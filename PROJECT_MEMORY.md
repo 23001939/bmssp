@@ -529,5 +529,9 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - `python -m unittest discover -s bmssp_visualizer/native`: **10/10 tests PASS** (13,74s).
   - `python run_all.py --quick`: **100% PASS** (bao gồm 10 ca kiểm tra khoảng cách thực nghiệm độc lập đối chiếu Bellman-Ford).
   - Khởi động server visualizer: `python bmssp_visualizer/start_demo.py --no-browser --port 8765` hoạt động hoàn hảo tại `http://127.0.0.1:8765/?demo=live`.
+- **Đẩy mã nguồn chính thức (Push to Remote Main):**
+  - Commit: `46f4ac0` ("Consolidate workspace into self-contained bmssp_visualizer lab and clean redundant artifacts").
+  - Đã đẩy thành công lên remote repository nhánh chính: `origin/main` (`https://github.com/23001939/bmssp.git`).
+  - Working tree hoàn toàn sạch sẽ (`nothing to commit, working tree clean`).
 
 
