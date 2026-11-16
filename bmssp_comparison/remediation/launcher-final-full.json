@@ -1,0 +1,247 @@
+{
+  "schema": "bmssp.verification-manifest.v1",
+  "created_utc": "2026-11-14T02:29:38.285679+00:00",
+  "status": "PASS",
+  "exit_code": 0,
+  "verification_scope": "production regressions + C++/Rust distances",
+  "config": {
+    "quick": false,
+    "demo_only": false,
+    "seed": 20261114,
+    "limit": 20,
+    "timeout_seconds": 120
+  },
+  "steps": [
+    {
+      "name": "python",
+      "required": true,
+      "command": [
+        "C:\\Users\\viet cong\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+        "--version"
+      ],
+      "cwd": "C:\\ttss",
+      "status": "PASS",
+      "exit_code": 0,
+      "stdout": "Python 3.11.9\n",
+      "stderr": "",
+      "elapsed_seconds": 0.012560600000142585
+    },
+    {
+      "name": "cpp_compiler",
+      "required": true,
+      "command": [
+        "g++",
+        "--version"
+      ],
+      "cwd": "C:\\ttss",
+      "status": "PASS",
+      "exit_code": 0,
+      "stdout": "g++ (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+      "stderr": "",
+      "elapsed_seconds": 0.009500200001639314
+    },
+    {
+      "name": "production_regressions",
+      "required": true,
+      "command": [
+        "C:\\Users\\viet cong\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "C:\\ttss\\bmssp_visualizer\\tests",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "C:\\ttss",
+      "status": "PASS",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "...............................................\n----------------------------------------------------------------------\nRan 47 tests in 2.055s\n\nOK\n",
+      "elapsed_seconds": 2.2733477000001585,
+      "tests_run": 47
+    },
+    {
+      "name": "native_regressions",
+      "required": true,
+      "command": [
+        "C:\\Users\\viet cong\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "C:\\ttss\\bmssp_visualizer\\native",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "C:\\ttss",
+      "status": "PASS",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 7.445s\n\nOK\n",
+      "elapsed_seconds": 7.567010400001891,
+      "tests_run": 10
+    },
+    {
+      "name": "empirical_distance_checks",
+      "required": true,
+      "command": [
+        "C:\\Users\\viet cong\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\ttss\\bmssp_comparison\\run_fidelity_checks.py",
+        "--limit",
+        "20",
+        "--seed",
+        "20261114",
+        "--timeout",
+        "120",
+        "--output",
+        "C:\\ttss\\bmssp_comparison\\remediation\\launcher-final-full_fidelity.json",
+        "--solvers",
+        "cpp",
+        "rust"
+      ],
+      "cwd": "C:\\ttss",
+      "status": "PASS",
+      "exit_code": 0,
+      "stdout": "pristine_near_tie (diagnostic): cpp=FAIL, rust=PASS\nrandom_0000 (required): cpp=PASS, rust=PASS\nrandom_0001 (required): cpp=PASS, rust=PASS\nrandom_0002 (required): cpp=PASS, rust=PASS\nrandom_0003 (required): cpp=PASS, rust=PASS\nrandom_0004 (required): cpp=PASS, rust=PASS\nrandom_0005 (required): cpp=PASS, rust=PASS\nrandom_0006 (required): cpp=PASS, rust=PASS\nrandom_0007 (required): cpp=PASS, rust=PASS\nrandom_0008 (required): cpp=PASS, rust=PASS\nrandom_0009 (required): cpp=PASS, rust=PASS\nrandom_0010 (required): cpp=PASS, rust=PASS\nrandom_0011 (required): cpp=PASS, rust=PASS\nrandom_0012 (required): cpp=PASS, rust=PASS\nrandom_0013 (required): cpp=PASS, rust=PASS\nrandom_0014 (required): cpp=PASS, rust=PASS\nrandom_0015 (required): cpp=PASS, rust=PASS\nrandom_0016 (required): cpp=PASS, rust=PASS\nrandom_0017 (required): cpp=PASS, rust=PASS\nrandom_0018 (required): cpp=PASS, rust=PASS\nrandom_0019 (required): cpp=PASS, rust=PASS\nPASS: 20 required inputs; diagnostics failed: 1; manifest: C:\\ttss\\bmssp_comparison\\remediation\\launcher-final-full_fidelity.json\n",
+      "stderr": "",
+      "elapsed_seconds": 1.4994656999988365,
+      "evidence": {
+        "manifest": "C:\\ttss\\bmssp_comparison\\remediation\\launcher-final-full_fidelity.json",
+        "status": "PASS",
+        "completed_cases": 20,
+        "diagnostic_failures": 1,
+        "scope": "Required random distance comparisons only. No predecessor or internal invariant certification. Pristine near-tie is a separate nonrequired diagnostic.",
+        "provenance": {
+          "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+          "platform": "win32",
+          "repos": {
+            "project": {
+              "commit": null,
+              "commit_error": "fatal: not a git repository (or any of the parent directories): .git\n",
+              "diff_sha256": null,
+              "diff_status": "FAIL",
+              "working_tree_status": ""
+            },
+            "cpp": {
+              "commit": null,
+              "commit_error": "fatal: detected dubious ownership in repository at 'C:/ttss/bmssp_comparison/repos/cpp'\n'C:/ttss/bmssp_comparison/repos/cpp' is owned by:\n\tVIETCOSNY/vietcong (S-1-5-21-225120179-659345154-4102416041-1001)\nbut the current user is:\n\tVIETCOSNY/CodexSandboxOffline (S-1-5-21-225120179-659345154-4102416041-1013)\nTo add an exception for this directory, call:\n\n\tgit config --global --add safe.directory C:/ttss/bmssp_comparison/repos/cpp\n",
+              "diff_sha256": null,
+              "diff_status": "FAIL",
+              "working_tree_status": ""
+            },
+            "rust": {
+              "commit": null,
+              "commit_error": "fatal: detected dubious ownership in repository at 'C:/ttss/bmssp_comparison/repos/rust_python'\n'C:/ttss/bmssp_comparison/repos/rust_python' is owned by:\n\tVIETCOSNY/vietcong (S-1-5-21-225120179-659345154-4102416041-1001)\nbut the current user is:\n\tVIETCOSNY/CodexSandboxOffline (S-1-5-21-225120179-659345154-4102416041-1013)\nTo add an exception for this directory, call:\n\n\tgit config --global --add safe.directory C:/ttss/bmssp_comparison/repos/rust_python\n",
+              "diff_sha256": null,
+              "diff_status": "FAIL",
+              "working_tree_status": ""
+            }
+          },
+          "compiler": {
+            "command": [
+              "g++",
+              "--version"
+            ],
+            "cwd": "C:\\ttss",
+            "status": "PASS",
+            "exit_code": 0,
+            "stdout": "g++ (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+            "stderr": "",
+            "elapsed_seconds": 0.010842100004083477
+          },
+          "rustc": {
+            "command": [
+              "rustc",
+              "--version"
+            ],
+            "cwd": "C:\\ttss",
+            "status": "FAIL",
+            "exit_code": null,
+            "error": "[WinError 2] The system cannot find the file specified",
+            "error_kind": "missing_tool_or_os_error",
+            "elapsed_seconds": 0.0036343999963719398
+          },
+          "script_sha256": "33d4ec47e8483d223c22f3f6ff3909c64e98c54fa13ae1d0e6bc5de7fe71aefa",
+          "wrapper_sha256": "9ecb5efc1567a01f6983ed8d26ce3e9989c37abd748e4d22107460fccaa303b4"
+        }
+      }
+    },
+    {
+      "name": "launch_demo",
+      "status": "SKIPPED",
+      "required": false,
+      "exit_code": null,
+      "reason": "Use --launch-demo or --demo-only to start the visualizer."
+    }
+  ],
+  "provenance": {
+    "launcher_sha256": "5632a8edf0357a4875bab39ad421801b5d99ec3dab22eacf4d3fa53aa7bd1177",
+    "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "root": "C:\\ttss",
+    "empirical_checks": {
+      "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+      "platform": "win32",
+      "repos": {
+        "project": {
+          "commit": null,
+          "commit_error": "fatal: not a git repository (or any of the parent directories): .git\n",
+          "diff_sha256": null,
+          "diff_status": "FAIL",
+          "working_tree_status": ""
+        },
+        "cpp": {
+          "commit": null,
+          "commit_error": "fatal: detected dubious ownership in repository at 'C:/ttss/bmssp_comparison/repos/cpp'\n'C:/ttss/bmssp_comparison/repos/cpp' is owned by:\n\tVIETCOSNY/vietcong (S-1-5-21-225120179-659345154-4102416041-1001)\nbut the current user is:\n\tVIETCOSNY/CodexSandboxOffline (S-1-5-21-225120179-659345154-4102416041-1013)\nTo add an exception for this directory, call:\n\n\tgit config --global --add safe.directory C:/ttss/bmssp_comparison/repos/cpp\n",
+          "diff_sha256": null,
+          "diff_status": "FAIL",
+          "working_tree_status": ""
+        },
+        "rust": {
+          "commit": null,
+          "commit_error": "fatal: detected dubious ownership in repository at 'C:/ttss/bmssp_comparison/repos/rust_python'\n'C:/ttss/bmssp_comparison/repos/rust_python' is owned by:\n\tVIETCOSNY/vietcong (S-1-5-21-225120179-659345154-4102416041-1001)\nbut the current user is:\n\tVIETCOSNY/CodexSandboxOffline (S-1-5-21-225120179-659345154-4102416041-1013)\nTo add an exception for this directory, call:\n\n\tgit config --global --add safe.directory C:/ttss/bmssp_comparison/repos/rust_python\n",
+          "diff_sha256": null,
+          "diff_status": "FAIL",
+          "working_tree_status": ""
+        }
+      },
+      "compiler": {
+        "command": [
+          "g++",
+          "--version"
+        ],
+        "cwd": "C:\\ttss",
+        "status": "PASS",
+        "exit_code": 0,
+        "stdout": "g++ (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+        "stderr": "",
+        "elapsed_seconds": 0.010842100004083477
+      },
+      "rustc": {
+        "command": [
+          "rustc",
+          "--version"
+        ],
+        "cwd": "C:\\ttss",
+        "status": "FAIL",
+        "exit_code": null,
+        "error": "[WinError 2] The system cannot find the file specified",
+        "error_kind": "missing_tool_or_os_error",
+        "elapsed_seconds": 0.0036343999963719398
+      },
+      "script_sha256": "33d4ec47e8483d223c22f3f6ff3909c64e98c54fa13ae1d0e6bc5de7fe71aefa",
+      "wrapper_sha256": "9ecb5efc1567a01f6983ed8d26ce3e9989c37abd748e4d22107460fccaa303b4"
+    }
+  },
+  "limitations": [
+    "Finite empirical checks do not certify Algorithms 1-3/Lemma 3.3.",
+    "No benchmark or transform remeasurement is performed by this command.",
+    "Historical files never count as a fresh PASS."
+  ]
+}

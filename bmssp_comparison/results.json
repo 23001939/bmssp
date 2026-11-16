@@ -1,0 +1,942 @@
+{
+  "created_utc": "2026-11-13T14:43:57.602150+00:00",
+  "platform": "Windows-10-10.0.26300-SP0",
+  "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "cases": [
+    {
+      "name": "counterexample_1500",
+      "n": 1500,
+      "m": 1501,
+      "algorithms": {
+        "cpp_dijkstra": {
+          "samples_ms": [
+            0.07,
+            0.067,
+            0.055,
+            0.064,
+            0.066
+          ],
+          "kernel_ms": [
+            0.013,
+            0.011,
+            0.012,
+            0.012,
+            0.012
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 0.066,
+          "median_kernel_ms": 0.012
+        },
+        "cpp_wc_bounded": {
+          "samples_ms": [
+            0.841,
+            0.7,
+            0.632,
+            0.634,
+            0.643
+          ],
+          "kernel_ms": [
+            0.518,
+            0.453,
+            0.415,
+            0.41,
+            0.409
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 0.643,
+          "median_kernel_ms": 0.415
+        },
+        "cpp_expected_bounded": {
+          "samples_ms": [
+            0.73,
+            0.598,
+            0.539,
+            0.538,
+            0.565
+          ],
+          "kernel_ms": [
+            0.533,
+            0.472,
+            0.427,
+            0.43,
+            0.432
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 0.565,
+          "median_kernel_ms": 0.432
+        },
+        "cpp_wc": {
+          "samples_ms": [
+            1.999,
+            1.731,
+            1.607,
+            1.74,
+            2.649
+          ],
+          "kernel_ms": [
+            1.067,
+            0.956,
+            0.883,
+            0.979,
+            1.43
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 1.74,
+          "median_kernel_ms": 0.979
+        },
+        "cpp_expected": {
+          "samples_ms": [
+            1.5,
+            1.456,
+            1.37,
+            1.374,
+            1.38
+          ],
+          "kernel_ms": [
+            0.953,
+            0.867,
+            0.862,
+            0.851,
+            0.87
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 1.38,
+          "median_kernel_ms": 0.867
+        },
+        "python_dijkstra": {
+          "status": "PASS",
+          "median_ms": 0.21080000010442745,
+          "samples_ms": [
+            0.24639999992359662,
+            0.21080000010442745,
+            0.21030000016253325
+          ],
+          "warmup_ms": 0.22169999988363998
+        },
+        "nobelk": {
+          "status": "PASS",
+          "median_ms": 0.9917999998378946,
+          "samples_ms": [
+            0.9917999998378946,
+            0.9533000002193148,
+            1.0056999999505933
+          ],
+          "warmup_ms": 1.2447000001429842
+        },
+        "bzantium_v1": {
+          "status": "PASS",
+          "median_ms": 0.6270999999742344,
+          "samples_ms": [
+            0.6270999999742344,
+            0.7284000000709057,
+            0.6194000000050437
+          ],
+          "warmup_ms": 0.6513999999242515
+        },
+        "bzantium_v2": {
+          "status": "WRONG",
+          "wrong_vertices": 1496,
+          "first_vertex": 3,
+          "actual": 1.0,
+          "expected": 0.30000000000000004
+        },
+        "logtwothirds_reference": {
+          "status": "PASS",
+          "median_ms": 26.40960000007908,
+          "samples_ms": [
+            26.40960000007908,
+            27.37380000007761,
+            25.645500000109678
+          ],
+          "warmup_ms": 26.267799999914132
+        }
+      }
+    },
+    {
+      "name": "real_2000",
+      "n": 2000,
+      "m": 7996,
+      "algorithms": {
+        "cpp_dijkstra": {
+          "samples_ms": [
+            0.455,
+            0.337,
+            0.326,
+            0.259,
+            0.262
+          ],
+          "kernel_ms": [
+            0.322,
+            0.23,
+            0.203,
+            0.193,
+            0.194
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 0.326,
+          "median_kernel_ms": 0.203
+        },
+        "cpp_wc_bounded": {
+          "samples_ms": [
+            2.065,
+            2.05,
+            2.582,
+            1.984,
+            1.902
+          ],
+          "kernel_ms": [
+            1.631,
+            1.702,
+            2.149,
+            1.598,
+            1.553
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 2.05,
+          "median_kernel_ms": 1.631
+        },
+        "cpp_expected_bounded": {
+          "samples_ms": [
+            2.877,
+            2.095,
+            2.361,
+            2.066,
+            1.973
+          ],
+          "kernel_ms": [
+            2.514,
+            1.789,
+            2.106,
+            1.801,
+            1.752
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 2.095,
+          "median_kernel_ms": 1.801
+        },
+        "cpp_wc": {
+          "samples_ms": [
+            22.923,
+            25.578,
+            25.293,
+            24.779,
+            23.76
+          ],
+          "kernel_ms": [
+            18.391,
+            22.077,
+            21.218,
+            19.473,
+            19.348
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 24.779,
+          "median_kernel_ms": 19.473
+        },
+        "cpp_expected": {
+          "samples_ms": [
+            23.43,
+            23.886,
+            26.373,
+            21.758,
+            20.723
+          ],
+          "kernel_ms": [
+            19.018,
+            20.659,
+            20.514,
+            17.579,
+            17.088
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 23.43,
+          "median_kernel_ms": 19.018
+        },
+        "python_dijkstra": {
+          "status": "PASS",
+          "median_ms": 1.3914999999542488,
+          "samples_ms": [
+            1.3914999999542488,
+            2.5762999998732994,
+            1.297199999953591
+          ],
+          "warmup_ms": 1.4528000001519104
+        },
+        "nobelk": {
+          "status": "PASS",
+          "median_ms": 4.539599999816346,
+          "samples_ms": [
+            4.539599999816346,
+            5.283200000121724,
+            4.39989999995305
+          ],
+          "warmup_ms": 5.22569999998268
+        },
+        "bzantium_v1": {
+          "status": "PASS",
+          "median_ms": 2.8173000000606407,
+          "samples_ms": [
+            2.991000000065469,
+            2.7528000000529573,
+            2.8173000000606407
+          ],
+          "warmup_ms": 2.942599999869344
+        },
+        "bzantium_v2": {
+          "status": "WRONG",
+          "wrong_vertices": 3,
+          "first_vertex": 469,
+          "actual": 22.160649391917836,
+          "expected": 21.967867260515956
+        },
+        "logtwothirds_reference": {
+          "status": "PASS",
+          "median_ms": 262.7956000001177,
+          "samples_ms": [
+            260.74389999985215,
+            262.7956000001177,
+            270.2902000000904
+          ],
+          "warmup_ms": 255.6833999999526
+        }
+      }
+    },
+    {
+      "name": "real_10000",
+      "n": 10000,
+      "m": 39996,
+      "algorithms": {
+        "cpp_dijkstra": {
+          "samples_ms": [
+            3.206,
+            2.203,
+            2.878,
+            2.332,
+            2.856
+          ],
+          "kernel_ms": [
+            2.181,
+            1.537,
+            2.15,
+            1.665,
+            1.998
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 2.856,
+          "median_kernel_ms": 1.998
+        },
+        "cpp_wc_bounded": {
+          "samples_ms": [
+            13.587,
+            12.523,
+            11.912,
+            12.003,
+            9.912
+          ],
+          "kernel_ms": [
+            11.507,
+            10.493,
+            9.956,
+            9.932,
+            7.944
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 12.003,
+          "median_kernel_ms": 9.956
+        },
+        "cpp_expected_bounded": {
+          "samples_ms": [
+            10.308,
+            11.691,
+            10.643,
+            11.166,
+            10.896
+          ],
+          "kernel_ms": [
+            9.035,
+            10.35,
+            9.289,
+            9.672,
+            9.563
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 10.896,
+          "median_kernel_ms": 9.563
+        },
+        "cpp_wc": {
+          "samples_ms": [
+            164.523,
+            160.538,
+            165.381,
+            155.43,
+            156.743
+          ],
+          "kernel_ms": [
+            132.974,
+            128.178,
+            129.11,
+            122.54,
+            130.087
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 160.538,
+          "median_kernel_ms": 129.11
+        },
+        "cpp_expected": {
+          "samples_ms": [
+            151.693,
+            150.328,
+            143.341,
+            127.232,
+            147.992
+          ],
+          "kernel_ms": [
+            121.168,
+            122.245,
+            112.485,
+            104.563,
+            117.399
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 147.992,
+          "median_kernel_ms": 117.399
+        },
+        "python_dijkstra": {
+          "status": "PASS",
+          "median_ms": 19.2595999999412,
+          "samples_ms": [
+            16.959699999915756,
+            19.618300000047384,
+            19.2595999999412
+          ],
+          "warmup_ms": 16.972599999917293
+        },
+        "nobelk": {
+          "status": "PASS",
+          "median_ms": 42.147200000044904,
+          "samples_ms": [
+            41.728600000169536,
+            42.147200000044904,
+            44.271900000012465
+          ],
+          "warmup_ms": 41.771199999857345
+        },
+        "bzantium_v1": {
+          "status": "PASS",
+          "median_ms": 46.25799999985247,
+          "samples_ms": [
+            50.32389999996667,
+            46.25799999985247,
+            39.92170000014994
+          ],
+          "warmup_ms": 58.037400000102934
+        },
+        "bzantium_v2": {
+          "status": "WRONG",
+          "wrong_vertices": 69,
+          "first_vertex": 12,
+          "actual": 31.53378017936101,
+          "expected": 31.144336327231752
+        },
+        "logtwothirds_reference": {
+          "status": "PASS",
+          "median_ms": 1508.0278000000362,
+          "samples_ms": [
+            1387.4825999998848,
+            1508.0278000000362,
+            2297.633899999937
+          ],
+          "warmup_ms": 1326.9729999999527
+        }
+      }
+    },
+    {
+      "name": "integer_10000",
+      "n": 10000,
+      "m": 39996,
+      "algorithms": {
+        "cpp_dijkstra": {
+          "samples_ms": [
+            2.672,
+            3.205,
+            2.826,
+            2.619,
+            2.652
+          ],
+          "kernel_ms": [
+            1.941,
+            2.401,
+            1.871,
+            1.88,
+            1.915
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 2.672,
+          "median_kernel_ms": 1.915
+        },
+        "cpp_wc_bounded": {
+          "samples_ms": [
+            16.045,
+            12.441,
+            11.685,
+            13.824,
+            14.984
+          ],
+          "kernel_ms": [
+            13.385,
+            10.437,
+            9.623,
+            10.968,
+            12.359
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 13.824,
+          "median_kernel_ms": 10.968
+        },
+        "cpp_expected_bounded": {
+          "samples_ms": [
+            11.756,
+            14.792,
+            12.503,
+            14.713,
+            17.172
+          ],
+          "kernel_ms": [
+            9.625,
+            13.292,
+            10.474,
+            13.401,
+            14.648
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 14.713,
+          "median_kernel_ms": 13.292
+        },
+        "cpp_wc": {
+          "samples_ms": [
+            277.452,
+            310.927,
+            350.615,
+            344.626,
+            229.95
+          ],
+          "kernel_ms": [
+            216.598,
+            260.857,
+            275.705,
+            257.536,
+            183.857
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 310.927,
+          "median_kernel_ms": 257.536
+        },
+        "cpp_expected": {
+          "samples_ms": [
+            527.471,
+            287.909,
+            282.808,
+            247.803,
+            272.495
+          ],
+          "kernel_ms": [
+            438.616,
+            212.966,
+            219.043,
+            201.897,
+            224.663
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 282.808,
+          "median_kernel_ms": 219.043
+        },
+        "python_dijkstra": {
+          "status": "PASS",
+          "median_ms": 27.58019999987482,
+          "samples_ms": [
+            33.40019999996002,
+            27.58019999987482,
+            23.543599999811704
+          ],
+          "warmup_ms": 36.4331000000675
+        },
+        "nobelk": {
+          "status": "PASS",
+          "median_ms": 73.24360000006891,
+          "samples_ms": [
+            75.56219999992209,
+            60.37989999981619,
+            73.24360000006891
+          ],
+          "warmup_ms": 59.29670000000442
+        },
+        "bzantium_v1": {
+          "status": "PASS",
+          "median_ms": 65.42430000013155,
+          "samples_ms": [
+            62.950100000080056,
+            125.44520000005832,
+            65.42430000013155
+          ],
+          "warmup_ms": 58.55929999984255
+        },
+        "bzantium_v2": {
+          "status": "PASS",
+          "median_ms": 24.66110000000299,
+          "samples_ms": [
+            44.652099999893835,
+            24.66110000000299,
+            22.924200000034034
+          ],
+          "warmup_ms": 46.76649999987603
+        },
+        "logtwothirds_reference": {
+          "status": "PASS",
+          "median_ms": 2685.303499999918,
+          "samples_ms": [
+            2178.596700000071,
+            2685.303499999918,
+            2963.7421000002178
+          ],
+          "warmup_ms": 1869.4330000000718
+        }
+      }
+    },
+    {
+      "name": "zero_ties_10000",
+      "n": 10000,
+      "m": 39996,
+      "algorithms": {
+        "cpp_dijkstra": {
+          "samples_ms": [
+            3.497,
+            2.209,
+            2.248,
+            3.098,
+            2.246
+          ],
+          "kernel_ms": [
+            1.707,
+            1.472,
+            1.606,
+            1.554,
+            1.522
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 2.248,
+          "median_kernel_ms": 1.554
+        },
+        "cpp_wc_bounded": {
+          "samples_ms": [
+            10.962,
+            10.384,
+            11.614,
+            17.979,
+            16.908
+          ],
+          "kernel_ms": [
+            8.803,
+            8.206,
+            9.469,
+            14.382,
+            13.837
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 11.614,
+          "median_kernel_ms": 9.469
+        },
+        "cpp_expected_bounded": {
+          "samples_ms": [
+            9.87,
+            9.337,
+            11.263,
+            11.268,
+            9.205
+          ],
+          "kernel_ms": [
+            8.611,
+            8.08,
+            9.313,
+            9.22,
+            7.921
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 9.87,
+          "median_kernel_ms": 8.611
+        },
+        "cpp_wc": {
+          "samples_ms": [
+            130.781,
+            138.185,
+            138.504,
+            120.228,
+            110.495
+          ],
+          "kernel_ms": [
+            100.941,
+            107.369,
+            102.207,
+            89.023,
+            84.966
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 130.781,
+          "median_kernel_ms": 100.941
+        },
+        "cpp_expected": {
+          "samples_ms": [
+            113.578,
+            99.644,
+            100.019,
+            99.968,
+            100.065
+          ],
+          "kernel_ms": [
+            83.536,
+            75.836,
+            78.92,
+            78.138,
+            76.278
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 100.019,
+          "median_kernel_ms": 78.138
+        },
+        "python_dijkstra": {
+          "status": "PASS",
+          "median_ms": 18.14290000015717,
+          "samples_ms": [
+            18.172499999991487,
+            18.14290000015717,
+            17.12069999985033
+          ],
+          "warmup_ms": 15.907900000001973
+        },
+        "nobelk": {
+          "status": "PASS",
+          "median_ms": 38.17419999995764,
+          "samples_ms": [
+            38.17419999995764,
+            39.00499999986096,
+            37.18720000006215
+          ],
+          "warmup_ms": 39.09920000000966
+        },
+        "bzantium_v1": {
+          "status": "PASS",
+          "median_ms": 41.54800000014802,
+          "samples_ms": [
+            43.37740000005397,
+            39.986800000178846,
+            41.54800000014802
+          ],
+          "warmup_ms": 44.84090000005381
+        },
+        "bzantium_v2": {
+          "status": "PASS",
+          "median_ms": 14.527600000064922,
+          "samples_ms": [
+            14.273400000092806,
+            14.79380000000674,
+            14.527600000064922
+          ],
+          "warmup_ms": 14.685299999882773
+        },
+        "logtwothirds_reference": {
+          "status": "PASS",
+          "median_ms": 1432.6078000001417,
+          "samples_ms": [
+            1174.5492000000013,
+            1432.6078000001417,
+            1840.2777000001151
+          ],
+          "warmup_ms": 1045.9619999999177
+        }
+      }
+    },
+    {
+      "name": "real_50000",
+      "n": 50000,
+      "m": 199996,
+      "algorithms": {
+        "cpp_dijkstra": {
+          "samples_ms": [
+            16.188,
+            18.177,
+            18.483,
+            14.605,
+            15.713
+          ],
+          "kernel_ms": [
+            12.807,
+            12.78,
+            14.246,
+            11.053,
+            12.249
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 16.188,
+          "median_kernel_ms": 12.78
+        },
+        "cpp_wc_bounded": {
+          "samples_ms": [
+            67.422,
+            63.411,
+            69.428,
+            81.341,
+            70.621
+          ],
+          "kernel_ms": [
+            56.738,
+            53.841,
+            59.853,
+            70.222,
+            59.793
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 69.428,
+          "median_kernel_ms": 59.793
+        },
+        "cpp_expected_bounded": {
+          "samples_ms": [
+            72.461,
+            70.206,
+            61.531,
+            63.301,
+            62.408
+          ],
+          "kernel_ms": [
+            64.807,
+            61.78,
+            55.054,
+            56.858,
+            55.066
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 63.301,
+          "median_kernel_ms": 56.858
+        },
+        "cpp_wc": {
+          "samples_ms": [
+            1109.05,
+            1745.83,
+            1149.08,
+            982.33,
+            1206.44
+          ],
+          "kernel_ms": [
+            850.959,
+            1379.52,
+            806.379,
+            742.323,
+            970.862
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 1149.08,
+          "median_kernel_ms": 850.959
+        },
+        "cpp_expected": {
+          "samples_ms": [
+            1701.63,
+            1528.05,
+            1361.61,
+            1172.13,
+            1273.39
+          ],
+          "kernel_ms": [
+            1288.5,
+            1115.36,
+            1014.46,
+            868.585,
+            967.721
+          ],
+          "status": "PASS",
+          "wrong_vertices": 0,
+          "median_ms": 1361.61,
+          "median_kernel_ms": 1014.46
+        },
+        "python_dijkstra": {
+          "status": "PASS",
+          "median_ms": 276.73090000007505,
+          "samples_ms": [
+            253.05309999998826,
+            351.78689999997914,
+            276.73090000007505
+          ],
+          "warmup_ms": 187.35259999994014
+        },
+        "nobelk": {
+          "status": "PASS",
+          "median_ms": 337.13509999984126,
+          "samples_ms": [
+            475.1710999998977,
+            337.13509999984126,
+            285.6724000000668
+          ],
+          "warmup_ms": 530.9315000001789
+        },
+        "bzantium_v1": {
+          "status": "PASS",
+          "median_ms": 404.47360000007393,
+          "samples_ms": [
+            398.9230000001953,
+            404.47360000007393,
+            405.54870000005394
+          ],
+          "warmup_ms": 396.5072999999393
+        },
+        "bzantium_v2": {
+          "status": "WRONG",
+          "wrong_vertices": 92,
+          "first_vertex": 1317,
+          "actual": 31.18342835506349,
+          "expected": 31.08122213162219
+        },
+        "logtwothirds_reference": {
+          "status": "SKIP",
+          "reason": "Pure Python reference only; Rust toolchain unavailable; limit reference workload."
+        }
+      }
+    }
+  ],
+  "commits": {
+    "cpp": "0a8eb82805bad7f64dfa1b51e17656c9af4c4681",
+    "csharp": "c63a7bc3497000f91be7f27d06b4584e77ec50a0",
+    "go": "538f16b7166f52f96dae9ed17d3565a44a1fa2fd",
+    "python_reference": "a0f0f3e7423b37e593a4ffeb1a263e4f135e59d3",
+    "python_variants": "fa7f2f6d10ddbe86752a2cef2d8ce414bb30c67d",
+    "rust_python": "4bc62c61c3af0bab97b7e01bab8352ed43b91e4c"
+  },
+  "processor_identifier": "AMD64 Family 25 Model 116 Stepping 1, AuthenticAMD",
+  "cpu_threads": 12,
+  "compiler": "g++ 16.2.0, -std=c++20 -O3 -DNDEBUG"
+}

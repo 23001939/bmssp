@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Phòng thí nghiệm BMSSP Mizchi Rust: khảo sát DMM+25, C-HD và Dijkstra trên cùng đồ thị.">
+  <title>BMSSP Mizchi Lab · DMM+25, C-HD & Dijkstra (Rust)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="BMSSP mizchi phòng thí nghiệm"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M8 26 15 9 29 17 8 26M15 9l7 21"/><circle cx="8" cy="26" r="3"/><circle cx="15" cy="9" r="3"/><circle cx="29" cy="17" r="3"/><circle cx="22" cy="30" r="3"/></svg><span>MIZCHI <small>BMSSP RUST LAB</small></span></a>
+    <nav aria-label="Khu vực ứng dụng"><span class="nav-active">Phòng thí nghiệm</span><a href="#method">Về 3 thuật toán</a></nav>
+    <span class="local-badge"><i></i><span id="connection-label">Port 8766 · Cục bộ</span></span>
+  </header>
+  <main>
+    <div class="page-heading"><div><p class="eyebrow">BA THUẬT TOÁN · CÙNG MỘT ĐỒ THỊ</p><h1>Thấy đường đi. Hiểu thuật toán.</h1><p class="subtitle">Chạy DMM+25, C-HD và Dijkstra trên cùng đầu vào, quan sát biến đổi bậc và đối chiếu kết quả.</p></div><span class="version-tag">MIZCHI RUST / 03</span></div>
+    <div class="workspace">
+      <aside class="sidebar">
+        <section class="panel setup-panel"><div class="section-heading"><span class="section-number">01</span><h2>Dữ liệu đầu vào</h2></div>
+          <label for="dataset">Bộ đồ thị</label><select id="dataset"><option>Đang tải dữ liệu…</option></select>
+          <p id="dataset-description" class="muted small">Đồ thị có hướng, trọng số không âm.</p>
+          <button id="import-button" class="button secondary wide"><span aria-hidden="true">↥</span> Nhập TXT / JSON</button><input id="file-input" type="file" accept=".txt,.json,.jsonl,.ndjson" hidden>
+          <p class="micro">TXT: n m, rồi mỗi dòng u v w. JSON: đồ thị hoặc kết quả đã xuất.</p>
+          <div class="graph-stats"><div><strong id="stat-n">—</strong><span>đỉnh</span></div><div><strong id="stat-m">—</strong><span>cạnh có hướng</span></div></div>
+        </section>
+        <section class="panel controls-panel"><div class="section-heading"><span class="section-number">02</span><h2>Điều khiển thuật toán</h2></div>
+          <div class="two-fields"><div><label for="source">Đỉnh nguồn</label><input id="source" type="number" min="0" value="0"></div><div><label for="target">Đỉnh đích</label><input id="target" type="number" min="0" value="1"></div></div>
+          <label for="mode">Chế độ chạy</label><select id="mode"><option value="controlled">Trực tiếp · có điều khiển</option><option value="fast">Chạy nhanh · không trace</option></select>
+          <p id="mode-note" class="micro">Sự kiện từ runner Rust thật; tạm dừng và từng bước tác động vào tiến trình.</p>
+          <button id="run" class="button primary wide"><span aria-hidden="true">▶</span> Chạy DMM+25</button>
+          <button id="run-chd" class="button secondary wide"><span aria-hidden="true">▶</span> Chạy C-HD</button>
+          <button id="run-dijkstra" class="button secondary wide"><span aria-hidden="true">▶</span> Chạy Dijkstra</button>
+          <p id="active-algorithm" class="micro algorithm-label">Thuật toán hiện tại: DMM+25</p>
+          <div class="transport"><button id="pause" class="button secondary" disabled>Tạm dừng</button><button id="step" class="button secondary" disabled>Từng bước</button></div>
+          <div class="transport"><button id="stop" class="button subtle" disabled>■ Dừng</button><button id="reset" class="button subtle">↺ Đặt lại</button></div>
+          <label class="speed-label" for="speed">Nhịp sự kiện <output id="speed-output">120 ms</output></label><input id="speed" type="range" min="0" max="1000" step="20" value="120"><div class="range-labels"><span>Nhanh</span><span>Chậm</span></div>
+        </section>
+        <section class="panel params-panel"><div class="section-heading"><span class="section-number">03</span><h2>Tham số & Biến đổi bậc</h2></div>
+          <div class="stats-mini">
+            <div><span class="label">Đỉnh gadget (N′)</span><strong id="stat-nv">—</strong></div>
+            <div><span class="label">Cạnh gadget (M′)</span><strong id="stat-mv">—</strong></div>
+            <div><span class="label">Pivots (k)</span><strong id="stat-k">—</strong></div>
+            <div><span class="label">Hop bound (t)</span><strong id="stat-t">—</strong></div>
+            <div><span class="label">Mức đệ quy (L)</span><strong id="stat-levels">—</strong></div>
+            <div><span class="label">Relax calls</span><strong id="stat-relax">—</strong></div>
+          </div>
+          <p id="params-expl" class="micro muted">DMM+25 biến đổi mỗi đỉnh bậc d thành chu trình 0-weight d đỉnh. C-HD phân rã out-degree thành chuỗi độ dài delta.</p>
+        </section>
+        <section class="panel export-panel"><div class="section-heading"><span class="section-number">04</span><h2>Lưu & xem lại</h2></div><div class="export-grid"><button data-export="graph">Đồ thị JSON</button><button data-export="result">Kết quả JSON</button><button data-export="trace">Trace JSONL</button><button data-export="csv">Bảng CSV</button><button data-export="html">Demo HTML</button><button data-export="svg">Ảnh SVG</button></div><p class="micro">Demo HTML mở ngoại tuyến, phát lại trace đã ghi. SVG lưu vùng đang xem.</p></section>
+      </aside>
+      <div class="main-column">
+        <section class="panel graph-panel" aria-label="Bản đồ đồ thị">
+          <div class="graph-top"><div class="view-tabs" role="group" aria-label="Lớp đồ thị"><button class="active" data-view="graph">Đồ thị đầu vào</button><button data-view="tree">Cây đường đi</button><button data-view="path">Đường đến đích</button></div><span id="run-status" class="status idle" role="status">Sẵn sàng</span></div>
+          <div class="graph-toolbar"><div class="graph-name"><strong id="graph-name">Chưa có đồ thị</strong><span id="render-note">Kéo đỉnh để sắp xếp · cuộn để thu phóng</span></div><div class="view-tools"><input id="search" type="number" min="0" placeholder="Tìm đỉnh…" aria-label="Tìm đỉnh theo ID"><button id="find" title="Đến đỉnh" aria-label="Đến đỉnh">⌕</button><button id="zoom-out" title="Thu nhỏ" aria-label="Thu nhỏ">−</button><button id="zoom-in" title="Phóng to" aria-label="Phóng to">+</button><button id="fit" title="Vừa khung" aria-label="Vừa khung">⊡</button><label class="checkbox-label"><input type="checkbox" id="weights" checked>Trọng số</label></div></div>
+          <div id="graph-stage" tabindex="0" aria-label="Đồ thị tương tác; chọn đỉnh để xem khoảng cách"><svg id="graph-svg" role="img" aria-label="Đồ thị có hướng"></svg><canvas id="graph-canvas" hidden></canvas><div class="graph-empty" id="graph-empty"><span>⌁</span><p>Chọn một đồ thị để bắt đầu khám phá</p></div><div id="selection-card" class="selection-card" hidden></div><span class="stage-note" id="stage-note">Mũi tên thể hiện chiều cạnh</span></div>
+          <div class="legend"><span><i class="dot source"></i>Nguồn</span><span><i class="line active-edge"></i>Cạnh đang relax</span><span><i class="dot frontier"></i>Đã relax</span><span id="pivot-legend"><i class="dot pivot"></i>Pivot</span><span><i class="dot complete"></i><span id="complete-legend">Hoàn tất lô</span></span><span><i class="line path"></i>Đường đã chọn</span><span><i class="dot unseen"></i>Chưa thăm</span></div>
+        </section>
+        <div class="metrics"><div class="metric"><span>Thời gian phiên</span><strong id="wall-time">0<span> ms</span></strong><small>Gồm chờ và điều khiển</small></div><div class="metric"><span id="compute-label">Tính toán native có trace</span><strong id="compute-time">—</strong><small id="compute-note">Không phải benchmark thuần</small><small id="native-detail" hidden></small></div><div class="metric"><span>Đỉnh tới được</span><strong id="reachable">—</strong><small id="reachable-note">Chờ kết quả được kiểm chứng</small></div><div class="metric"><span>Đối chiếu độc lập</span><strong id="verification" class="verification">Chưa chạy</strong><small id="verification-note">So toàn bộ khoảng cách</small></div></div>
+        <section class="panel comparison-panel" aria-label="So sánh trên cùng đồ thị và nguồn"><div class="comparison-heading"><div><p class="eyebrow">CÙNG ĐỒ THỊ · CÙNG NGUỒN</p><h2>DMM+25, C-HD và Dijkstra</h2></div><span id="comparison-context">Chưa có phiên chạy</span></div><div class="comparison-scroll"><table><thead><tr><th>Thuật toán</th><th>Đối chiếu Oracle</th><th>Tính toán Native</th><th>Kích thước N′ / M′</th><th>Tham số (k, t, L)</th><th>Chờ điều khiển</th></tr></thead><tbody id="comparison-body"></tbody></table></div><p id="comparison-note" class="micro comparison-note">Chạy lần lượt 3 thuật toán trên đồ thị đang chọn. Chọn Chạy nhanh để đo không trace. Dữ liệu đối chiếu độc lập với Python Dijkstra Oracle. Thời gian phiên gồm chờ điều khiển không dùng để so tốc độ thuật toán.</p></section>
+        <section class="panel results-panel"><div class="result-tabs" role="tablist" aria-label="Chi tiết phiên"><button id="tab-distances" class="active" role="tab" aria-selected="true" data-tab="distances">Khoảng cách & đường đi</button><button id="tab-events" role="tab" aria-selected="false" data-tab="events">Dòng sự kiện <span id="event-count">0</span></button><span class="trace-counters" id="trace-counters">Độ sâu 0 · Pivot 0</span></div>
+          <div id="distances-pane"><div class="path-summary"><div><span class="eyebrow">ĐƯỜNG ĐANG CHỌN</span><p id="path-text">Chạy thuật toán để xem đường đi ngắn nhất.</p></div><strong id="path-cost">—</strong></div><div class="table-scroll"><table><thead><tr><th>Đỉnh</th><th>Khoảng cách</th><th>Đỉnh trước</th><th>Cạnh trước</th><th>Trạng thái</th></tr></thead><tbody id="distance-body"><tr><td colspan="5" class="empty-table">Chưa có dữ liệu khoảng cách</td></tr></tbody></table></div><div class="table-footer"><span id="table-count">0 đỉnh</span><div><button id="prev-page" aria-label="Trang trước">←</button><span id="page-number">1</span><button id="next-page" aria-label="Trang sau">→</button></div></div></div>
+          <div id="events-pane" hidden><div id="trace-note" class="trace-note">Sự kiện được ghi tại các hook của thuật toán, không suy diễn từ kết quả cuối.</div><ol id="events-list" class="events-list"><li class="empty-table">Chưa có sự kiện. Chọn chế độ trực tiếp và chạy một thuật toán.</li></ol></div>
+        </section>
+      </div>
+    </div>
+    <section id="method" class="method-note"><span class="method-icon">i</span><p><strong>DMM+25, C-HD & Dijkstra · Ba phương pháp SSSP trên Rust Engine (mizchi fork)</strong><br>DMM+25 triển khai trung thực bài báo arXiv:2504.17033 (Algorithms 1–3, Lemma 3.3 block structure và constant-degree cycle gadget). C-HD sử dụng cấu trúc hop-constrained và pointer scan. Dijkstra (Rust binary heap) đóng vai trò baseline đối chiếu. Kết quả được kiểm chứng độc lập với Python Dijkstra Oracle.<br><em>Minh bạch học thuật:</em> DMM+25 và C-HD là các đột phá lý thuyết tiệm cận O(m log^(2/3) n); trên thực tế ở kích thước vừa và nhỏ, chúng chậm hơn Dijkstra do hằng số ẩn và overhead chuyển đổi bậc (gadget expansion). Thời gian animation không thay thế benchmark; test pass hữu hạn không thay thế chứng minh tổng quát.</p><span>Port: 8766<br>Trọng số ≥ 0</span></section>
+    <div id="notice" class="notice" role="alert" hidden></div>
+  </main>
+  <footer><span>BMSSP GRAPH LAB</span><span>Nghiên cứu có thể quan sát, kết quả có thể tái lập.</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>

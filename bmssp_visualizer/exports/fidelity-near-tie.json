@@ -1,0 +1,37 @@
+{
+  "input_txt": "3 3\n0 1 0.00000000004\n0 2 0\n2 1 0\n",
+  "distances": [
+    0,
+    0,
+    0
+  ],
+  "predecessors": [
+    null,
+    0,
+    0
+  ],
+  "verification": {
+    "ok": true,
+    "oracle": "Dijkstra độc lập (Python heapq)",
+    "wrong_vertices": 0,
+    "first_wrong_vertices": [],
+    "predecessor_errors": [],
+    "cycle_vertices": [],
+    "path_cost_errors": [],
+    "exact_mismatches": 0,
+    "max_abs_error": 0.0,
+    "rtol": 1e-09,
+    "atol": 1e-09
+  },
+  "exact_shortest_path_to_1": [
+    0,
+    2,
+    1
+  ],
+  "returned_path_to_1": [
+    0,
+    1
+  ],
+  "returned_path_cost": 4e-11,
+  "note": "Correct distance, nonoptimal exact output path accepted by tolerance. Not a performance benchmark."
+}

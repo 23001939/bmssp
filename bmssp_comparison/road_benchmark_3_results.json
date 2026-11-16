@@ -1,0 +1,179 @@
+[
+  {
+    "id": "NY",
+    "name": "New York (NY)",
+    "n": 264346,
+    "m": 733846,
+    "gr_bytes": 15493148,
+    "txt_bytes": 14025237,
+    "solvers": {
+      "rust_dijkstra": {
+        "solve_ms": 21.515800000000002,
+        "samples": [
+          23.2272,
+          20.2,
+          21.6795,
+          21.5126,
+          21.515800000000002
+        ]
+      },
+      "rust_bmssp_fast": {
+        "solve_ms": 43.433800000000005,
+        "samples": [
+          44.1757,
+          43.873599999999996,
+          43.433800000000005,
+          42.5313,
+          42.1316
+        ]
+      },
+      "cpp_dijkstra": {
+        "setup_ms": 27.134,
+        "solve_ms": 46.113,
+        "total_ms": 73.247
+      },
+      "cpp_bmssp_notransform": {
+        "setup_ms": 82.299,
+        "solve_ms": 138.148,
+        "total_ms": 220.447
+      },
+      "cpp_bmssp_transform": {
+        "setup_ms": 397.777,
+        "solve_ms": 697.71,
+        "total_ms": 1095.487,
+        "n_expanded": 730100,
+        "m_expanded": 1460200
+      },
+      "rust_chd": {
+        "compute_ms": 156.78990000000002,
+        "preprocess_ms": 71.1374,
+        "core_ms": 84.0307
+      },
+      "rust_dmm25": {
+        "compute_ms": 705.6929,
+        "preprocess_ms": 46.7418,
+        "core_ms": 650.9329,
+        "relax_calls": 11467676
+      }
+    },
+    "dist_match_dijkstra_vs_bmssp_fast": true
+  },
+  {
+    "id": "BAY",
+    "name": "San Francisco Bay Area (BAY)",
+    "n": 321270,
+    "m": 800172,
+    "gr_bytes": 16206846,
+    "txt_bytes": 15406467,
+    "solvers": {
+      "rust_dijkstra": {
+        "solve_ms": 24.6602,
+        "samples": [
+          24.6602,
+          23.0315,
+          24.848399999999998,
+          23.7113,
+          26.8428
+        ]
+      },
+      "rust_bmssp_fast": {
+        "solve_ms": 49.5127,
+        "samples": [
+          48.6706,
+          49.5127,
+          50.191100000000006,
+          48.6092,
+          50.4932
+        ]
+      },
+      "cpp_dijkstra": {
+        "setup_ms": 31.773,
+        "solve_ms": 49.507,
+        "total_ms": 81.28
+      },
+      "cpp_bmssp_notransform": {
+        "setup_ms": 81.151,
+        "solve_ms": 162.549,
+        "total_ms": 243.7
+      },
+      "cpp_bmssp_transform": {
+        "setup_ms": 422.535,
+        "solve_ms": 771.681,
+        "total_ms": 1194.216,
+        "n_expanded": 794830,
+        "m_expanded": 1589660
+      },
+      "rust_chd": {
+        "compute_ms": 191.95110000000003,
+        "preprocess_ms": 92.2269,
+        "core_ms": 98.2372
+      },
+      "rust_dmm25": {
+        "compute_ms": 963.6881000000001,
+        "preprocess_ms": 54.1693,
+        "core_ms": 901.9758,
+        "relax_calls": 12498687
+      }
+    },
+    "dist_match_dijkstra_vs_bmssp_fast": true
+  },
+  {
+    "id": "COL",
+    "name": "Colorado (COL)",
+    "n": 435666,
+    "m": 1057066,
+    "gr_bytes": 21759502,
+    "txt_bytes": 20702224,
+    "solvers": {
+      "rust_dijkstra": {
+        "solve_ms": 33.0306,
+        "samples": [
+          33.0306,
+          33.7027,
+          32.8349,
+          34.3102,
+          32.5976
+        ]
+      },
+      "rust_bmssp_fast": {
+        "solve_ms": 68.7453,
+        "samples": [
+          68.7453,
+          70.19930000000001,
+          66.7321,
+          70.8,
+          68.5013
+        ]
+      },
+      "cpp_dijkstra": {
+        "setup_ms": 43.249,
+        "solve_ms": 71.984,
+        "total_ms": 115.233
+      },
+      "cpp_bmssp_notransform": {
+        "setup_ms": 109.529,
+        "solve_ms": 272.51,
+        "total_ms": 382.039
+      },
+      "cpp_bmssp_transform": {
+        "setup_ms": 540.695,
+        "solve_ms": 1193.344,
+        "total_ms": 1734.039,
+        "n_expanded": 1042400,
+        "m_expanded": 2084800
+      },
+      "rust_chd": {
+        "compute_ms": 248.8024,
+        "preprocess_ms": 116.792,
+        "core_ms": 129.48950000000002
+      },
+      "rust_dmm25": {
+        "compute_ms": 1086.4924,
+        "preprocess_ms": 61.8453,
+        "core_ms": 1015.0056999999999,
+        "relax_calls": 19684668
+      }
+    },
+    "dist_match_dijkstra_vs_bmssp_fast": true
+  }
+]

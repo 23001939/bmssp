@@ -1,0 +1,649 @@
+{
+  "schema": "bmssp.empirical-distance-checks.v1",
+  "status": "PASS",
+  "accuracy": true,
+  "exit_code": 0,
+  "scope": "Required random distance comparisons only. No predecessor or internal invariant certification. Pristine near-tie is a separate nonrequired diagnostic.",
+  "config": {
+    "seed": 20261114,
+    "limit": 10,
+    "solvers": [
+      "cpp"
+    ],
+    "timeout_seconds": 120,
+    "tolerance": 1e-09,
+    "limit_scope": "required random inputs; fixed diagnostic listed separately"
+  },
+  "provenance": {
+    "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "platform": "win32",
+    "repos": {
+      "project": {
+        "commit": null,
+        "commit_error": "fatal: not a git repository (or any of the parent directories): .git\n",
+        "diff_sha256": null,
+        "diff_status": "FAIL",
+        "working_tree_status": ""
+      },
+      "cpp": {
+        "commit": null,
+        "commit_error": "fatal: detected dubious ownership in repository at 'C:/ttss/bmssp_comparison/repos/cpp'\n'C:/ttss/bmssp_comparison/repos/cpp' is owned by:\n\tVIETCOSNY/vietcong (S-1-5-21-225120179-659345154-4102416041-1001)\nbut the current user is:\n\tVIETCOSNY/CodexSandboxOffline (S-1-5-21-225120179-659345154-4102416041-1013)\nTo add an exception for this directory, call:\n\n\tgit config --global --add safe.directory C:/ttss/bmssp_comparison/repos/cpp\n",
+        "diff_sha256": null,
+        "diff_status": "FAIL",
+        "working_tree_status": ""
+      },
+      "rust": {
+        "commit": null,
+        "commit_error": "fatal: detected dubious ownership in repository at 'C:/ttss/bmssp_comparison/repos/rust_python'\n'C:/ttss/bmssp_comparison/repos/rust_python' is owned by:\n\tVIETCOSNY/vietcong (S-1-5-21-225120179-659345154-4102416041-1001)\nbut the current user is:\n\tVIETCOSNY/CodexSandboxOffline (S-1-5-21-225120179-659345154-4102416041-1013)\nTo add an exception for this directory, call:\n\n\tgit config --global --add safe.directory C:/ttss/bmssp_comparison/repos/rust_python\n",
+        "diff_sha256": null,
+        "diff_status": "FAIL",
+        "working_tree_status": ""
+      }
+    },
+    "compiler": {
+      "command": [
+        "g++",
+        "--version"
+      ],
+      "cwd": "C:\\ttss",
+      "status": "PASS",
+      "exit_code": 0,
+      "stdout": "g++ (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+      "stderr": "",
+      "elapsed_seconds": 0.010933199999271892
+    },
+    "rustc": {
+      "command": [
+        "rustc",
+        "--version"
+      ],
+      "cwd": "C:\\ttss",
+      "status": "FAIL",
+      "exit_code": null,
+      "error": "[WinError 2] The system cannot find the file specified",
+      "error_kind": "missing_tool_or_os_error",
+      "elapsed_seconds": 0.004149500004132278
+    },
+    "script_sha256": "6a79dd8a0636e36d7a77cca891f34952491de7781e71222fee87fa5dc90367c9",
+    "wrapper_sha256": "9ecb5efc1567a01f6983ed8d26ce3e9989c37abd748e4d22107460fccaa303b4"
+  },
+  "solvers": {
+    "cpp": {
+      "binary": "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+      "mode": "wc",
+      "binary_sha256": "c400e0aa7a130fa74be860c8baed7c879e96583622c0a90cea90666b6b9fa7b7",
+      "status": "READY",
+      "error": null
+    }
+  },
+  "cases": [
+    {
+      "name": "random_0000",
+      "n": 82,
+      "m": 143,
+      "source": 0,
+      "seed": 8573185192729147539,
+      "weight_type": "zero_ties",
+      "required": true,
+      "arithmetic": "exact",
+      "input_sha256": "eb7fd24687a3688f953d8c4c1a0e86674d3ddadec194555b2f89a39398ac73ff",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0000.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0000.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0000_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[0.352,0.357,0.317,0.314,0.319],\"kernel_ms\":[0.271,0.287,0.242,0.242,0.258]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.01859639999747742,
+          "child_json": {
+            "samples_ms": [
+              0.352,
+              0.357,
+              0.317,
+              0.314,
+              0.319
+            ],
+            "kernel_ms": [
+              0.271,
+              0.287,
+              0.242,
+              0.242,
+              0.258
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "exact",
+          "relative_tolerance": 0
+        }
+      }
+    },
+    {
+      "name": "random_0001",
+      "n": 297,
+      "m": 814,
+      "source": 0,
+      "seed": 226509494925380742,
+      "weight_type": "real",
+      "required": true,
+      "arithmetic": "tolerance",
+      "input_sha256": "e112eae2b65e147f06cc425833d71538542927c518e596c3f5f79649b99c0174",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0001.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0001.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0001_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[1.758,1.627,1.571,1.621,1.621],\"kernel_ms\":[1.286,1.206,1.193,1.238,1.222]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.028444600000511855,
+          "child_json": {
+            "samples_ms": [
+              1.758,
+              1.627,
+              1.571,
+              1.621,
+              1.621
+            ],
+            "kernel_ms": [
+              1.286,
+              1.206,
+              1.193,
+              1.238,
+              1.222
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "tolerance",
+          "relative_tolerance": 1e-09
+        }
+      }
+    },
+    {
+      "name": "random_0002",
+      "n": 274,
+      "m": 1076,
+      "source": 0,
+      "seed": 8958303978795063729,
+      "weight_type": "real",
+      "required": true,
+      "arithmetic": "tolerance",
+      "input_sha256": "9fae4258d4ba46b97ecfa86575dda5a1b0a95a4457b6dc60383067e311cfa8da",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0002.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0002.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0002_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[2.804,2.2,2.179,2.255,2.145],\"kernel_ms\":[2.176,1.639,1.652,1.671,1.628]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.03465019999566721,
+          "child_json": {
+            "samples_ms": [
+              2.804,
+              2.2,
+              2.179,
+              2.255,
+              2.145
+            ],
+            "kernel_ms": [
+              2.176,
+              1.639,
+              1.652,
+              1.671,
+              1.628
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "tolerance",
+          "relative_tolerance": 1e-09
+        }
+      }
+    },
+    {
+      "name": "random_0003",
+      "n": 128,
+      "m": 141,
+      "source": 0,
+      "seed": 5660999253139280340,
+      "weight_type": "integer",
+      "required": true,
+      "arithmetic": "exact",
+      "input_sha256": "ecdc2c21353eb48a479b17ceadade57ccbd57c18c6c125c9307f96199b85a171",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0003.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0003.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0003_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[0.246,0.216,0.202,0.215,0.221],\"kernel_ms\":[0.144,0.141,0.139,0.143,0.148]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.017881599997053854,
+          "child_json": {
+            "samples_ms": [
+              0.246,
+              0.216,
+              0.202,
+              0.215,
+              0.221
+            ],
+            "kernel_ms": [
+              0.144,
+              0.141,
+              0.139,
+              0.143,
+              0.148
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "exact",
+          "relative_tolerance": 0
+        }
+      }
+    },
+    {
+      "name": "random_0004",
+      "n": 384,
+      "m": 1490,
+      "source": 0,
+      "seed": 6419999386417655142,
+      "weight_type": "integer",
+      "required": true,
+      "arithmetic": "exact",
+      "input_sha256": "8fd445efa867e4b7112d37ac9e570e198ead2a346e82419e2c812316db782558",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0004.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0004.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0004_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[4.819,4.693,3.932,5.301,4.152],\"kernel_ms\":[3.992,3.765,3.134,4.552,3.361]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.05905950000305893,
+          "child_json": {
+            "samples_ms": [
+              4.819,
+              4.693,
+              3.932,
+              5.301,
+              4.152
+            ],
+            "kernel_ms": [
+              3.992,
+              3.765,
+              3.134,
+              4.552,
+              3.361
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "exact",
+          "relative_tolerance": 0
+        }
+      }
+    },
+    {
+      "name": "random_0005",
+      "n": 188,
+      "m": 413,
+      "source": 0,
+      "seed": 1379347393517995133,
+      "weight_type": "real",
+      "required": true,
+      "arithmetic": "tolerance",
+      "input_sha256": "1fa111ffd8b0488940b23130c15b4cb6a1d2690bbe26d26ac3de43e9eb255726",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0005.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0005.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0005_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[0.813,0.756,0.773,0.747,0.74],\"kernel_ms\":[0.591,0.557,0.568,0.558,0.544]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.02434660000290023,
+          "child_json": {
+            "samples_ms": [
+              0.813,
+              0.756,
+              0.773,
+              0.747,
+              0.74
+            ],
+            "kernel_ms": [
+              0.591,
+              0.557,
+              0.568,
+              0.558,
+              0.544
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "tolerance",
+          "relative_tolerance": 1e-09
+        }
+      }
+    },
+    {
+      "name": "random_0006",
+      "n": 385,
+      "m": 1455,
+      "source": 0,
+      "seed": 8161876127594751068,
+      "weight_type": "zero_ties",
+      "required": true,
+      "arithmetic": "exact",
+      "input_sha256": "7d9e3b6e6c4b69342e20288046d18d100fd6aa4cb481964181c50dd8a2afd578",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0006.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0006.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0006_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[4.732,4.918,3.927,4.13,4.088],\"kernel_ms\":[3.957,3.987,3.197,3.4,3.346]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.04843509999773232,
+          "child_json": {
+            "samples_ms": [
+              4.732,
+              4.918,
+              3.927,
+              4.13,
+              4.088
+            ],
+            "kernel_ms": [
+              3.957,
+              3.987,
+              3.197,
+              3.4,
+              3.346
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "exact",
+          "relative_tolerance": 0
+        }
+      }
+    },
+    {
+      "name": "random_0007",
+      "n": 238,
+      "m": 435,
+      "source": 0,
+      "seed": 4435332191527354855,
+      "weight_type": "integer",
+      "required": true,
+      "arithmetic": "exact",
+      "input_sha256": "803888d98d1b456f80526203c783af48195a1848982c0efa67a3cbd16fa1819a",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0007.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0007.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0007_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[1.031,1.039,0.952,0.9,0.887],\"kernel_ms\":[0.767,0.817,0.715,0.688,0.677]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.026389899998321198,
+          "child_json": {
+            "samples_ms": [
+              1.031,
+              1.039,
+              0.952,
+              0.9,
+              0.887
+            ],
+            "kernel_ms": [
+              0.767,
+              0.817,
+              0.715,
+              0.688,
+              0.677
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "exact",
+          "relative_tolerance": 0
+        }
+      }
+    },
+    {
+      "name": "random_0008",
+      "n": 199,
+      "m": 326,
+      "source": 0,
+      "seed": 9073092338846166500,
+      "weight_type": "zero_ties",
+      "required": true,
+      "arithmetic": "exact",
+      "input_sha256": "216b7a71917d06ec325fcea855bc5c587dc4d735b854d71610c53b3d7dfbd519",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0008.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0008.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0008_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[0.969,1.292,0.873,0.807,0.788],\"kernel_ms\":[0.788,1.068,0.699,0.645,0.631]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.022497700003441423,
+          "child_json": {
+            "samples_ms": [
+              0.969,
+              1.292,
+              0.873,
+              0.807,
+              0.788
+            ],
+            "kernel_ms": [
+              0.788,
+              1.068,
+              0.699,
+              0.645,
+              0.631
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "exact",
+          "relative_tolerance": 0
+        }
+      }
+    },
+    {
+      "name": "random_0009",
+      "n": 338,
+      "m": 1332,
+      "source": 0,
+      "seed": 1636544695507158930,
+      "weight_type": "integer",
+      "required": true,
+      "arithmetic": "exact",
+      "input_sha256": "16fd297464a6c77a011ba69348f1460841fe4654a453dcea62ad66a05ffdb9bc",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0009.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0009.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\random_0009_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "PASS",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[3.84,3.667,3.551,3.733,3.522],\"kernel_ms\":[2.996,3.001,2.819,2.99,2.789]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.04214789999969071,
+          "child_json": {
+            "samples_ms": [
+              3.84,
+              3.667,
+              3.551,
+              3.733,
+              3.522
+            ],
+            "kernel_ms": [
+              2.996,
+              3.001,
+              2.819,
+              2.99,
+              2.789
+            ]
+          },
+          "accuracy": true,
+          "mismatches": 0,
+          "mismatch_vertices": [],
+          "exact_mismatches": 0,
+          "max_abs_error": 0.0,
+          "arithmetic": "exact",
+          "relative_tolerance": 0
+        }
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "name": "pristine_near_tie",
+      "n": 3,
+      "m": 3,
+      "source": 0,
+      "seed": null,
+      "weight_type": "near_tie",
+      "arithmetic": "exact",
+      "required": false,
+      "input_sha256": "d4c9684d775f8c58029a1f764ed467653a02a180e11921b57fb803928b1118eb",
+      "input_path": "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\pristine_near_tie.txt",
+      "results": {
+        "cpp": {
+          "command": [
+            "C:\\ttss\\bmssp_comparison\\bench_cpp.exe",
+            "wc",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\pristine_near_tie.txt",
+            "C:\\ttss\\bmssp_comparison\\remediation\\root-quick_fidelity_inputs\\pristine_near_tie_cpp.dist"
+          ],
+          "cwd": "C:\\ttss",
+          "status": "FAIL",
+          "exit_code": 0,
+          "stdout": "{\"samples_ms\":[0.042,0.041,0.025,0.023,0.022],\"kernel_ms\":[0.033,0.031,0.019,0.018,0.017]}\n",
+          "stderr": "",
+          "elapsed_seconds": 0.01563299999543233,
+          "child_json": {
+            "samples_ms": [
+              0.042,
+              0.041,
+              0.025,
+              0.023,
+              0.022
+            ],
+            "kernel_ms": [
+              0.033,
+              0.031,
+              0.019,
+              0.018,
+              0.017
+            ]
+          },
+          "accuracy": false,
+          "mismatches": 1,
+          "mismatch_vertices": [
+            1
+          ],
+          "exact_mismatches": 1,
+          "max_abs_error": 4e-11,
+          "arithmetic": "exact",
+          "relative_tolerance": 0
+        }
+      }
+    }
+  ],
+  "completed_cases": 10,
+  "passed_solver_cases": 10,
+  "diagnostic_failures": 1
+}

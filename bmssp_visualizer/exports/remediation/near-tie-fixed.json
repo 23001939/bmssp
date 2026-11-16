@@ -1,0 +1,58 @@
+{
+  "input": "3 3\n0 1 0.00000000004\n0 2 0\n2 1 0\n",
+  "result": {
+    "type": "native_result",
+    "distances": [
+      0,
+      0,
+      0
+    ],
+    "predecessors": [
+      null,
+      2,
+      0
+    ],
+    "compute_ms": 0.09,
+    "control_wait_ms": 0,
+    "sample_every": 1,
+    "sampled": false,
+    "events_seen": 0,
+    "events_emitted": 0,
+    "degree_transformation": false,
+    "comparison_rounding": false,
+    "patches": [
+      "real_distance_comparison",
+      "single_vertex_parameters",
+      "deduplicate_pivot_frontier",
+      "safe_bound_lookup"
+    ],
+    "predecessor_origin": "solver",
+    "predecessor_unresolved": 0,
+    "predecessor_edges": [
+      null,
+      2,
+      1
+    ]
+  },
+  "verification": {
+    "ok": true,
+    "oracle": "Independent Dijkstra (Python heapq)",
+    "comparison_mode": "exact",
+    "integer_exact_domain": false,
+    "distance_exact_ok": true,
+    "distance_tolerance_ok": true,
+    "path_exact_ok": true,
+    "path_tolerance_ok": true,
+    "wrong_vertices": 0,
+    "first_wrong_vertices": [],
+    "predecessor_errors": [],
+    "cycle_vertices": [],
+    "path_cost_errors": [],
+    "path_exact_errors": [],
+    "path_tolerance_errors": [],
+    "exact_mismatches": 0,
+    "max_abs_error": 0.0,
+    "rtol": 1e-09,
+    "atol": 1e-09
+  }
+}

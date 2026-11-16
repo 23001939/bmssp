@@ -1,0 +1,374 @@
+{
+  "created_utc": "2026-11-13T17:49:57.527351+00:00",
+  "graph": "weighted_1000",
+  "graph_id": "upload_e3cd56a3671d",
+  "n": 1000,
+  "m": 2400,
+  "source": 0,
+  "mode": "fast",
+  "warmup_per_algorithm": 3,
+  "measured_per_algorithm": 21,
+  "method": "HTTP API sequential runs; alternate order. Native compute excludes file parsing/serialization, control waits and rendering. Native setup differs per implementation. BMSSP baseline is separate pristine upstream measurement.",
+  "samples": {
+    "dijkstra": [
+      {
+        "run_id": "411118fa956f4e05",
+        "native_compute_ms": 0.206,
+        "upstream_baseline_ms": null,
+        "wall_ms": 24.72940000006929,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "a6805f3ce34d407a",
+        "native_compute_ms": 0.206,
+        "upstream_baseline_ms": null,
+        "wall_ms": 23.758200000884244,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "6581d1b25dfe47f5",
+        "native_compute_ms": 0.2,
+        "upstream_baseline_ms": null,
+        "wall_ms": 25.094099999478203,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "16c0966604be421c",
+        "native_compute_ms": 0.214,
+        "upstream_baseline_ms": null,
+        "wall_ms": 23.712700000032783,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "7cba669055c543ca",
+        "native_compute_ms": 0.204,
+        "upstream_baseline_ms": null,
+        "wall_ms": 24.803499998597545,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "05e587ba7a0b4eac",
+        "native_compute_ms": 0.226,
+        "upstream_baseline_ms": null,
+        "wall_ms": 30.29900000001362,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "eddcd8f100ac4b69",
+        "native_compute_ms": 0.237,
+        "upstream_baseline_ms": null,
+        "wall_ms": 23.562200000014855,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "753ab94e7d7a4ab1",
+        "native_compute_ms": 0.205,
+        "upstream_baseline_ms": null,
+        "wall_ms": 22.400199999538017,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "477c8914283d41b2",
+        "native_compute_ms": 0.211,
+        "upstream_baseline_ms": null,
+        "wall_ms": 25.677199999336153,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "63b1c9fd120e47bb",
+        "native_compute_ms": 0.212,
+        "upstream_baseline_ms": null,
+        "wall_ms": 26.3890000005631,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "f51dfce6bbcd4fe4",
+        "native_compute_ms": 0.202,
+        "upstream_baseline_ms": null,
+        "wall_ms": 25.183899999319692,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "bc343ec86b8b49f7",
+        "native_compute_ms": 0.205,
+        "upstream_baseline_ms": null,
+        "wall_ms": 24.62569999988773,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "1ac70466831e4fb4",
+        "native_compute_ms": 0.209,
+        "upstream_baseline_ms": null,
+        "wall_ms": 26.38449999903969,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "2088efcd41d54a29",
+        "native_compute_ms": 0.203,
+        "upstream_baseline_ms": null,
+        "wall_ms": 32.453799998620525,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "d7ceaefb0fd54e62",
+        "native_compute_ms": 0.396,
+        "upstream_baseline_ms": null,
+        "wall_ms": 24.62560000094527,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "c0c662420097459e",
+        "native_compute_ms": 0.304,
+        "upstream_baseline_ms": null,
+        "wall_ms": 25.364600000102655,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "ddc23e06731d44eb",
+        "native_compute_ms": 0.207,
+        "upstream_baseline_ms": null,
+        "wall_ms": 24.648700000398094,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "76957a7a7a164b69",
+        "native_compute_ms": 0.21,
+        "upstream_baseline_ms": null,
+        "wall_ms": 26.315400000385125,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "c0c4c9b3c69949ef",
+        "native_compute_ms": 0.21,
+        "upstream_baseline_ms": null,
+        "wall_ms": 24.701199999981327,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "faa262e9ebd84a89",
+        "native_compute_ms": 0.273,
+        "upstream_baseline_ms": null,
+        "wall_ms": 23.63800000057381,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "7b92386ebdf04119",
+        "native_compute_ms": 0.219,
+        "upstream_baseline_ms": null,
+        "wall_ms": 24.801699999443372,
+        "control_wait_ms": 0,
+        "verified": true
+      }
+    ],
+    "bmssp": [
+      {
+        "run_id": "aa9684304e1445a5",
+        "native_compute_ms": 0.736,
+        "upstream_baseline_ms": 0.869,
+        "wall_ms": 48.330499999792664,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "d7bd2d1234224a8a",
+        "native_compute_ms": 0.741,
+        "upstream_baseline_ms": 0.87,
+        "wall_ms": 47.98230000051262,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "59a78ef04f0e4af9",
+        "native_compute_ms": 1.182,
+        "upstream_baseline_ms": 1.335,
+        "wall_ms": 63.99020000026212,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "f2d66849f26f487c",
+        "native_compute_ms": 0.742,
+        "upstream_baseline_ms": 0.939,
+        "wall_ms": 51.500099998520454,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "1528dba73df54aba",
+        "native_compute_ms": 0.75,
+        "upstream_baseline_ms": 0.889,
+        "wall_ms": 47.60600000008708,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "72d98984649d43b7",
+        "native_compute_ms": 0.761,
+        "upstream_baseline_ms": 0.887,
+        "wall_ms": 46.169999999619904,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "87135e59ce9a49a8",
+        "native_compute_ms": 0.757,
+        "upstream_baseline_ms": 0.883,
+        "wall_ms": 49.16450000018813,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "58bae41c16374b71",
+        "native_compute_ms": 0.841,
+        "upstream_baseline_ms": 0.899,
+        "wall_ms": 48.729699999967124,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "53b7d92eac634ac9",
+        "native_compute_ms": 0.899,
+        "upstream_baseline_ms": 0.879,
+        "wall_ms": 55.46839999988151,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "609b77f99b6e4dc4",
+        "native_compute_ms": 0.758,
+        "upstream_baseline_ms": 0.883,
+        "wall_ms": 47.18270000012126,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "d4fdcb11435d4376",
+        "native_compute_ms": 0.752,
+        "upstream_baseline_ms": 0.871,
+        "wall_ms": 47.739699999510776,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "9a71dab069c844be",
+        "native_compute_ms": 0.774,
+        "upstream_baseline_ms": 1.324,
+        "wall_ms": 50.1853999994637,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "dfd5794edc5a4e18",
+        "native_compute_ms": 0.766,
+        "upstream_baseline_ms": 0.874,
+        "wall_ms": 47.56299999826297,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "334d5e9f020d4654",
+        "native_compute_ms": 0.764,
+        "upstream_baseline_ms": 0.909,
+        "wall_ms": 48.744199999418925,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "68ef5d4907c54708",
+        "native_compute_ms": 0.804,
+        "upstream_baseline_ms": 0.888,
+        "wall_ms": 47.58459999902698,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "c3f4218345db4731",
+        "native_compute_ms": 0.758,
+        "upstream_baseline_ms": 0.895,
+        "wall_ms": 46.81299999901967,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "c1014f4819fb41d9",
+        "native_compute_ms": 1.223,
+        "upstream_baseline_ms": 0.894,
+        "wall_ms": 52.615000000514556,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "7e9111344fa64b4b",
+        "native_compute_ms": 0.843,
+        "upstream_baseline_ms": 1.189,
+        "wall_ms": 45.22429999997257,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "261edad6cd794a73",
+        "native_compute_ms": 0.753,
+        "upstream_baseline_ms": 0.892,
+        "wall_ms": 49.702299998898525,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "3a74c5fc2ad541b4",
+        "native_compute_ms": 0.774,
+        "upstream_baseline_ms": 1.134,
+        "wall_ms": 47.91980000118201,
+        "control_wait_ms": 0,
+        "verified": true
+      },
+      {
+        "run_id": "fcc320ef1c7f43f4",
+        "native_compute_ms": 0.78,
+        "upstream_baseline_ms": 0.952,
+        "wall_ms": 47.045700001035584,
+        "control_wait_ms": 0,
+        "verified": true
+      }
+    ]
+  },
+  "verified": true,
+  "graph_hash": "785a96e7637a854fd401894c49ac171a767485cea24d821263b6369ae19a94b8",
+  "target": 999,
+  "target_distance": 279,
+  "summary": {
+    "dijkstra": {
+      "median_native_ms": 0.21,
+      "min_native_ms": 0.2,
+      "max_native_ms": 0.396,
+      "median_wall_ms": 24.801699999443372
+    },
+    "bmssp": {
+      "median_native_ms": 0.764,
+      "min_native_ms": 0.736,
+      "max_native_ms": 1.223,
+      "median_wall_ms": 47.98230000051262,
+      "median_upstream_baseline_ms": 0.892
+    }
+  },
+  "native_ratio_bmssp_to_dijkstra": 3.6380952380952385
+}

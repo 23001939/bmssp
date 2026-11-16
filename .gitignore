@@ -1,0 +1,63 @@
+# ==========================================
+# Git Ignore for BMSSP Research & Visualizer Lab
+# ==========================================
+
+# Compiled executables and libraries
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.pdb
+*.ilk
+*.lib
+*.a
+
+# Build directories
+target/
+**/target/
+build/
+**/build/
+bin/
+**/bin/
+out/
+**/out/
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+env/
+venv/
+.venv/
+
+# Large dataset dumps & benchmark artifacts (>10MB)
+bmssp_comparison/data/
+bmssp_comparison/repos/rust_python/target/
+bmssp_visualizer_mizchi/native_rust/target/
+*.csv.zip
+*.part
+scratch_*.py
+
+# Visualizer runtime caches and browser profiles
+bmssp_visualizer/browser_profile/
+bmssp_visualizer/runs/
+bmssp_visualizer_mizchi/runs/
+bmssp_visualizer_mizchi/exports/runs/
+
+# Third-party nested repositories (each has independent Git history)
+bmssp_comparison/repos/cpp/
+bmssp_comparison/repos/csharp/
+bmssp_comparison/repos/go/
+bmssp_comparison/repos/python_reference/
+bmssp_comparison/repos/python_variants/
+bmssp_comparison/repos/rust_python/
+
+# IDE & OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+native/*.exe
+browser_profile/
+runs/
+preview*.png
+verification*.json
+server.log
+server.pid
