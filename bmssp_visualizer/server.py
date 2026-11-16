@@ -23,7 +23,7 @@ from build_native import ensure_built
 
 ROOT = Path(__file__).resolve().parent
 DIST = ROOT/'dist'
-INPUTS = ROOT.parent/'bmssp_comparison'/'data'
+INPUTS = ROOT/'data'
 RUNS = ROOT/'runs'
 TERMINAL = {'completed','error','stopped'}
 MAX_EVENTS = 12_000

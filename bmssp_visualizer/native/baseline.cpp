@@ -1,4 +1,4 @@
-﻿#include <chrono>
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "../../bmssp_comparison/repos/cpp/include/bmssp-worst-case.hpp"
+#include "upstream/include/bmssp-worst-case.hpp"
 
 struct Edge { int u, v; double w; };
 int main(int argc, char** argv) {

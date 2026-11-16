@@ -24,19 +24,9 @@
 - `FRIEND_REQUEST_PLAN.md`: kế hoạch 6 giai đoạn đáp ứng yêu cầu bạn người dùng (source code đúng + benchmark), mốc tiến độ và tiêu chí hoàn thành. Phiên sau bắt đầu từ đây.
 - `VISUALIZATION_PLAN.md`: kế hoạch visualize, demo trực tiếp, định dạng xuất và tiến độ tổng.
 - `COMPARISON_100_PLAN.md`: phần mở rộng 100 đỉnh và hai thuật toán; đã hoàn thành. Dữ liệu weighted_100 và các bản HTML xuất ở bmssp_visualizer/data/ và exports/weighted_100/.
-- `MIZCHI_DEMO_PLAN.md`: kế hoạch xây demo visualizer cho repo Rust `mizchi/check-arxiv-2504-17033` (DMM+25, C-HD, Dijkstra). 6 mốc, tiến độ riêng, port 8766. Phiên sau bắt đầu từ M1.
+- `bmssp_visualizer/`: Dự án BMSSP duy nhất được giữ lại, độc lập và tự chứa toàn bộ mã nguồn C++, Web visualizer, bộ test suite và headers đối chuẩn.
 - `bmssp_visualizer/README.md`: cách chạy ứng dụng visualize, demo live, mở HTML ngoại tuyến và kiểm tra.
 - `bmssp_visualizer/CONTRACT.md`: giao thức graph/result/trace và API giữa C++, Python và trình duyệt.
-- `bmssp_comparison/repos/`: sáu repo GitHub đã tải; mỗi repo có lịch sử Git riêng.
-- `bmssp_comparison/REPORT.md`: báo cáo benchmark tại máy và các giới hạn.
-- `bmssp_comparison/results.json`: số liệu cuối cùng, môi trường và commit từng repo.
-- `bmssp_comparison/audit.json`: phản ví dụ và chẩn đoán bài toán cơ sở.
-- `bmssp_comparison/data/`: dữ liệu dùng chung và khoảng cách xuất từ C++.
-- `bmssp_comparison/bench_cpp.cpp`, `bench_python.py`: wrapper đo các bản triển khai.
-- `bmssp_comparison/run_comparison.py`: sinh dữ liệu, kiểm tra kết quả và chạy benchmark.
-- `bmssp_comparison/audit_variants.py`: tái lập lỗi và kiểm tra workload của base case.
-- `bmssp_comparison/write_report.py`: sinh báo cáo từ kết quả cuối cùng.
-- `smoke_results.json` chỉ là kết quả kiểm tra sơ bộ; dùng `results.json` để báo cáo kết quả cuối cùng.
 
 ## Nguyên tắc nghiên cứu và sửa mã
 

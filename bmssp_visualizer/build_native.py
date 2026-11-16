@@ -15,7 +15,7 @@ def ensure_built() -> Path:
 def ensure_baseline_built() -> Path:
     """Build the separate no-hook executable against the original checkout."""
     exe = NATIVE / "baseline.exe"
-    upstream = ROOT.parent / "bmssp_comparison" / "repos" / "cpp" / "include"
+    upstream = NATIVE / "upstream" / "include"
     sources = [NATIVE / "baseline.cpp", upstream / "bmssp-worst-case.hpp", *upstream.glob("external/**/*.h"), *upstream.glob("external/*.h")]
     if not exe.exists() or any(p.stat().st_mtime_ns > exe.stat().st_mtime_ns for p in sources):
         subprocess.run(["g++", "-std=c++20", "-O2", "-DNDEBUG", str(NATIVE / "baseline.cpp"), "-o", str(exe)], check=True)

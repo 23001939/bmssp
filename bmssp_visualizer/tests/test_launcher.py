@@ -21,7 +21,7 @@ def load(name, path):
 
 
 launcher = load('remediation_launcher', ROOT/'run_all.py')
-fidelity = load('remediation_fidelity', ROOT/'bmssp_comparison/run_fidelity_checks.py')
+fidelity = load('remediation_fidelity', Path(__file__).resolve().parent/'run_fidelity_checks.py')
 
 
 class LauncherTests(unittest.TestCase):

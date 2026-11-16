@@ -510,3 +510,24 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
     - **Mizchi Rust C-HD:** FLA đạt **587,98 ms** ($7,93\times$ Dijkstra), TX đạt **1.082,04 ms** ($6,88\times$ Dijkstra).
   - Dữ liệu thô lưu tại: `bmssp_comparison/road_benchmark_groups_1_2_results.json`.
 
+---
+
+## Tinh giản Workspace — Giữ lại Dự án BMSSP Chuẩn nhất (16/11/2026)
+
+- **Quyết định:** Theo yêu cầu người dùng sau khi thẩm định 8 repository và mã nguồn trên nhánh `main`, chỉ giữ lại dự án tái hiện đúng và trung thành nhất với bài báo Duan-Mao-Mao-Shu-Yin (arXiv:2504.17033v2).
+- **Dự án duy nhất được giữ lại:** `bmssp_visualizer` (C++ Native Solver `bmssp-traced.hpp` + Interactive Web Visualizer) được đóng gói độc lập 100%, tự chứa toàn bộ mã nguồn C++, Web visualizer, bộ test suite và headers đối chuẩn.
+- **Xóa bỏ hoàn toàn thư mục so sánh cũ `bmssp_comparison/`:**
+  - Theo yêu cầu của người dùng, toàn bộ thư mục `bmssp_comparison/` đã được loại bỏ để workspace hoàn toàn sạch sẽ, không còn tàn dư của đợt khảo sát 8 repo.
+  - Các tài nguyên kiểm chuẩn cần thiết đã được tích hợp trực tiếp vào nội bộ `bmssp_visualizer/`:
+    + Headers upstream đối soát: đưa vào `bmssp_visualizer/native/upstream/`.
+    + Kiểm tra khoảng cách thực nghiệm: đưa vào `bmssp_visualizer/tests/run_fidelity_checks.py`.
+    + Wrapper đo lường: đưa vào `bmssp_visualizer/native/bench_cpp.cpp` & `bench_cpp.exe`.
+    + Dữ liệu đầu vào: server trỏ trực tiếp đến `bmssp_visualizer/data/`.
+    + Điều phối kiểm thử `run_all.py` trỏ trực tiếp vào `bmssp_visualizer/`.
+- **Xác minh toàn diện sau khi loại bỏ hoàn toàn `bmssp_comparison/`:**
+  - `python -m unittest discover -s bmssp_visualizer/tests`: **47/47 tests PASS** (2,46s).
+  - `python -m unittest discover -s bmssp_visualizer/native`: **10/10 tests PASS** (13,74s).
+  - `python run_all.py --quick`: **100% PASS** (bao gồm 10 ca kiểm tra khoảng cách thực nghiệm độc lập đối chiếu Bellman-Ford).
+  - Khởi động server visualizer: `python bmssp_visualizer/start_demo.py --no-browser --port 8765` hoạt động hoàn hảo tại `http://127.0.0.1:8765/?demo=live`.
+
+

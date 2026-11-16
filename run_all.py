@@ -17,7 +17,7 @@ import time
 
 ROOT = Path(__file__).resolve().parent
 VISUALIZER_DIR = ROOT/'bmssp_visualizer'
-COMP_DIR = ROOT/'bmssp_comparison'
+COMP_DIR = VISUALIZER_DIR/'tests'
 SCHEMA = 'bmssp.verification-manifest.v1'
 
 
@@ -120,7 +120,7 @@ def build_parser():
     parser.add_argument('--seed', type=int, default=20261114)
     parser.add_argument('--limit', type=int, help='Required random fidelity inputs; overrides quick/full default')
     parser.add_argument('--timeout', type=int, default=120, help='Child timeout in seconds; fidelity applies it per solver process')
-    parser.add_argument('--output', type=Path, default=COMP_DIR/'remediation/verification_manifest.json')
+    parser.add_argument('--output', type=Path, default=VISUALIZER_DIR/'runs/verification_manifest.json')
     parser.add_argument('--history', type=Path, help='Inspect historical evidence without treating it as a fresh check')
     return parser
 

@@ -30,8 +30,8 @@ try:
     report['txt_import_replaces_graph']=True
     b.screenshot(ROOT/'switch-import.png')
     # Upload actual large JSON through the file control as well as the dropdown.
-    b.call('DOM.setFileInputFiles',{'nodeId':node['nodeId'],'files':[str(ROOT.parent/'bmssp_comparison/data/real_2000.json')]})
-    b.wait("document.getElementById('stat-n').textContent.replace(/\\D/g,'')==='2000'")
+    b.call('DOM.setFileInputFiles',{'nodeId':node['nodeId'],'files':[str(ROOT/'data'/'weighted_1000.json')]})
+    b.wait("document.getElementById('stat-n').textContent.replace(/\\D/g,'')==='1000'")
     assert b.evaluate("getComputedStyle(document.getElementById('graph-svg')).display==='none' && getComputedStyle(document.getElementById('graph-canvas')).display!=='none'")
     report['large_json_import_replaces_graph']=True
     report['errors']=b.errors

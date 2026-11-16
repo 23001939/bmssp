@@ -1,6 +1,0 @@
-native_rust/target/
-__pycache__/
-*.pyc
-runs/
-server.log
-server.pid
