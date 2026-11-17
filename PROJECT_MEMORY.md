@@ -534,4 +534,29 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - Đã đẩy thành công lên remote repository nhánh chính: `origin/main` (`https://github.com/23001939/bmssp.git`).
   - Working tree hoàn toàn sạch sẽ (`nothing to commit, working tree clean`).
 
+---
+
+## Tích hợp Skill & Evals Tính Toán Song Song (17/11/2026)
+
+- **Kỹ năng đã cài đặt:** `parallel-algorithms-expert` (chuyên gia thiết kế, triển khai, review, gỡ lỗi và benchmark thuật toán song song OpenMP, MPI, CUDA, SIMD/AVX, C++ threads/atomics, PRAM/work-span).
+- **Bộ đánh giá đã tích hợp:** 14 ca benchmark kiểm thử kỹ năng (`evals/`) cùng bộ kiểm tra trigger (`trigger-eval/`).
+- **Phạm vi triển khai:**
+  1. **Antigravity (Google AGY):** Đã cài đặt vào `C:\Users\5560\.gemini\config\skills\parallel-algorithms-expert\`. Kỹ năng tự động khả dụng trên toàn bộ workspace/phiên làm việc của Antigravity.
+  2. **Codex (OpenAI Codex CLI/IDE):** Đã cài đặt vào `C:\Users\5560\.codex\skills\parallel-algorithms-expert\` kèm cấu hình giao diện `agents/openai.yaml`. Codex tự động nhận diện và gọi khi người dùng yêu cầu xử lý tác vụ tính toán song song / multithreading / HPC.
+
+---
+
+## Nâng Cấp Tài Liệu Thiết Kế Song Song Hóa BMSSP (17/11/2026)
+
+- Đã chỉnh sửa toàn diện `bmssp_parallelization_design_document.md` dựa trên kỹ năng `parallel-algorithms-expert` và bài báo gốc `2504.17033v2.pdf`:
+  1. **Mô hình song song:** Bác bỏ quan niệm sai về "Task Divide-and-Conquer" do sự phụ thuộc tuần tự giữa các iteration $B_i$ trong Algorithm 3; chuẩn hóa thành **Distance-Sliced Synchronization Loop** kết hợp **Fine-Grained Graph Data Parallelism** trên các vòng lặp relax cạnh.
+  2. **Cấu trúc dữ liệu đồng thời $\mathcal{D}$ (Lemma 3.3):**
+     - Bãi bỏ Treiber Stack trong $\mathcal{D}_0$ (vì Treiber Stack là LIFO làm đảo ngược thứ tự khoảng cách); thay bằng Block Vector được prepend bởi Master Thread sau barrier kết hợp Parallel Sample Sort.
+     - Thiết kế $\mathcal{D}_1$ với Concurrent Skip-List + Block-Level Spinlocks + **Lazy Deletion** (`best_known_dist[v]`), triệt tiêu 100% nguy cơ Deadlock khi relax cạnh.
+  3. **Nguyên tử hóa 128-bit:** Dùng struct 16-byte `VertexState` với `cmpxchg16b` (`dist`, `pred`, `epoch`) ngăn chặn torn read/write giữa khoảng cách và đỉnh cha.
+  4. **Granularity Cutoff:** Ngưỡng $|E_{\text{active}}| \ge 2048$ cạnh chuyển tuần tự ở các tầng đệ quy đáy ($l=0, 1$).
+  5. **Phân tích Work-Span:** $T_1 = \mathcal{O}(m \log^{2/3} n)$, $T_\infty = \mathcal{O}(2^{\log^{1/3} n} \log^2 n)$, chứng minh kiến trúc CPU Multi-core (OpenMP/TBB) vượt trội hơn GPU cho BMSSP.
+
+
+
 
