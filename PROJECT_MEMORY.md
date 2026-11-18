@@ -557,6 +557,18 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   4. **Granularity Cutoff:** Ngưỡng $|E_{\text{active}}| \ge 2048$ cạnh chuyển tuần tự ở các tầng đệ quy đáy ($l=0, 1$).
   5. **Phân tích Work-Span:** $T_1 = \mathcal{O}(m \log^{2/3} n)$, $T_\infty = \mathcal{O}(2^{\log^{1/3} n} \log^2 n)$, chứng minh kiến trúc CPU Multi-core (OpenMP/TBB) vượt trội hơn GPU cho BMSSP.
 
+---
+
+## Chuẩn Hóa Kế Hoạch Phân Công Kỹ Thuật Nhóm 4 Người (18/11/2026)
+
+- Đã cập nhật và chuẩn hóa toàn diện tài liệu `team_allocation_and_technical_workflow.md`:
+  1. **Bổ sung Mục 2:** Cấu trúc cây thư mục chi tiết (`bmssp_parallel/`) và Ma trận phân quyền tệp (RACI Matrix) triệt tiêu 100% rủi ro xung đột mã nguồn.
+  2. **Bổ sung Module Gadget Constant-Degree Transformation:** Giao Người 1 phụ trách biến đổi đồ thị bậc $d \le 2$ và ánh xạ ngược kết quả để bảo đảm độ phức tạp tiệm cận theo Mục 2 của bài báo gốc.
+  3. **Khắc phục hiện tượng "Split Storm" trong Lazy Deletion:** Bổ sung cơ chế **Eager Cleanup on Split** cho Người 2 (quét lọc phần tử rác trước khi chia tách block).
+  4. **Giải quyết tranh chấp bộ nhớ Heap:** Bổ sung Memory Pool / Thread-local Arena Allocator cho các Block của $\mathcal{D}_1$ và cấu hình CPU Affinity (`OMP_PROC_BIND=close`) loại bỏ trễ NUMA.
+  5. **Khóa cứng Giao diện & Tiêu chí nghiệm thu (DoD):** Bổ sung hàm `empty()` và `clear()` vào `IFrontierD`; thiết lập bảng tiêu chí định lượng nghiệm thu mã nguồn (DoD) cho 4 thành viên trước khi merge PR.
+
+
 
 
 
