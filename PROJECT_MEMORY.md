@@ -589,6 +589,24 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - Kết luận: **APPROVED - COMMENDATION (Chấp thuận nghiệm thu và khen ngợi kỹ thuật)**.
   - 0 Data Race, 0 Memory Leak, đáp ứng 100% Definition of Done (DoD) của Người 1.
 
+---
+
+## Hoàn Thành Phần Người 2 (Nguyễn Công Việt): Cấu Trúc Dữ Liệu Đồng Thời $\mathcal{D}$ (18/11/2026)
+
+- **Tiến độ phần Người 2: 95%** (đạt 3/4 tiêu chí DoD trên Windows; còn bước ThreadSanitizer `-fsanitize=thread` / ASan cần chạy trên WSL2/Linux do `w64devkit` GCC 16.2.0 trên Windows không hỗ trợ `-ltsan`/`-lasan`).
+- **Mã nguồn đã triển khai tại `bmssp_parallel/` (không sửa các tệp `include/core/*`, `src/core/*`, `include/baseline/*`, `src/baseline/*`, `tests/test_person1_comprehensive.cpp` của Người 1):**
+  1. `include/data_structure/d0_deque.hpp` & `src/data_structure/d0_deque.cpp`: `D0Deque` dùng `std::deque<D0Block>` (bãi bỏ Treiber Stack), giữ thứ tự block tăng dần với đường nhanh $O(|K|)$ cho `batch_prepend(K)` và hỗ trợ trộn khi đầu vào chồng lấn.
+  2. `include/data_structure/d1_skiplist.hpp` & `src/data_structure/d1_skiplist.cpp`: `D1SkipList` dạng Concurrent B-Link Skip-List, `BlockSpinlock` căn chỉnh 64-byte + `_mm_pause()`, Eager Cleanup trước `SPLIT`, pool cấp phát chia 64 shard bọc `ThreadLocalBlockPool` thuộc sở hữu của `D1SkipList`, và thu hồi node rỗng qua EBR (gỡ đồng bộ node retired khỏi mọi tầng Skip-List dưới `tower_mtx_` trước khi nhả `spinlock`).
+  3. `include/data_structure/concurrent_frontier_d.hpp` & `src/data_structure/concurrent_frontier_d.cpp`: `ConcurrentFrontierD : public IFrontierD` tích hợp `set_state_array(const AtomicVertexState*, size_t)` không phá vỡ hợp đồng Người 1, `insert()` không khóa `pull_mtx_`, `pull()` lọc rác + khử trùng giữa $\mathcal{D}_0$ và $\mathcal{D}_1$ + trả `B_i = B_` khi cạn.
+  4. `tests/test_d_stress.cpp`, `benchmarks/bench_person2_d.cpp`, `CMakeLists.txt`, và báo cáo chi tiết tại `bmssp_parallel/PERSON2_CONCURRENT_D_REPORT.md`.
+- **Kết quả kiểm thử & đối chứng thực nghiệm (Windows, 12 luồng CPU logic, `g++ 16.2.0 -std=c++20 -O3 -march=native -mcx16 -fopenmp`):**
+  - `test_person1.exe`: **153.932 / 153.932 checks PASS** (`9.38 ms`).
+  - `test_d_stress.exe`: **1.472.524 / 1.472.524 checks PASS** (`14.361,77 ms`); Suite 3 giảm **`55,05%` số lần `SPLIT`** (`683 -> 307`) nhờ Eager Cleanup; Suite 4 chạy **32 luồng / 10.000.000 ops** trong `14.226,95 ms` với 0 deadlock, 0 crash.
+  - `bench_person2_d.exe` (So sánh Trước `MutexFrontierD` vs Sau `ConcurrentFrontierD`):
+    - **Benchmark A (1M relax + insert):** Tại 8 luồng đạt `34,17 ms` (`29,27 Mops/s`, tăng tốc nội bộ `4,51×` vs 1T) — nhanh hơn **`21,26×`** so với `MutexFrontierD` (`726,42 ms`).
+    - **Benchmark B (Vòng lặp cắt lát đồ thị `N=50.000, E=500.000, M=64`):** Tại 8 luồng đạt `41,33 ms` vs `201,22 ms` (nhanh hơn **`4,87×`** tổng thể, riêng pha `insert` nhanh hơn **`15,59×`**), khớp 100% khoảng cách cuối với `dijkstra_sequential`. Pha `pull()` chậm hơn `Mutex` (`26–32 ms` vs `9–17 ms`) do lọc rác, khử trùng và EBR; tải 12T SMT suy giảm nhẹ (`59,27 ms`) do kích thước pha `~64` đỉnh nhỏ hơn $\Theta_{\text{cutoff}} = 2048$ cạnh.
+- **Nhánh GitHub:** Đã đồng bộ nhánh `Viet` trên `origin` (`https://github.com/23001939/bmssp.git`) từ `feat/concurrent-d`.
+
 
 
 

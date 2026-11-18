@@ -25,8 +25,28 @@ add_library(bmssp_core STATIC
 )
 target_link_libraries(bmssp_core PUBLIC OpenMP::OpenMP_CXX)
 
+# Concurrent Data Structure D library (Person 2)
+add_library(bmssp_data_structure STATIC
+    src/data_structure/d0_deque.cpp
+    src/data_structure/d1_skiplist.cpp
+    src/data_structure/concurrent_frontier_d.cpp
+)
+target_link_libraries(bmssp_data_structure PUBLIC bmssp_core OpenMP::OpenMP_CXX)
+
 # Person 1 Comprehensive Verification Test Suite
 add_executable(test_person1
     tests/test_person1_comprehensive.cpp
 )
 target_link_libraries(test_person1 PRIVATE bmssp_core OpenMP::OpenMP_CXX)
+
+# Person 2 Concurrent Frontier D QA Stress Test Suite
+add_executable(test_d_stress
+    tests/test_d_stress.cpp
+)
+target_link_libraries(test_d_stress PRIVATE bmssp_data_structure bmssp_core OpenMP::OpenMP_CXX)
+
+# Person 2 Before-vs-After A/B Benchmark (MutexFrontierD vs ConcurrentFrontierD)
+add_executable(bench_person2_d
+    benchmarks/bench_person2_d.cpp
+)
+target_link_libraries(bench_person2_d PRIVATE bmssp_data_structure bmssp_core OpenMP::OpenMP_CXX)
