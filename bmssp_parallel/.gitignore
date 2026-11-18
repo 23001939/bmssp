@@ -1,0 +1,8 @@
+# Build artifacts
+*.o
+*.obj
+*.exe
+tests/*.exe
+src/core/*.o
+src/baseline/*.o
+build/
