@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and execution harness for Person 1 deliverables."""
+"""Build and execution harness for Parallel BMSSP deliverables."""
 import subprocess
 import sys
 import time
@@ -26,7 +26,7 @@ def run_cmd(cmd, desc):
 
 def main():
     print("=" * 70)
-    print("  BUILDING AND VERIFYING PERSON 1 INFRASTRUCTURE & PRIMITIVES")
+    print("  BUILDING AND VERIFYING PARALLEL BMSSP SYSTEM")
     print("=" * 70)
 
     includes = [
@@ -35,11 +35,14 @@ def main():
         "-Iinclude/baseline/upstream/include"
     ]
 
-    # 1. Compile core library
+    # 1. Compile all core and algorithm object files
     obj_files = []
     cpp_files = [
         ("src/core/graph.cpp", "src/core/graph.o"),
-        ("src/baseline/bmssp_seq.cpp", "src/baseline/bmssp_seq.o")
+        ("src/baseline/bmssp_seq.cpp", "src/baseline/bmssp_seq.o"),
+        ("src/algorithm/find_pivots.cpp", "src/algorithm/find_pivots.o"),
+        ("src/algorithm/base_case.cpp", "src/algorithm/base_case.o"),
+        ("src/algorithm/bmssp.cpp", "src/algorithm/bmssp.o"),
     ]
 
     for src, obj in cpp_files:
@@ -49,20 +52,32 @@ def main():
         run_cmd(cmd, f"Compiling {src}")
         obj_files.append(obj)
 
-    # 2. Compile and link comprehensive test suite
-    test_exe = "tests/test_person1.exe"
-    link_cmd = [
+    # 2. Compile and link Person 1 test suite
+    test_p1_exe = "tests/test_person1.exe"
+    link_p1_cmd = [
         "g++", "-std=c++20", "-O3", "-march=native", "-mcx16", "-fopenmp"
-    ] + includes + ["tests/test_person1_comprehensive.cpp"] + obj_files + ["-o", test_exe]
-    run_cmd(link_cmd, "Linking Person 1 test suite executable")
+    ] + includes + ["tests/test_person1_comprehensive.cpp", "src/core/graph.o", "src/baseline/bmssp_seq.o", "-o", test_p1_exe]
+    run_cmd(link_p1_cmd, "Linking Person 1 test suite executable")
 
-    # 3. Execute test suite
+    # 3. Compile and link Parallel BMSSP verification test suite
+    test_par_exe = "tests/verify_parallel_bmssp.exe"
+    link_par_cmd = [
+        "g++", "-std=c++20", "-O3", "-march=native", "-mcx16", "-fopenmp"
+    ] + includes + ["tests/verify_parallel_bmssp.cpp"] + obj_files + ["-o", test_par_exe]
+    run_cmd(link_par_cmd, "Linking Parallel BMSSP verification executable")
+
+    # 4. Execute test suites
     print("-" * 70)
-    print("  EXECUTING VERIFICATION TEST SUITE")
+    print("  EXECUTING PERSON 1 INFRASTRUCTURE TEST SUITE")
     print("-" * 70)
-    test_cmd = [str(ROOT / test_exe)]
-    res = run_cmd(test_cmd, "Running test_person1.exe")
-    print(res.stdout)
+    res_p1 = run_cmd([str(ROOT / test_p1_exe)], "Running test_person1.exe")
+    print(res_p1.stdout)
+
+    print("-" * 70)
+    print("  EXECUTING PARALLEL BMSSP VERIFICATION TEST SUITE")
+    print("-" * 70)
+    res_par = run_cmd([str(ROOT / test_par_exe)], "Running verify_parallel_bmssp.exe")
+    print(res_par.stdout)
 
 if __name__ == "__main__":
     main()

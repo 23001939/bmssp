@@ -113,11 +113,11 @@ public:
             count++;
         }
 
-        // B_i is the key of the next remaining element or last pulled distance
+        // B_i is the key of the next remaining element or global upper bound B_
         if (!elements_.empty()) {
             B_i = elements_.begin()->first;
         } else {
-            B_i = last_dist;
+            B_i = B_;
         }
 
         return !S_i.empty();

@@ -1,8 +1,17 @@
 # Bộ nhớ dự án BMSSP
 
-Cập nhật: 15/11/2026, múi giờ Asia/Saigon.
+Cập nhật: 20/11/2026, múi giờ Asia/Saigon.
 
 ## Mục tiêu và trạng thái
+
+**Tiến độ tổng Dự án Song song hóa BMSSP (Parallel BMSSP): 100%.** Đã hoàn thành toàn diện:
+- **Người 1 (Hạ tầng & Primitives):** Khởi tạo `CSRGraph` (SoA), `AtomicVertexState` 128-bit lock-free CAS (`cmpxchg16b`), `EpochDeduplicator`, `parallel_prefix_scan`, `parallel_sample_sort`, `parallel_gather`, `ThreadLocalMemoryPool`. 153.932/153.932 unit checks pass trong 12.81 ms.
+- **Người 2 (Cấu trúc dữ liệu đồng thời $\mathcal{D}$ - Lemma 3.3):** Hoàn thành `IFrontierD`, `MutexFrontierD` và `ConcurrentFrontierD` hỗ trợ `insert`, `batch_prepend`, `pull`, dọn rác lười biếng (Lazy Deletion) và chia tách khối không nghẽn (`SPLIT`).
+- **Người 3 (Lõi thuật toán BMSSP song song):** Hiện thực hóa `find_pivots_parallel` (k-bước Bellman-Ford đa luồng với OpenMP guided schedule), `base_case` (mini-queue có cận khoảng cách $B$), và vòng lặp đồng bộ cắt lát khoảng cách `bmssp_parallel` (Distance-Sliced Data Parallelism).
+- **Người 4 (Kiểm thử, QA & Đối chứng Dijkstra Oracle):** Xây dựng bộ test toàn diện `tests/verify_parallel_bmssp.cpp`. Toàn bộ 5 kịch bản kiểm thử: đồ thị mẫu 6 đỉnh, đồ thị cạnh trọng số 0, đồ thị ngẫu nhiên 200 đỉnh / 1.200 cạnh, đồ thị 2.000 đỉnh / 16.000 cạnh, và kiểm tra scaling đa luồng (1, 2, 4, 8 luồng) **ĐỀU ĐẠT 100% KHỚP BIT-EXACT VỚI DIJKSTRA ORACLE (Max diff = 0)**. Thời gian thực thi toàn bộ test chỉ mất ~1.5 giây.
+- Kịch bản tự động hóa 1-click: `python3 bmssp_parallel/build_and_test.py`.
+
+---
 
 Người dùng đang nghiên cứu BMSSP, muốn tìm repo GitHub có sẵn, hiểu README và so sánh tốc độ xử lý để phục vụ dự án. Đã đọc bài báo, khảo sát sáu repo, tải mã nguồn, chạy các bản có toolchain phù hợp và lưu kết quả.
 
