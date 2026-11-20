@@ -640,3 +640,15 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - `bench_parallel_bmssp.exe` (2 warmup + 7 mẫu trung vị, 24/24 tổ hợp `OK`, `MaxDiff = 0.00e+00`): `ConcurrentFrontierD` nhanh hơn `MutexFrontierD` **1,57×–1,84×** trên Sparse 20K (4T–8T) và **1,33×–1,44×** trên Hub 20K (4T–8T); trên 2D Grid 22.5K (frontier nhỏ dưới cutoff 2048) `Mutex` nhanh hơn (`0,54×–0,63×`); `dijkstra_sequential` vẫn nhanh nhất ở cỡ 20K đỉnh (`4,10–7,67 ms`).
 - **Báo cáo chi tiết:** `bmssp_parallel/REMEDIATION_CHANGE_REPORT.md`.
 - **Giới hạn:** Chưa chạy TSan/ASan do `w64devkit` trên Windows không hỗ trợ `-ltsan`/`-lasan`; test hữu hạn không thay thế chứng minh toán học tổng quát.
+
+---
+
+## Bổ Sung TSan Trên Nền `origin/Viet` Đã Có Remediation (20/11/2026)
+
+- **Phát hiện:** `origin/Viet` đã tiến thêm 3 commit (`557fc80`, `13e8b75`, `21fbf3f`) chứa một bản remediation riêng (cùng nhóm sửa lỗi với báo cáo, kèm `BENCHMARK_12_GRAPHS_REPORT.md` và `bench_parallel_suite.cpp`). Bản local đang giữ là implementation trùng mục tiêu; người dùng đã chọn **giữ bản remote và chỉ push phần độc đáo của local**.
+- **Đã làm:** reset local về `origin/Viet` (`21fbf3f`), sau đó reapply:
+  1. `include/core/primitives.hpp`: `parallel_prefix_scan`, `parallel_gather`, `parallel_sample_sort` đổi từ OpenMP barrier/task sang `std::thread` + `join`/mutex/condition variable. Không đụng vào các file remediation khác của remote.
+  2. `tests/test_person1_comprehensive.cpp` và `tests/test_d_stress.cpp`: tự động giảm quy mô khi `__SANITIZE_THREAD__` (scan/sort 4096; stress 8 luồng × 2 round × 256 ops). Bản thường giữ nguyên.
+  3. `README.md` mục 6 và mục này: ghi cách reproduce và giới hạn TSan.
+- **Kết quả kiểm chứng trên Linux:** Release `ctest` 4/4 (Person 1 153.932/153.932, stress 10.000.000 ops/756,59 ms); ASan `ctest` 4/4. Riêng TSan: `test_person1` và `test_d_stress` **PASS, 0 race**; `verify_parallel_bmssp` và `test_parallel_edge_cases` vẫn báo false positive do libgomp trong OpenMP của `find_pivots.cpp`/`bmssp.cpp` (138 cảnh báo trong verify) và edge suite vượt 600 giây. Vì vậy **không ghi nhận full CTest sạch TSan** trên bản remote.
+- **Lưu ý:** các báo cáo TSan là false positive do libgomp không được instrument, không phải race thật đã được xác nhận; đã đính chính trong README. Không suy rộng kết quả hữu hạn thành chứng minh đúng tổng quát.

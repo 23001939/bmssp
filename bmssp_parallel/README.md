@@ -322,3 +322,27 @@ Theo lý thuyết mô hình tính toán song song PRAM:
 * **Hệ số tăng tốc lý thuyết tối đa (Maximum Speedup Potential):**
   $$\mathcal{P}_{\text{max}} = \frac{T_1}{T_\infty} = \mathcal{O}\left(\frac{m}{2^{\log^{1/3} n} \log^{4/3} n}\right)$$
   Trên các đồ thị quy mô lớn ($n \ge 10^7, m \ge 10^8$), dư địa tăng tốc song song của thuật toán có thể đạt trên **$100.000\times$**.
+
+---
+
+## 6. Kiểm Chứng ThreadSanitizer
+
+* `libgomp` không được ThreadSanitizer instrument, nên barrier/task của OpenMP bị báo race giả. Ba utility `parallel_prefix_scan`, `parallel_gather` và `parallel_sample_sort` trong `include/core/primitives.hpp` đã dùng `std::thread` + `join`/mutex để mọi happens-before đều nhìn thấy được với TSan. API và ngưỡng serial (`DEFAULT_GRANULARITY_CUTOFF = 2048`, cutoff 1024 cho quicksort) không đổi.
+* Khi build TSan (`__SANITIZE_THREAD__`), kích thước test primitives và ca stress tự động giảm (4096 thay vì 100000/50000; 8 luồng × 2 round × 256 ops thay vì 32 × 10 × 31250). Bản thường vẫn dùng thông số đầy đủ.
+
+### 6.1. Chạy lại TSan
+
+```bash
+cmake -S bmssp_parallel -B /tmp/bmssp-tsan -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS="-fsanitize=thread -g -O1"
+cmake --build /tmp/bmssp-tsan -j4
+OMP_NUM_THREADS=4 setarch "$(uname -m)" -R \
+  ctest --test-dir /tmp/bmssp-tsan --output-on-failure
+```
+
+`setarch -R` chỉ cần thiết nếu máy gặp lỗi `ThreadSanitizer: unexpected memory mapping` do ASLR. Trên Linux (g++ 13.3):
+
+* `test_person1` và `test_d_stress`: **PASS, 0 race** (đây là phạm vi utility/Person 1–2 được sửa ở mục này).
+* `verify_parallel_bmssp` và `test_parallel_edge_cases`: vẫn dùng song song OpenMP trong `find_pivots.cpp`/`bmssp.cpp` của bản remediation trên remote. TSan báo các false positive tương tự do libgomp không được instrument (ví dụ main khởi tạo vector rồi thread pool cũ đọc qua vùng `parallel`); toàn bộ edge suite cũng vượt quá giới hạn 600 giây khi instrumentation. Vì vậy **không khẳng định full CTest sạch TSan**; Release và ASan vẫn đạt 4/4.
+
+Đây là kiểm chứng hữu hạn, không thay thế chứng minh đúng tổng quát.
