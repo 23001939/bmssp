@@ -589,6 +589,12 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - Kết luận: **APPROVED - COMMENDATION (Chấp thuận nghiệm thu và khen ngợi kỹ thuật)**.
   - 0 Data Race, 0 Memory Leak, đáp ứng 100% Definition of Done (DoD) của Người 1.
 
+## Kiểm thử hạ tầng của Người 4 (20/11/2026)
+
+- Trên `feat/person4-qa`, script Người 1 chạy thành công với GCC 14.2.0 tại commit `874775b976761db39d95f1288644fa732518ff5b`, đạt 153.932/153.932 kiểm tra. [Log nền](bmssp_parallel/person4_results/person1_baseline.txt)
+- CTest Release chạy ba bộ test mới. `verify_correctness` đối chiếu Dijkstra với đáp án xác định và Bellman–Ford trên 17 ca. `test_atomic_state` kiểm tra snapshot 128-bit với 8 và 16 luồng ghi. `test_gadget_transform` kiểm tra bậc vào/ra và khôi phục khoảng cách, kể cả nguồn cô lập. Bản sao test có đáp án near-tie cố tình sai thoát với mã `1` và in đỉnh lỗi. [Log CTest](bmssp_parallel/person4_results/ctest_release.txt)
+- Mục 1 của [checklist Người 4](NGUOI_4_KE_HOACH_CONG_VIEC.md#1-làm-ngay-với-hạ-tầng-người-1) đã hoàn thành. Các phép so sánh BMSSP song song với Dijkstra ở nhiều mức luồng chờ API của Người 3.
+
 
 
 

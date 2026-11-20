@@ -1,0 +1,45 @@
+Command: python bmssp_parallel/build_and_test.py
+Commit: 874775b976761db39d95f1288644fa732518ff5b
+Exit code: 0
+
+GCC:
+g++.exe (Rev2, Built by MSYS2 project) 14.2.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Output:
+======================================================================
+  BUILDING AND VERIFYING PERSON 1 INFRASTRUCTURE & PRIMITIVES
+======================================================================
+[*] Compiling src/core/graph.cpp: g++ -std=c++20 -O3 -march=native -mcx16 -fopenmp -Iinclude -Iinclude/baseline/external -Iinclude/baseline/upstream/include -c src/core/graph.cpp -o src/core/graph.o
+[OK] Compiling src/core/graph.cpp (3.46s)
+[*] Compiling src/baseline/bmssp_seq.cpp: g++ -std=c++20 -O3 -march=native -mcx16 -fopenmp -Iinclude -Iinclude/baseline/external -Iinclude/baseline/upstream/include -c src/baseline/bmssp_seq.cpp -o src/baseline/bmssp_seq.o
+[OK] Compiling src/baseline/bmssp_seq.cpp (3.07s)
+[*] Linking Person 1 test suite executable: g++ -std=c++20 -O3 -march=native -mcx16 -fopenmp -Iinclude -Iinclude/baseline/external -Iinclude/baseline/upstream/include tests/test_person1_comprehensive.cpp src/core/graph.o src/baseline/bmssp_seq.o -o tests/test_person1.exe
+[OK] Linking Person 1 test suite executable (2.99s)
+----------------------------------------------------------------------
+  EXECUTING VERIFICATION TEST SUITE
+----------------------------------------------------------------------
+[*] Running test_person1.exe: C:\Users\dtai168\VScode\bmssp\bmssp_parallel\tests\test_person1.exe
+[OK] Running test_person1.exe (0.59s)
+==================================================================
+  BMSSP Parallel - Person 1 Comprehensive Verification Test Suite
+==================================================================
+>>> Running Test Suite 1: 128-bit Atomic VertexState & Memory Integrity...
+    [PASS] 128-bit Atomic CAS & Torn-Write Prevention verified.
+>>> Running Test Suite 2: CSRGraph & Gadget Constant-Degree Transform...
+    [PASS] Gadget Transformation max degree <= 2 and exact distance restoration verified.
+>>> Running Test Suite 3: Thread-Local Memory Pool...
+    [PASS] Thread-Local Memory Pool allocation and recycling verified.
+>>> Running Test Suite 4: MutexFrontierD Mockup Interface...
+    [PASS] MutexFrontierD concurrent insertions and pull monotonicity verified.
+>>> Running Test Suite 5: Parallel Primitives (Scan, Sort, Epoch Deduplication)...
+    [PASS] Epoch deduplication, parallel scan, and sample sort verified.
+>>> Running Test Suite 6: Baseline BMSSP Sequential Against Dijkstra Oracle...
+    [PASS] Sequential BMSSP produces 100% exact match with Dijkstra oracle.
+==================================================================
+  ALL PERSON 1 TESTS PASSED SUCCESSFULLY! (153932/153932 checks)
+  Total execution time: 7.76 ms
+==================================================================
