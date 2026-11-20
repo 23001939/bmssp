@@ -42,6 +42,7 @@ bmssp_visualizer_mizchi/native_rust/target/
 scratch_*.py
 
 # Visualizer runtime caches and browser profiles
+bmssp_visualizer/native/*.build.json
 bmssp_visualizer/browser_profile/
 bmssp_visualizer/runs/
 bmssp_visualizer_mizchi/runs/

@@ -1,0 +1,1167 @@
+{
+  "schema_version": 2,
+  "recorded_at": "2026-11-20T02:21:07.632636+00:00",
+  "windows_error_dialogs": "Disabled for this runner and child processes only; crash exit codes remain failures.",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "machine": "AMD64",
+  "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+  "logical_cpus": 20,
+  "compiler": "clang version 23.1.5 (https://github.com/llvm/llvm-project.git 392dfff97d29b59d77e5cac6d4b6ef2585fe7117)\nTarget: x86_64-w64-windows-gnu\nThread model: posix\nInstalledDir: D:/TTSS_CK/.tools/llvm-mingw-20261104-ucrt-x86_64/bin\nConfiguration file: D:/TTSS_CK/.tools/llvm-mingw-20261104-ucrt-x86_64/bin/x86_64-w64-windows-gnu.cfg",
+  "compiler_path": "D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\g++.exe",
+  "compiler_sha256": "d05fee2c3f79b15d998d3c3413c76aabd416ec789edff89c8f698a8be44a3970",
+  "build_directory": "D:\\TTSS_Prj\\bmssp\\bmssp_parallel\\build\\dijkstra_openmp_v2_b7c3ebe31b53",
+  "flags": [
+    "-std=c++20",
+    "-O3",
+    "-mcx16",
+    "-fopenmp",
+    "-Wall",
+    "-Wextra",
+    "-Iinclude",
+    "-Iinclude/baseline/external",
+    "-Iinclude/baseline/upstream/include"
+  ],
+  "compile_logs": {
+    "probe": {
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "test": {
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "In file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:571:22: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  571 |             active = move(nw_active);\n      |                      ^\n      |                      std::\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:349:26: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  349 |             ori_adj[i] = move(nw_adj);\n      |                          ^\n      |                          std::\nsrc/baseline/bmssp_seq.cpp:67:12: note: in instantiation of member function 'spp::bmssp<double>::prepare_graph' requested here\n   67 |     solver.prepare_graph(false);\n      |            ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:354:19: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  354 |             adj = move(ori_adj);\n      |                   ^\n      |                   std::\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:25:33: warning: field 'data' will be initialized after field 'flag' [-Wreorder-ctor]\n   25 |     worst_case_hash_map(int n): data(n), flag(n) {}; // O(n)\n      |                                 ^~~~~~~  ~~~~~~~\n      |                                 flag(n)  data(n)\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:73:21: note: in instantiation of member function 'spp::worst_case_hash_map<spp::bmssp<double>::uniqueDistT>::worst_case_hash_map' requested here\n   73 |     batchPQ(int n): actual_value(n), where_is0(n), where_is1(n){} // O(n)\n      |                     ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:415:22: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::batchPQ' requested here\n  415 |         Ds.assign(l, adj.size());\n      |                      ^\nsrc/baseline/bmssp_seq.cpp:67:12: note: in instantiation of member function 'spp::bmssp<double>::prepare_graph' requested here\n   67 |     solver.prepare_graph(false);\n      |            ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:25:33: warning: field 'data' will be initialized after field 'flag' [-Wreorder-ctor]\n   25 |     worst_case_hash_map(int n): data(n), flag(n) {}; // O(n)\n      |                                 ^~~~~~~  ~~~~~~~\n      |                                 flag(n)  data(n)\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:73:38: note: in instantiation of member function 'spp::worst_case_hash_map<std::pair<std::__list_iterator<std::list<std::pair<int, spp::bmssp<double>::uniqueDistT>>, void *>, std::__list_iterator<std::pair<int, spp::bmssp<double>::uniqueDistT>, void *>>>::worst_case_hash_map' requested here\n   73 |     batchPQ(int n): actual_value(n), where_is0(n), where_is1(n){} // O(n)\n      |                                      ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:415:22: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::batchPQ' requested here\n  415 |         Ds.assign(l, adj.size());\n      |                      ^\nsrc/baseline/bmssp_seq.cpp:67:12: note: in instantiation of member function 'spp::bmssp<double>::prepare_graph' requested here\n   67 |     solver.prepare_graph(false);\n      |            ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:422:26: warning: comparison of integers of different signs: 'int' and 'size_type' (aka 'unsigned long long') [-Wsign-compare]\n  422 |         for(int i = 0; i < pred.size(); i++) pred[i] = i;\n      |                        ~ ^ ~~~~~~~~~~~\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:632:31: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'const long long' [-Wsign-compare]\n  632 |         while(complete.size() < quota && D.size()) {\n      |               ~~~~~~~~~~~~~~~ ^ ~~~~~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:589:56: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  589 |         while(heap.empty() == false && complete.size() < k + 1) {\n      |                                        ~~~~~~~~~~~~~~~ ^ ~~~~~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:617:27: note: in instantiation of member function 'spp::bmssp<double>::baseCase' requested here\n  617 |         if(l == 0) return baseCase(B, S[0]);\n      |                           ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:606:28: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  606 |         if(complete.size() <= k) return {B, complete};\n      |            ~~~~~~~~~~~~~~~ ^  ~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:571:22: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  571 |             active = move(nw_active);\n      |                      ^\n      |                      std::\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:619:33: note: in instantiation of member function 'spp::bmssp<double>::findPivots' requested here\n  619 |         auto [P, bellman_vis] = findPivots(B, S);\n      |                                 ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:116:31: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  116 |         if((*it_block).size() > M){\n      |            ~~~~~~~~~~~~~~~~~~ ^ ~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:624:25: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::insert' requested here\n  624 |         for(int p: P) D.insert(getDist(p));\n      |                         ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:233:40: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  233 |                 (*new_block).push_back(move(*it));\n      |                                        ^\n      |                                        std::\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:117:13: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::split' requested here\n  117 |             split(it_block);\n      |             ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:624:25: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::insert' requested here\n  624 |         for(int p: P) D.insert(getDist(p));\n      |                         ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:134:49: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  134 |         while(it_block != D0.end() && s0.size() <= M){ // O(M)   \n      |                                       ~~~~~~~~~ ^  ~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:633:40: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::pull' requested here\n  633 |             auto [trying_B, miniS] = D.pull();\n      |                                        ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:140:49: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  140 |         while(it_block != D1.end() && s1.size() <= M){   //O(M)\n      |                                       ~~~~~~~~~ ^  ~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:145:34: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  145 |         if(s1.size() + s0.size() <= M){\n      |            ~~~~~~~~~~~~~~~~~~~~~ ^  ~\n15 warnings generated.\n"
+    },
+    "bench": {
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "In file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:571:22: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  571 |             active = move(nw_active);\n      |                      ^\n      |                      std::\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:349:26: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  349 |             ori_adj[i] = move(nw_adj);\n      |                          ^\n      |                          std::\nsrc/baseline/bmssp_seq.cpp:67:12: note: in instantiation of member function 'spp::bmssp<double>::prepare_graph' requested here\n   67 |     solver.prepare_graph(false);\n      |            ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:354:19: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  354 |             adj = move(ori_adj);\n      |                   ^\n      |                   std::\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:25:33: warning: field 'data' will be initialized after field 'flag' [-Wreorder-ctor]\n   25 |     worst_case_hash_map(int n): data(n), flag(n) {}; // O(n)\n      |                                 ^~~~~~~  ~~~~~~~\n      |                                 flag(n)  data(n)\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:73:21: note: in instantiation of member function 'spp::worst_case_hash_map<spp::bmssp<double>::uniqueDistT>::worst_case_hash_map' requested here\n   73 |     batchPQ(int n): actual_value(n), where_is0(n), where_is1(n){} // O(n)\n      |                     ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:415:22: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::batchPQ' requested here\n  415 |         Ds.assign(l, adj.size());\n      |                      ^\nsrc/baseline/bmssp_seq.cpp:67:12: note: in instantiation of member function 'spp::bmssp<double>::prepare_graph' requested here\n   67 |     solver.prepare_graph(false);\n      |            ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:25:33: warning: field 'data' will be initialized after field 'flag' [-Wreorder-ctor]\n   25 |     worst_case_hash_map(int n): data(n), flag(n) {}; // O(n)\n      |                                 ^~~~~~~  ~~~~~~~\n      |                                 flag(n)  data(n)\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:73:38: note: in instantiation of member function 'spp::worst_case_hash_map<std::pair<std::__list_iterator<std::list<std::pair<int, spp::bmssp<double>::uniqueDistT>>, void *>, std::__list_iterator<std::pair<int, spp::bmssp<double>::uniqueDistT>, void *>>>::worst_case_hash_map' requested here\n   73 |     batchPQ(int n): actual_value(n), where_is0(n), where_is1(n){} // O(n)\n      |                                      ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:415:22: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::batchPQ' requested here\n  415 |         Ds.assign(l, adj.size());\n      |                      ^\nsrc/baseline/bmssp_seq.cpp:67:12: note: in instantiation of member function 'spp::bmssp<double>::prepare_graph' requested here\n   67 |     solver.prepare_graph(false);\n      |            ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:422:26: warning: comparison of integers of different signs: 'int' and 'size_type' (aka 'unsigned long long') [-Wsign-compare]\n  422 |         for(int i = 0; i < pred.size(); i++) pred[i] = i;\n      |                        ~ ^ ~~~~~~~~~~~\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:632:31: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'const long long' [-Wsign-compare]\n  632 |         while(complete.size() < quota && D.size()) {\n      |               ~~~~~~~~~~~~~~~ ^ ~~~~~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:589:56: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  589 |         while(heap.empty() == false && complete.size() < k + 1) {\n      |                                        ~~~~~~~~~~~~~~~ ^ ~~~~~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:617:27: note: in instantiation of member function 'spp::bmssp<double>::baseCase' requested here\n  617 |         if(l == 0) return baseCase(B, S[0]);\n      |                           ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:606:28: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  606 |         if(complete.size() <= k) return {B, complete};\n      |            ~~~~~~~~~~~~~~~ ^  ~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:571:22: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  571 |             active = move(nw_active);\n      |                      ^\n      |                      std::\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:619:33: note: in instantiation of member function 'spp::bmssp<double>::findPivots' requested here\n  619 |         auto [P, bellman_vis] = findPivots(B, S);\n      |                                 ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:116:31: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  116 |         if((*it_block).size() > M){\n      |            ~~~~~~~~~~~~~~~~~~ ^ ~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:624:25: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::insert' requested here\n  624 |         for(int p: P) D.insert(getDist(p));\n      |                         ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:233:40: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]\n  233 |                 (*new_block).push_back(move(*it));\n      |                                        ^\n      |                                        std::\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:117:13: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::split' requested here\n  117 |             split(it_block);\n      |             ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:624:25: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::insert' requested here\n  624 |         for(int p: P) D.insert(getDist(p));\n      |                         ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:134:49: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  134 |         while(it_block != D0.end() && s0.size() <= M){ // O(M)   \n      |                                       ~~~~~~~~~ ^  ~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:633:40: note: in instantiation of member function 'spp::batchPQ<spp::bmssp<double>::uniqueDistT>::pull' requested here\n  633 |             auto [trying_B, miniS] = D.pull();\n      |                                        ^\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:430:9: note: in instantiation of member function 'spp::bmssp<double>::bmsspRec' requested here\n  430 |         bmsspRec(l, inf_dist, {s});\n      |         ^\nsrc/baseline/bmssp_seq.cpp:68:40: note: in instantiation of member function 'spp::bmssp<double>::execute' requested here\n   68 |     auto [raw_dist, raw_pred] = solver.execute(source);\n      |                                        ^\nIn file included from src/baseline/bmssp_seq.cpp:2:\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:140:49: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  140 |         while(it_block != D1.end() && s1.size() <= M){   //O(M)\n      |                                       ~~~~~~~~~ ^  ~\ninclude/baseline/upstream/include/bmssp-worst-case.hpp:145:34: warning: comparison of integers of different signs: 'size_type' (aka 'unsigned long long') and 'int' [-Wsign-compare]\n  145 |         if(s1.size() + s0.size() <= M){\n      |            ~~~~~~~~~~~~~~~~~~~~~ ^  ~\n15 warnings generated.\n"
+    }
+  },
+  "git_commit": "874775b976761db39d95f1288644fa732518ff5b",
+  "git_status": "M PROJECT_MEMORY.md\n M README.md\n M VISUALIZATION_PLAN.md\n M bmssp_parallel/CMakeLists.txt\n M bmssp_parallel/build_and_test.py\n?? bmssp_parallel/DIJKSTRA_OPENMP_RESULTS.md\n?? bmssp_parallel/DIJKSTRA_OPENMP_REVIEW.md\n?? bmssp_parallel/README.md\n?? bmssp_parallel/benchmarks/\n?? bmssp_parallel/examples/\n?? bmssp_parallel/include/baseline/dijkstra_openmp.hpp\n?? bmssp_parallel/references/\n?? bmssp_parallel/results/\n?? bmssp_parallel/run_dijkstra_openmp.py\n?? bmssp_parallel/src/baseline/dijkstra_openmp.cpp\n?? bmssp_parallel/tests/openmp_runtime_probe.cpp\n?? bmssp_parallel/tests/test_dijkstra_openmp.cpp",
+  "environment": {
+    "OMP_NUM_THREADS": "4",
+    "OMP_DYNAMIC": "FALSE"
+  },
+  "removed_inherited_runtime_environment": {},
+  "loaded_runtime_modules": [
+    {
+      "path": "D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\libomp.dll",
+      "sha256": "ee4fa811b4c66a4bb67bc0764de3352e4f41cfb5cbc201f95b2d9979f57d633e"
+    }
+  ],
+  "runtime_import_inspection": {
+    "tool": "D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\llvm-objdump.exe",
+    "imports": [
+      "libc++.dll",
+      "libomp.dll",
+      "libunwind.dll",
+      "api-ms-win-crt-stdio-l1-1-0.dll",
+      "api-ms-win-crt-runtime-l1-1-0.dll",
+      "api-ms-win-crt-locale-l1-1-0.dll",
+      "api-ms-win-crt-math-l1-1-0.dll",
+      "api-ms-win-crt-heap-l1-1-0.dll",
+      "api-ms-win-crt-private-l1-1-0.dll",
+      "api-ms-win-crt-string-l1-1-0.dll",
+      "KERNEL32.dll",
+      "api-ms-win-crt-environment-l1-1-0.dll"
+    ],
+    "output": "\nD:\\TTSS_Prj\\bmssp\\bmssp_parallel\\build\\dijkstra_openmp_v2_b7c3ebe31b53\\bench.exe:\tfile format coff-x86-64\nCharacteristics 0x22\n\texecutable\n\tlarge address aware\n\nTime/Date               Fri Nov 20 09:20:43 2026\nMagic                   020b\t(PE32+)\nMajorLinkerVersion      14\nMinorLinkerVersion      0\nSizeOfCode              0000000000019600\nSizeOfInitializedData   0000000000012000\nSizeOfUninitializedData 0000000000000000\nAddressOfEntryPoint     00000000000013b0\nBaseOfCode              0000000000001000\nImageBase               0000000140000000\nSectionAlignment        00001000\nFileAlignment           00000200\nMajorOSystemVersion     6\nMinorOSystemVersion     0\nMajorImageVersion       0\nMinorImageVersion       0\nMajorSubsystemVersion   6\nMinorSubsystemVersion   0\nWin32Version            00000000\nSizeOfImage             00035000\nSizeOfHeaders           00000400\nCheckSum                00000000\nSubsystem               00000003\t(Windows CUI)\nDllCharacteristics      00008160\n\t\t\t\t\tHIGH_ENTROPY_VA\n\t\t\t\t\tDYNAMIC_BASE\n\t\t\t\t\tNX_COMPAT\n\t\t\t\t\tTERMINAL_SERVER_AWARE\nSizeOfStackReserve      0000000000100000\nSizeOfStackCommit       0000000000001000\nSizeOfHeapReserve       0000000000100000\nSizeOfHeapCommit        0000000000001000\nLoaderFlags             00000000\nNumberOfRvaAndSizes     00000010\n\nThe Data Directory\nEntry 0 0000000000000000 00000000 Export Directory [.edata (or where ever we found it)]\nEntry 1 000000000001c808 00000104 Import Directory [parts of .idata]\nEntry 2 0000000000000000 00000000 Resource Directory [.rsrc]\nEntry 3 0000000000023000 000008b8 Exception Directory [.pdata]\nEntry 4 0000000000000000 00000000 Security Directory\nEntry 5 0000000000024000 000001d0 Base Relocation Directory [.reloc]\nEntry 6 0000000000021000 0000001c Debug Directory\nEntry 7 0000000000000000 00000000 Description Directory\nEntry 8 0000000000000000 00000000 Special Directory\nEntry 9 0000000000000000 00000000 Thread Storage Directory [.tls]\nEntry a 000000000001c598 00000138 Load Configuration Directory\nEntry b 0000000000000000 00000000 Bound Import Directory\nEntry c 000000000001ce18 00000508 Import Address Table Directory\nEntry d 0000000000000000 00000000 Delay Import Directory\nEntry e 0000000000000000 00000000 CLR Runtime Header\nEntry f 0000000000000000 00000000 Reserved\n\nThe Import Tables:\n  lookup 0001c910 time 00000000 fwd 00000000 name 0001e52a addr 0001ce18\n\n    DLL Name: libc++.dll\n    Hint/Ord  Name\n           0  _ZNKSt3__16locale9has_facetERNS0_2idE\n           0  _ZNKSt3__16locale9use_facetERNS0_2idE\n           0  _ZNKSt3__18ios_base6getlocEv\n           0  _ZNSt11logic_errorC2EPKc\n           0  _ZNSt12length_errorD1Ev\n           0  _ZNSt13runtime_errorC1EPKc\n           0  _ZNSt13runtime_errorC1ERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE\n           0  _ZNSt13runtime_errorD1Ev\n           0  _ZNSt16invalid_argumentD1Ev\n           0  _ZNSt20bad_array_new_lengthC1Ev\n           0  _ZNSt20bad_array_new_lengthD1Ev\n           0  _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKcy\n           0  _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEyc\n           0  _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE9push_backEc\n           0  _ZNSt3__113basic_istreamIcNS_11char_traitsIcEEED0Ev\n           0  _ZNSt3__113basic_istreamIcNS_11char_traitsIcEEED1Ev\n           0  _ZNSt3__113basic_istreamIcNS_11char_traitsIcEEED2Ev\n           0  _ZNSt3__113basic_istreamIcNS_11char_traitsIcEEErsERd\n           0  _ZNSt3__113basic_istreamIcNS_11char_traitsIcEEErsERj\n           0  _ZNSt3__113basic_istreamIcNS_11char_traitsIcEEErsERy\n           0  _ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEE5flushEv\n           0  _ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEED0Ev\n           0  _ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEED1Ev\n           0  _ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEd\n           0  _ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEi\n           0  _ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEj\n           0  _ZNSt3__113basic_ostreamIcNS_11char_traitsIcEEElsEy\n           0  _ZNSt3__114basic_iostreamIcNS_11char_traitsIcEEED0Ev\n           0  _ZNSt3__114basic_iostreamIcNS_11char_traitsIcEEED1Ev\n           0  _ZNSt3__114basic_iostreamIcNS_11char_traitsIcEEED2Ev\n           0  _ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE4syncEv\n           0  _ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE5imbueERKNS_6localeE\n           0  _ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE5uflowEv\n           0  _ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6setbufEPcx\n           0  _ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6xsgetnEPcx\n           0  _ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE6xsputnEPKcx\n           0  _ZNSt3__115basic_streambufIcNS_11char_traitsIcEEE9showmanycEv\n           0  _ZNSt3__14cerrE\n           0  _ZNSt3__14coutE\n           0  _ZNSt3__15ctypeIcE2idE\n           0  _ZNSt3__16__sortIRNS_6__lessIddEEPdEEvT0_S5_T_\n           0  _ZNSt3__16chrono12steady_clock3nowEv\n           0  _ZNSt3__16localeC1ERKS0_\n           0  _ZNSt3__16localeC1Ev\n           0  _ZNSt3__16localeD1Ev\n           0  _ZNSt3__17codecvtIcc9_MbstatetE2idE\n           0  _ZNSt3__18ios_base33__set_badbit_and_consider_rethrowEv\n           0  _ZNSt3__18ios_base4initEPv\n           0  _ZNSt3__18ios_base5clearEj\n           0  _ZNSt3__19basic_iosIcNS_11char_traitsIcEEED2Ev\n           0  _ZNSt3__1plIcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringIT_T0_T1_EEPKS6_RKS9_\n           0  _ZNSt8bad_castC1Ev\n           0  _ZNSt8bad_castD1Ev\n           0  _ZSt19uncaught_exceptionsv\n           0  _ZSt9terminatev\n           0  _ZTVN10__cxxabiv117__class_type_infoE\n           0  _ZTVN10__cxxabiv120__si_class_type_infoE\n           0  _ZTVN10__cxxabiv121__vmi_class_type_infoE\n           0  _ZTVNSt3__115basic_streambufIcNS_11char_traitsIcEEEE\n           0  _ZTVSt12length_error\n           0  _ZTVSt16invalid_argument\n           0  _ZThn16_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED0Ev\n           0  _ZThn16_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED1Ev\n           0  _ZTv0_n24_NSt3__113basic_istreamIcNS_11char_traitsIcEEED0Ev\n           0  _ZTv0_n24_NSt3__113basic_istreamIcNS_11char_traitsIcEEED1Ev\n           0  _ZTv0_n24_NSt3__113basic_ostreamIcNS_11char_traitsIcEEED0Ev\n           0  _ZTv0_n24_NSt3__113basic_ostreamIcNS_11char_traitsIcEEED1Ev\n           0  _ZTv0_n24_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED0Ev\n           0  _ZTv0_n24_NSt3__114basic_iostreamIcNS_11char_traitsIcEEED1Ev\n           0  _ZdaPv\n           0  _ZdlPv\n           0  _ZdlPvSt11align_val_t\n           0  _Znay\n           0  _Znwy\n           0  _ZnwySt11align_val_t\n           0  __cxa_allocate_exception\n           0  __cxa_begin_catch\n           0  __cxa_end_catch\n           0  __cxa_free_exception\n           0  __cxa_rethrow\n           0  __cxa_throw\n           0  __gxx_personality_seh0\n\n  lookup 0001cba8 time 00000000 fwd 00000000 name 0001e535 addr 0001d0b0\n\n    DLL Name: libomp.dll\n    Hint/Ord  Name\n         106  __kmpc_barrier\n         127  __kmpc_end_single\n         135  __kmpc_for_static_fini\n         137  __kmpc_for_static_init_8\n         225  __kmpc_for_static_init_8u\n         138  __kmpc_fork_call\n         141  __kmpc_global_thread_num\n         148  __kmpc_push_num_threads\n         151  __kmpc_single\n         703  omp_get_max_threads\n         705  omp_get_num_procs\n         706  omp_get_num_threads\n         707  omp_get_thread_num\n         713  omp_set_dynamic\n\n  lookup 0001cc20 time 00000000 fwd 00000000 name 0001e540 addr 0001d128\n\n    DLL Name: libunwind.dll\n    Hint/Ord  Name\n           0  _Unwind_Resume\n\n  lookup 0001cc30 time 00000000 fwd 00000000 name 0001e54e addr 0001d138\n\n    DLL Name: api-ms-win-crt-stdio-l1-1-0.dll\n    Hint/Ord  Name\n           0  __acrt_iob_func\n           0  __p__commode\n           0  __p__fmode\n           0  __stdio_common_vfprintf\n           0  _fseeki64\n           0  _ftelli64\n           0  fclose\n           0  fflush\n           0  fopen\n           0  fread\n           0  fseek\n           0  fwrite\n           0  setbuf\n           0  setvbuf\n\n  lookup 0001cca8 time 00000000 fwd 00000000 name 0001e56e addr 0001d1b0\n\n    DLL Name: api-ms-win-crt-runtime-l1-1-0.dll\n    Hint/Ord  Name\n           0  __p___argc\n           0  __p___argv\n           0  _assert\n           0  _cexit\n           0  _configure_narrow_argv\n           0  _crt_atexit\n           0  _exit\n           0  _fpreset\n           0  _initialize_narrow_environment\n           0  _initterm\n           0  _initterm_e\n           0  _seh_filter_exe\n           0  _set_app_type\n           0  _set_invalid_parameter_handler\n           0  abort\n           0  exit\n\n  lookup 0001cd30 time 00000000 fwd 00000000 name 0001e590 addr 0001d238\n\n    DLL Name: api-ms-win-crt-locale-l1-1-0.dll\n    Hint/Ord  Name\n           0  _configthreadlocale\n\n  lookup 0001cd40 time 00000000 fwd 00000000 name 0001e5b1 addr 0001d248\n\n    DLL Name: api-ms-win-crt-math-l1-1-0.dll\n    Hint/Ord  Name\n           0  __setusermatherr\n           0  ceil\n           0  floor\n           0  log2\n           0  pow\n           0  round\n\n  lookup 0001cd78 time 00000000 fwd 00000000 name 0001e5d0 addr 0001d280\n\n    DLL Name: api-ms-win-crt-heap-l1-1-0.dll\n    Hint/Ord  Name\n           0  _set_new_mode\n           0  malloc\n\n  lookup 0001cd90 time 00000000 fwd 00000000 name 0001e5ef addr 0001d298\n\n    DLL Name: api-ms-win-crt-private-l1-1-0.dll\n    Hint/Ord  Name\n           0  memchr\n           0  memcpy\n           0  memmove\n\n  lookup 0001cdb0 time 00000000 fwd 00000000 name 0001e611 addr 0001d2b8\n\n    DLL Name: api-ms-win-crt-string-l1-1-0.dll\n    Hint/Ord  Name\n           0  memset\n           0  strlen\n\n  lookup 0001cdc8 time 00000000 fwd 00000000 name 0001e632 addr 0001d2d0\n\n    DLL Name: KERNEL32.dll\n    Hint/Ord  Name\n           0  GetLastError\n           0  GetModuleFileNameA\n           0  GetModuleHandleA\n           0  SetUnhandledExceptionFilter\n           0  Sleep\n           0  VirtualProtect\n           0  VirtualQuery\n\n  lookup 0001ce08 time 00000000 fwd 00000000 name 0001e63f addr 0001d310\n\n    DLL Name: api-ms-win-crt-environment-l1-1-0.dll\n    Hint/Ord  Name\n           0  __p__environ\n\n"
+  },
+  "runtime_note": "Loaded module paths observed inside benchmark process. Empty module list may mean static runtime linkage; inspect PE imports. Probe failure does not identify the root cause.",
+  "timer": "std::chrono::steady_clock; start/stop on the main caller thread; wall elapsed time, not clock()/CPU time.",
+  "timing_scope": {
+    "api": "Entire solver call on original CSR: result/workspace allocation and initialization, validation/normalization for serial scan and OpenMP, OpenMP team entry/exit, and cleanup of internal workspace/normalized temporary. Existing heap does not validate CSR.",
+    "sssp_prepared": "Solve using the same already-validated/normalized CSR snapshot. Includes result/workspace allocation and initialization, workspace cleanup and OpenMP team entry/exit. Excludes validation/normalization. Serial scan contains no OpenMP construct.",
+    "preparation": "PreparedDijkstraGraph construction only: validation, row sorting, duplicate-edge coalescing, owning CSR allocation; excludes destruction.",
+    "excluded": "Input generation, file IO, result verification and result destruction. API/prepared speedups use serial scan of the SAME scope; preparation median is not subtracted from API median."
+  },
+  "structural_review": {
+    "parallel_directives_in_solver": 1,
+    "critical_directives_in_solver": 0,
+    "organization": "One persistent parallel region encloses all vertex-selection iterations. Per-thread minima merged by single; no critical per candidate. Selection, single publication, and relaxation retain phase barriers.",
+    "granularity": "Graph-level mean/max outgoing degree and per-probe-team vertices/relax-edges recorded; this is a workload-size diagnostic, not a measured barrier-cost attribution."
+  },
+  "source_sha256": {
+    "benchmarks/bench_dijkstra_openmp.cpp": "849f8e912622aa6356e82f39c09da8c3d2bc94ef040b1574ccc6ca2d28c9f42f",
+    "include/baseline/bmssp_seq.hpp": "24942a66f5de0eb537de2ac09d4e640c8532c73ae6e73330a31a70d919878589",
+    "include/baseline/dijkstra_openmp.hpp": "867ac845ec042f39c3f71e6acf422596e7f4fc5eb9aba0d422ff302f3e2e7669",
+    "include/baseline/external/median_of_ninthers.h": "767ddda539535b7162e4e607764bf6b9198e91e9537ec06ebb97cea62381e36b",
+    "include/baseline/external/private/median_common.h": "3bb540f840155b3a886da38e27418ce3a6282fa426001f85c386a93564b3a17a",
+    "include/baseline/upstream/helpers/common.hpp": "d459417e7e8905b676e6d2c85da1729bb075c41538e1b315c0af1ae5da94fd57",
+    "include/baseline/upstream/helpers/dijkstra.hpp": "cefbd9c57b149180a5b78d7a9d4769c5cbf754193af430bcb0fdd2df1f51aafa",
+    "include/baseline/upstream/helpers/external/doctest.h": "fe0ac31915b60fab49f2d9eccc47c256a865511ddb8c27c327dd77c2654c6c23",
+    "include/baseline/upstream/helpers/external/json.hpp": "efd5ea8a4ec984df3ee7193653958bcf01c4aea683a1d7d40315ca5fe51363c3",
+    "include/baseline/upstream/helpers/external/nanobench.h": "64f4ba244c3a7aaea61668aec64faaa8ef6bdefe641d1591883aafa9c39ca201",
+    "include/baseline/upstream/include/bmssp-expected.hpp": "68b21b59f5c266a6c5f1151fa075ca7eebf273ebecbdda395b34aa140d930102",
+    "include/baseline/upstream/include/bmssp-worst-case.hpp": "72e25625ed62fad2a9f0a6264875b2a1a6336e69a69fbf4df0c7083ff85f43c0",
+    "include/baseline/upstream/include/bmssp.hpp": "00e4acc0451005bb32beeb0ae00d83399277defa03991bd97c3ebae5c938e92e",
+    "include/baseline/upstream/include/external/floyd_rivest_select.h": "520cc1ab1df65821576a71b419ad8afe2154255c70092eb8aab0e86ae71d1e5e",
+    "include/baseline/upstream/include/external/median_of_ninthers.h": "767ddda539535b7162e4e607764bf6b9198e91e9537ec06ebb97cea62381e36b",
+    "include/baseline/upstream/include/external/private/median_common.h": "3bb540f840155b3a886da38e27418ce3a6282fa426001f85c386a93564b3a17a",
+    "include/baseline/upstream/include/external/stl.h": "e7b380d70d312786d0b332abe8f73a6f4acfe633bd9ccb82bd4cac057e78a317",
+    "include/baseline/upstream/include/external/unordered_dense.h": "1d3a9bb9635d288340f3d54e78af670ede02aaa75d2804263649132f2829c0c1",
+    "include/core/frontier_interface.hpp": "bf8546404db60a6b046ade7c493b3267cf5aea058c0eaad26bc4ebef247b809a",
+    "include/core/graph.hpp": "2f53322292d80770a8c271bbe38d497e4560b2480142989ecff65e2fa5e063be",
+    "include/core/memory_pool.hpp": "0edeb333d7d4d4eb1f64519dca15fc98a1c230214dd305a8cd5234232f01f33b",
+    "include/core/primitives.hpp": "a59150d052213b134083b181152db80b31bca55a5dacdca35082607ad967036e",
+    "include/core/types.hpp": "d3f5797af16232f744e6f0f123acd7f525c85fff6985981d87455fa455c341b9",
+    "run_dijkstra_openmp.py": "ab2866f2ad76ebe8bc9ecc64023c4d1f060d227bbc766b6d18d396c5d31e1bc4",
+    "src/baseline/bmssp_seq.cpp": "8920aaf4ae01032480b4e5fa98ed17a21793a0f058ebecef5ff5f9410125d40c",
+    "src/baseline/dijkstra_openmp.cpp": "4e1ebe80d6cec5aa27d9235190c610c5b783eb6685187fcee8243a92eebb41de",
+    "src/core/graph.cpp": "a9de17b8c35a9ec7ae8649b5583843e7cad1d22dd544590071bef2c37ba71c79",
+    "tests/openmp_runtime_probe.cpp": "aad4ab34613c7fda8b2e078a91cea234313b3af19ea6652051dc53113d024725",
+    "tests/test_dijkstra_openmp.cpp": "61dfb40ec726697e51adbcf4870042b88525c03adc16310b9e7fc725180ed2e1"
+  },
+  "validation": [
+    {
+      "mode": "normal",
+      "environment": {},
+      "status": "PASS",
+      "probe": {
+        "returncode": 0,
+        "returncode_hex": "0x00000000",
+        "stdout": "PASS: minimal OpenMP runtime probe\n",
+        "stderr": "loaded_runtime_module=D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\libomp.dll\nthread_limit=2147483647 dynamic=0\nrequested=1\nactual=1\nrequested=2\nactual=2\nrequested=4\nactual=4\nrequested=8\nactual=8\n",
+        "loaded_runtime_modules": [
+          {
+            "path": "D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\libomp.dll",
+            "sha256": "ee4fa811b4c66a4bb67bc0764de3352e4f41cfb5cbc201f95b2d9979f57d633e"
+          }
+        ]
+      },
+      "output": "PASS: 279132 checks, 1943 full-result comparisons; seed=20261119"
+    },
+    {
+      "mode": "limited_team",
+      "environment": {
+        "OMP_THREAD_LIMIT": "2"
+      },
+      "status": "SKIPPED_RUNTIME_FAILURE",
+      "probe": {
+        "returncode": 3221225477,
+        "returncode_hex": "0xc0000005",
+        "stdout": "",
+        "stderr": "loaded_runtime_module=D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\libomp.dll\nthread_limit=2 dynamic=0\nrequested=1\nactual=1\nrequested=2\nactual=2\nrequested=4\n",
+        "loaded_runtime_modules": [
+          {
+            "path": "D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\libomp.dll",
+            "sha256": "ee4fa811b4c66a4bb67bc0764de3352e4f41cfb5cbc201f95b2d9979f57d633e"
+          }
+        ]
+      },
+      "reason": "Independent omp-only probe failed before solver execution; root cause (compiler/runtime/DLL configuration) not established."
+    },
+    {
+      "mode": "dynamic_team",
+      "environment": {
+        "OMP_DYNAMIC": "TRUE"
+      },
+      "status": "SKIPPED_RUNTIME_FAILURE",
+      "probe": {
+        "returncode": 3221225477,
+        "returncode_hex": "0xc0000005",
+        "stdout": "",
+        "stderr": "loaded_runtime_module=D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\libomp.dll\nthread_limit=2147483647 dynamic=1\nrequested=1\nactual=1\nrequested=2\n",
+        "loaded_runtime_modules": [
+          {
+            "path": "D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\libomp.dll",
+            "sha256": "ee4fa811b4c66a4bb67bc0764de3352e4f41cfb5cbc201f95b2d9979f57d633e"
+          }
+        ]
+      },
+      "reason": "Independent omp-only probe failed before solver execution; root cause (compiler/runtime/DLL configuration) not established."
+    }
+  ],
+  "benchmark": {
+    "schema_version": 2,
+    "seed": 20261119,
+    "warmup": 2,
+    "samples": 7,
+    "openmp": 202011,
+    "num_procs": 20,
+    "timer": "std::chrono::steady_clock; start/stop on main thread",
+    "cases": [
+      {
+        "family": "sparse",
+        "n": 100,
+        "m": 900,
+        "normalized_m": 868,
+        "source": 0,
+        "exact_distance_match": true,
+        "max_out_degree": 17,
+        "mean_out_degree": 8.68,
+        "preparation": {
+          "median_ms": 0.0166,
+          "samples_ms": [
+            0.0179,
+            0.0171,
+            0.0167,
+            0.0166,
+            0.0166,
+            0.0165,
+            0.0166
+          ]
+        },
+        "modes": [
+          {
+            "mode": "heap",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 8.68,
+            "median_ms": 0.0305,
+            "speedup_vs_scan": 1.6393442623,
+            "speedup_vs_heap": 1,
+            "samples_ms": [
+              0.0303,
+              0.0305,
+              0.0458,
+              0.0305,
+              0.0295,
+              0.0318,
+              0.0298
+            ]
+          },
+          {
+            "mode": "scan",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 8.68,
+            "median_ms": 0.05,
+            "speedup_vs_scan": 1,
+            "speedup_vs_heap": 0.61,
+            "samples_ms": [
+              0.0505,
+              0.0494,
+              0.0541,
+              0.0587,
+              0.048,
+              0.05,
+              0.0478
+            ]
+          },
+          {
+            "mode": "omp1",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 8.68,
+            "median_ms": 0.0531,
+            "speedup_vs_scan": 0.941619585687,
+            "speedup_vs_heap": 0.574387947269,
+            "samples_ms": [
+              0.0597,
+              0.0531,
+              0.0533,
+              0.0735,
+              0.0515,
+              0.053,
+              0.0512
+            ]
+          },
+          {
+            "mode": "omp2",
+            "scope": "api",
+            "requested_threads": 2,
+            "actual_threads_probe": 2,
+            "vertices_per_thread": 50,
+            "mean_relax_edges_per_thread": 4.34,
+            "median_ms": 4.0236,
+            "speedup_vs_scan": 0.0124266825728,
+            "speedup_vs_heap": 0.00758027636942,
+            "samples_ms": [
+              4.0236,
+              4.0408,
+              3.8112,
+              3.9351,
+              4.0472,
+              3.4971,
+              4.0368
+            ]
+          },
+          {
+            "mode": "omp4",
+            "scope": "api",
+            "requested_threads": 4,
+            "actual_threads_probe": 4,
+            "vertices_per_thread": 25,
+            "mean_relax_edges_per_thread": 2.17,
+            "median_ms": 5.4003,
+            "speedup_vs_scan": 0.00925874488454,
+            "speedup_vs_heap": 0.00564783437957,
+            "samples_ms": [
+              6.2966,
+              6.0993,
+              6.1065,
+              4.1227,
+              5.1608,
+              4.5026,
+              5.4003
+            ]
+          },
+          {
+            "mode": "omp8",
+            "scope": "api",
+            "requested_threads": 8,
+            "actual_threads_probe": 8,
+            "vertices_per_thread": 12.5,
+            "mean_relax_edges_per_thread": 1.085,
+            "median_ms": 8.8998,
+            "speedup_vs_scan": 0.00561810377761,
+            "speedup_vs_heap": 0.00342704330434,
+            "samples_ms": [
+              9.2369,
+              9.025,
+              8.9261,
+              8.8552,
+              8.8049,
+              8.8998,
+              8.4871
+            ]
+          },
+          {
+            "mode": "scan",
+            "scope": "sssp_prepared",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 8.68,
+            "median_ms": 0.0287,
+            "speedup_vs_scan": 1,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              0.0291,
+              0.0285,
+              0.0307,
+              0.0286,
+              0.0287,
+              0.0283,
+              0.0322
+            ]
+          },
+          {
+            "mode": "omp1",
+            "scope": "sssp_prepared",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 8.68,
+            "median_ms": 0.0371,
+            "speedup_vs_scan": 0.77358490566,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              0.0371,
+              0.0367,
+              0.0383,
+              0.037,
+              0.0389,
+              0.0393,
+              0.037
+            ]
+          },
+          {
+            "mode": "omp2",
+            "scope": "sssp_prepared",
+            "requested_threads": 2,
+            "actual_threads_probe": 2,
+            "vertices_per_thread": 50,
+            "mean_relax_edges_per_thread": 4.34,
+            "median_ms": 4.0402,
+            "speedup_vs_scan": 0.00710360873224,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              4.0402,
+              4.0705,
+              4.1831,
+              4.1535,
+              4.0331,
+              3.995,
+              3.1969
+            ]
+          },
+          {
+            "mode": "omp4",
+            "scope": "sssp_prepared",
+            "requested_threads": 4,
+            "actual_threads_probe": 4,
+            "vertices_per_thread": 25,
+            "mean_relax_edges_per_thread": 2.17,
+            "median_ms": 5.1547,
+            "speedup_vs_scan": 0.00556773430074,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              6.1337,
+              5.1189,
+              6.1902,
+              6.1127,
+              4.363,
+              5.1547,
+              4.5099
+            ]
+          },
+          {
+            "mode": "omp8",
+            "scope": "sssp_prepared",
+            "requested_threads": 8,
+            "actual_threads_probe": 8,
+            "vertices_per_thread": 12.5,
+            "mean_relax_edges_per_thread": 1.085,
+            "median_ms": 9.0406,
+            "speedup_vs_scan": 0.00317456805964,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              9.164,
+              9.0406,
+              9.1002,
+              9.3,
+              8.613,
+              8.6102,
+              8.481
+            ]
+          }
+        ]
+      },
+      {
+        "family": "sparse",
+        "n": 1000,
+        "m": 9000,
+        "normalized_m": 8966,
+        "source": 0,
+        "exact_distance_match": true,
+        "max_out_degree": 19,
+        "mean_out_degree": 8.966,
+        "preparation": {
+          "median_ms": 0.1566,
+          "samples_ms": [
+            0.1625,
+            0.1699,
+            0.1566,
+            0.1555,
+            0.1545,
+            0.1538,
+            0.1677
+          ]
+        },
+        "modes": [
+          {
+            "mode": "heap",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 8.966,
+            "median_ms": 0.421,
+            "speedup_vs_scan": 3.50641330166,
+            "speedup_vs_heap": 1,
+            "samples_ms": [
+              0.3948,
+              0.4696,
+              0.3924,
+              0.421,
+              0.3999,
+              0.9085,
+              0.9134
+            ]
+          },
+          {
+            "mode": "scan",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 8.966,
+            "median_ms": 1.4762,
+            "speedup_vs_scan": 1,
+            "speedup_vs_heap": 0.285191708441,
+            "samples_ms": [
+              1.4229,
+              1.4762,
+              1.4781,
+              1.4265,
+              1.4289,
+              3.2775,
+              3.3724
+            ]
+          },
+          {
+            "mode": "omp1",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 8.966,
+            "median_ms": 1.6287,
+            "speedup_vs_scan": 0.906367041199,
+            "speedup_vs_heap": 0.258488364954,
+            "samples_ms": [
+              1.6284,
+              1.6344,
+              1.6287,
+              1.6164,
+              1.617,
+              3.882,
+              3.6856
+            ]
+          },
+          {
+            "mode": "omp2",
+            "scope": "api",
+            "requested_threads": 2,
+            "actual_threads_probe": 2,
+            "vertices_per_thread": 500,
+            "mean_relax_edges_per_thread": 4.483,
+            "median_ms": 40.8418,
+            "speedup_vs_scan": 0.036144342316,
+            "speedup_vs_heap": 0.0103080667356,
+            "samples_ms": [
+              34.3311,
+              28.6606,
+              37.3234,
+              41.8453,
+              40.8418,
+              78.1793,
+              100.5255
+            ]
+          },
+          {
+            "mode": "omp4",
+            "scope": "api",
+            "requested_threads": 4,
+            "actual_threads_probe": 4,
+            "vertices_per_thread": 250,
+            "mean_relax_edges_per_thread": 2.2415,
+            "median_ms": 49.0839,
+            "speedup_vs_scan": 0.0300750347874,
+            "speedup_vs_heap": 0.00857715055242,
+            "samples_ms": [
+              61.7795,
+              45.7479,
+              48.2189,
+              47.274,
+              49.0839,
+              106.5954,
+              118.0195
+            ]
+          },
+          {
+            "mode": "omp8",
+            "scope": "api",
+            "requested_threads": 8,
+            "actual_threads_probe": 8,
+            "vertices_per_thread": 125,
+            "mean_relax_edges_per_thread": 1.12075,
+            "median_ms": 99.7261,
+            "speedup_vs_scan": 0.0148025441685,
+            "speedup_vs_heap": 0.00422156286068,
+            "samples_ms": [
+              93.343,
+              99.7261,
+              101.5076,
+              83.0793,
+              93.2242,
+              211.7049,
+              217.6363
+            ]
+          },
+          {
+            "mode": "scan",
+            "scope": "sssp_prepared",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 8.966,
+            "median_ms": 1.2388,
+            "speedup_vs_scan": 1,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              1.3264,
+              1.2367,
+              1.2281,
+              1.2285,
+              1.2388,
+              3.3267,
+              3.4191
+            ]
+          },
+          {
+            "mode": "omp1",
+            "scope": "sssp_prepared",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 8.966,
+            "median_ms": 1.4588,
+            "speedup_vs_scan": 0.849191115986,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              1.5729,
+              1.5823,
+              1.4588,
+              1.4084,
+              1.4157,
+              1.4146,
+              2.7042
+            ]
+          },
+          {
+            "mode": "omp2",
+            "scope": "sssp_prepared",
+            "requested_threads": 2,
+            "actual_threads_probe": 2,
+            "vertices_per_thread": 500,
+            "mean_relax_edges_per_thread": 4.483,
+            "median_ms": 42.4025,
+            "speedup_vs_scan": 0.0292152585343,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              39.6726,
+              43.2086,
+              42.4025,
+              29.5976,
+              42.5966,
+              40.9248,
+              98.5156
+            ]
+          },
+          {
+            "mode": "omp4",
+            "scope": "sssp_prepared",
+            "requested_threads": 4,
+            "actual_threads_probe": 4,
+            "vertices_per_thread": 250,
+            "mean_relax_edges_per_thread": 2.2415,
+            "median_ms": 47.9684,
+            "speedup_vs_scan": 0.0258253350122,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              45.1374,
+              46.9797,
+              47.479,
+              47.9684,
+              48.4776,
+              126.2811,
+              113.3659
+            ]
+          },
+          {
+            "mode": "omp8",
+            "scope": "sssp_prepared",
+            "requested_threads": 8,
+            "actual_threads_probe": 8,
+            "vertices_per_thread": 125,
+            "mean_relax_edges_per_thread": 1.12075,
+            "median_ms": 96.41,
+            "speedup_vs_scan": 0.0128492894928,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              83.3258,
+              96.41,
+              92.8521,
+              96.7652,
+              92.1745,
+              231.5586,
+              212.329
+            ]
+          }
+        ]
+      },
+      {
+        "family": "dense",
+        "n": 100,
+        "m": 10000,
+        "normalized_m": 9900,
+        "source": 0,
+        "exact_distance_match": true,
+        "max_out_degree": 99,
+        "mean_out_degree": 99,
+        "preparation": {
+          "median_ms": 0.2749,
+          "samples_ms": [
+            0.2785,
+            0.2759,
+            0.2749,
+            0.2749,
+            0.2957,
+            0.2729,
+            0.2729
+          ]
+        },
+        "modes": [
+          {
+            "mode": "heap",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 99,
+            "median_ms": 0.1912,
+            "speedup_vs_scan": 2.53556485356,
+            "speedup_vs_heap": 1,
+            "samples_ms": [
+              0.1912,
+              0.1437,
+              0.1089,
+              0.2137,
+              0.2044,
+              0.1882,
+              0.1925
+            ]
+          },
+          {
+            "mode": "scan",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 99,
+            "median_ms": 0.4848,
+            "speedup_vs_scan": 1,
+            "speedup_vs_heap": 0.394389438944,
+            "samples_ms": [
+              0.5065,
+              0.3879,
+              0.2649,
+              0.4848,
+              0.4853,
+              0.459,
+              0.615
+            ]
+          },
+          {
+            "mode": "omp1",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 99,
+            "median_ms": 0.4973,
+            "speedup_vs_scan": 0.974864267042,
+            "speedup_vs_heap": 0.384476171325,
+            "samples_ms": [
+              0.4825,
+              0.7303,
+              0.4632,
+              0.5062,
+              0.8831,
+              0.427,
+              0.4973
+            ]
+          },
+          {
+            "mode": "omp2",
+            "scope": "api",
+            "requested_threads": 2,
+            "actual_threads_probe": 2,
+            "vertices_per_thread": 50,
+            "mean_relax_edges_per_thread": 49.5,
+            "median_ms": 9.1425,
+            "speedup_vs_scan": 0.05302707137,
+            "speedup_vs_heap": 0.0209133169264,
+            "samples_ms": [
+              10.8561,
+              11.066,
+              7.0676,
+              7.9884,
+              7.7312,
+              9.1425,
+              10.5219
+            ]
+          },
+          {
+            "mode": "omp4",
+            "scope": "api",
+            "requested_threads": 4,
+            "actual_threads_probe": 4,
+            "vertices_per_thread": 25,
+            "mean_relax_edges_per_thread": 24.75,
+            "median_ms": 13.5354,
+            "speedup_vs_scan": 0.0358171904783,
+            "speedup_vs_heap": 0.0141259216573,
+            "samples_ms": [
+              12.8826,
+              14.9415,
+              12.5363,
+              13.5354,
+              6.5393,
+              15.801,
+              14.9834
+            ]
+          },
+          {
+            "mode": "omp8",
+            "scope": "api",
+            "requested_threads": 8,
+            "actual_threads_probe": 8,
+            "vertices_per_thread": 12.5,
+            "mean_relax_edges_per_thread": 12.375,
+            "median_ms": 21.7247,
+            "speedup_vs_scan": 0.022315613104,
+            "speedup_vs_heap": 0.00880104213177,
+            "samples_ms": [
+              23.2751,
+              22.2108,
+              21.2832,
+              22.6519,
+              21.7247,
+              21.6611,
+              21.0259
+            ]
+          },
+          {
+            "mode": "scan",
+            "scope": "sssp_prepared",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 99,
+            "median_ms": 0.1082,
+            "speedup_vs_scan": 1,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              0.1118,
+              0.1082,
+              0.1054,
+              0.1106,
+              0.1065,
+              0.1078,
+              0.1134
+            ]
+          },
+          {
+            "mode": "omp1",
+            "scope": "sssp_prepared",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 100,
+            "mean_relax_edges_per_thread": 99,
+            "median_ms": 0.1228,
+            "speedup_vs_scan": 0.881107491857,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              0.1302,
+              0.1233,
+              0.1195,
+              0.1228,
+              0.1207,
+              0.1334,
+              0.1194
+            ]
+          },
+          {
+            "mode": "omp2",
+            "scope": "sssp_prepared",
+            "requested_threads": 2,
+            "actual_threads_probe": 2,
+            "vertices_per_thread": 50,
+            "mean_relax_edges_per_thread": 49.5,
+            "median_ms": 9.11,
+            "speedup_vs_scan": 0.0118770581778,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              11.4694,
+              10.4981,
+              11.0877,
+              8.6943,
+              8.9114,
+              9.0845,
+              9.11
+            ]
+          },
+          {
+            "mode": "omp4",
+            "scope": "sssp_prepared",
+            "requested_threads": 4,
+            "actual_threads_probe": 4,
+            "vertices_per_thread": 25,
+            "mean_relax_edges_per_thread": 24.75,
+            "median_ms": 14.0507,
+            "speedup_vs_scan": 0.00770068395169,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              14.8079,
+              14.0507,
+              14.5768,
+              12.5473,
+              13.4769,
+              14.7123,
+              13.8811
+            ]
+          },
+          {
+            "mode": "omp8",
+            "scope": "sssp_prepared",
+            "requested_threads": 8,
+            "actual_threads_probe": 8,
+            "vertices_per_thread": 12.5,
+            "mean_relax_edges_per_thread": 12.375,
+            "median_ms": 21.5008,
+            "speedup_vs_scan": 0.00503237088853,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              19.4751,
+              21.6702,
+              21.8578,
+              21.9925,
+              21.5008,
+              21.4909,
+              21.4057
+            ]
+          }
+        ]
+      },
+      {
+        "family": "dense",
+        "n": 1000,
+        "m": 1000000,
+        "normalized_m": 999000,
+        "source": 0,
+        "exact_distance_match": true,
+        "max_out_degree": 999,
+        "mean_out_degree": 999,
+        "preparation": {
+          "median_ms": 32.9459,
+          "samples_ms": [
+            32.8919,
+            32.9459,
+            34.3129,
+            32.7203,
+            30.4761,
+            36.8575,
+            37.8849
+          ]
+        },
+        "modes": [
+          {
+            "mode": "heap",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 999,
+            "median_ms": 5.4647,
+            "speedup_vs_scan": 8.75575969404,
+            "speedup_vs_heap": 1,
+            "samples_ms": [
+              5.4018,
+              5.6881,
+              5.2894,
+              5.3884,
+              16.2361,
+              5.4647,
+              5.5025
+            ]
+          },
+          {
+            "mode": "scan",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 999,
+            "median_ms": 47.8476,
+            "speedup_vs_scan": 1,
+            "speedup_vs_heap": 0.114210535116,
+            "samples_ms": [
+              79.8793,
+              40.7179,
+              48.1737,
+              42.3819,
+              69.4095,
+              47.8476,
+              46.3554
+            ]
+          },
+          {
+            "mode": "omp1",
+            "scope": "api",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 999,
+            "median_ms": 48.2298,
+            "speedup_vs_scan": 0.992075438837,
+            "speedup_vs_heap": 0.113305466745,
+            "samples_ms": [
+              37.3554,
+              43.6755,
+              52.5805,
+              43.9939,
+              48.2298,
+              57.5143,
+              57.0944
+            ]
+          },
+          {
+            "mode": "omp2",
+            "scope": "api",
+            "requested_threads": 2,
+            "actual_threads_probe": 2,
+            "vertices_per_thread": 500,
+            "mean_relax_edges_per_thread": 499.5,
+            "median_ms": 178.8617,
+            "speedup_vs_scan": 0.267511714358,
+            "speedup_vs_heap": 0.0305526560465,
+            "samples_ms": [
+              113.0939,
+              238.6792,
+              265.1145,
+              174.786,
+              160.1246,
+              187.5457,
+              178.8617
+            ]
+          },
+          {
+            "mode": "omp4",
+            "scope": "api",
+            "requested_threads": 4,
+            "actual_threads_probe": 4,
+            "vertices_per_thread": 250,
+            "mean_relax_edges_per_thread": 249.75,
+            "median_ms": 322.221,
+            "speedup_vs_scan": 0.148493114974,
+            "speedup_vs_heap": 0.0169594781222,
+            "samples_ms": [
+              129.052,
+              355.5599,
+              406.7612,
+              288.9525,
+              322.221,
+              321.815,
+              331.2873
+            ]
+          },
+          {
+            "mode": "omp8",
+            "scope": "api",
+            "requested_threads": 8,
+            "actual_threads_probe": 8,
+            "vertices_per_thread": 125,
+            "mean_relax_edges_per_thread": 124.875,
+            "median_ms": 535.1794,
+            "speedup_vs_scan": 0.0894047865071,
+            "speedup_vs_heap": 0.0102109685089,
+            "samples_ms": [
+              250.7068,
+              406.3833,
+              438.7491,
+              535.1794,
+              540.5394,
+              543.8382,
+              551.5245
+            ]
+          },
+          {
+            "mode": "scan",
+            "scope": "sssp_prepared",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 999,
+            "median_ms": 5.0564,
+            "speedup_vs_scan": 1,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              4.4241,
+              5.0564,
+              5.1417,
+              4.8835,
+              5.8581,
+              4.7361,
+              5.6295
+            ]
+          },
+          {
+            "mode": "omp1",
+            "scope": "sssp_prepared",
+            "requested_threads": 1,
+            "actual_threads_probe": 1,
+            "vertices_per_thread": 1000,
+            "mean_relax_edges_per_thread": 999,
+            "median_ms": 6.275,
+            "speedup_vs_scan": 0.805800796813,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              5.1081,
+              12.7582,
+              5.0261,
+              5.0463,
+              6.275,
+              10.0809,
+              7.7417
+            ]
+          },
+          {
+            "mode": "omp2",
+            "scope": "sssp_prepared",
+            "requested_threads": 2,
+            "actual_threads_probe": 2,
+            "vertices_per_thread": 500,
+            "mean_relax_edges_per_thread": 499.5,
+            "median_ms": 128.2074,
+            "speedup_vs_scan": 0.039439221137,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              142.2868,
+              128.2074,
+              178.7567,
+              202.1146,
+              127.1479,
+              126.4208,
+              123.189
+            ]
+          },
+          {
+            "mode": "omp4",
+            "scope": "sssp_prepared",
+            "requested_threads": 4,
+            "actual_threads_probe": 4,
+            "vertices_per_thread": 250,
+            "mean_relax_edges_per_thread": 249.75,
+            "median_ms": 257.4515,
+            "speedup_vs_scan": 0.0196402040773,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              304.9152,
+              243.7221,
+              218.0016,
+              301.5852,
+              272.918,
+              257.4515,
+              207.9367
+            ]
+          },
+          {
+            "mode": "omp8",
+            "scope": "sssp_prepared",
+            "requested_threads": 8,
+            "actual_threads_probe": 8,
+            "vertices_per_thread": 125,
+            "mean_relax_edges_per_thread": 124.875,
+            "median_ms": 435.7144,
+            "speedup_vs_scan": 0.0116048494151,
+            "speedup_vs_heap": null,
+            "samples_ms": [
+              525.1226,
+              431.8445,
+              384.5951,
+              463.4406,
+              435.7144,
+              477.1363,
+              383.4886
+            ]
+          }
+        ]
+      }
+    ],
+    "runtime_modules": [
+      "D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\libomp.dll"
+    ]
+  }
+}

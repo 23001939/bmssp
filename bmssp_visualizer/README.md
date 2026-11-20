@@ -22,6 +22,10 @@ python bmssp_visualizer/start_demo.py
 
 Nếu muốn mở giao diện trước rồi tự bấm Chạy, thêm `--no-autoplay`. Server nền ghi log trong `bmssp_visualizer/server.log`.
 
+Backend chọn compiler từ `CXX` (đường dẫn executable), rồi `g++` trên PATH; nếu không có sẽ thử GCC portable tại `../.tools/w64devkit` của workspace. Mỗi binary có provenance `native/*.build.json` ghi compiler, hash nguồn và hash binary. Đổi compiler hoặc thay binary sẽ buộc build lại; khi chạy, backend thêm thư mục compiler đã ghi vào PATH riêng của tiến trình native để tìm DLL. Không dùng binary cũ chỉ dựa trên timestamp nguồn.
+
+Nếu thấy lỗi `3221225781` (`0xC0000135`), Windows không nạp được DLL của runner. Ngày 20/11/2026 đã tái hiện binary LLVM lỗi với PATH server và chạy đúng khi thêm thư mục LLVM; bản sửa quản lý môi trường native như trên. Cần khởi động lại server sau khi cập nhật backend. Đã kiểm tra 54 unit/integration tests và tám lượt API (BMSSP/Dijkstra × controlled/fast × demo/weighted_100) đều hoàn tất, verified. Bằng chứng: `../bmssp_parallel/results/visualizer_dll_repro.json` và `visualizer_dll_fix_verification.json`.
+
 Mở `http://127.0.0.1:8765/?demo=live` để bắt đầu ngay demo trực tiếp 18 đỉnh, nhịp 80 ms/sự kiện. Có thể Tạm dừng và Từng bước để quan sát. Mỗi lần mở URL này tạo một lần chạy thật; hãy dừng lần chạy cũ trước nếu còn hoạt động.
 
 Để nạp đồ thị có trọng số 100 đỉnh, mở `http://127.0.0.1:8765/?dataset=weighted_100` hoặc chạy `python bmssp_visualizer/start_demo.py --dataset weighted_100 --no-autoplay`. Đồ thị thưa này dùng seed `20261114`, có 100 đỉnh và 240 cạnh trọng số nguyên 1–20, nguồn 0, đích 99 và được tạo để mọi đỉnh đều tới được. Bấm **Chạy BMSSP** hoặc **Chạy Dijkstra**; hai thuật toán dùng cùng đồ thị và nguồn. Bảng bên dưới giữ kết quả của cả hai, xóa khi đổi đồ thị hoặc nguồn. Đường từ 0 đến 99 có chi phí 93. Dijkstra là solver C++ binary heap riêng, đối chiếu bằng Python độc lập. Một lần chạy demo hoặc so kết quả không phải benchmark hiệu năng.

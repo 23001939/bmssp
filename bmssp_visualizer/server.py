@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 from data import demo_graph, weighted_graph_100, normalize_graph, parse_text, integer, verify_result
-from build_native import ensure_built
+from build_native import ensure_built, runtime_environment
 
 ROOT = Path(__file__).resolve().parent
 DIST = ROOT/'dist'
@@ -157,7 +157,7 @@ class Run:
             native_mode='trace' if self.mode=='controlled' else 'plain'
             self.process=subprocess.Popen([str(exe),str(self.input_path),str(self.source),native_mode,str(sample)],
                 stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
-                text=True,encoding='utf-8',bufsize=1)
+                text=True,encoding='utf-8',bufsize=1,env=runtime_environment(exe))
             native=None
             for line in self.process.stdout:
                 if self.status=='stopped':
@@ -221,7 +221,8 @@ class Run:
                     with BUILD_LOCK:
                         baseline=ensure_baseline_built()
                     clean=subprocess.run([str(baseline),str(self.input_path),str(self.source)],
-                                         capture_output=True,text=True,encoding='utf-8',timeout=30,check=True)
+                                         capture_output=True,text=True,encoding='utf-8',timeout=30,check=True,
+                                         env=runtime_environment(baseline))
                     measurement=json.loads(clean.stdout.strip().splitlines()[-1])
                     baseline_result={'distances':measurement['distances'],
                                      'predecessors':result['predecessors']}

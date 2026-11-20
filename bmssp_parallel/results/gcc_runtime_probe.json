@@ -1,0 +1,84 @@
+{
+  "retrieved_date": "2026-11-20",
+  "artifacts": [
+    {
+      "file": "w64devkit-x64-2.11.0.7z.exe",
+      "url": "https://github.com/skeeto/w64devkit/releases/download/v2.11.0/w64devkit-x64-2.11.0.7z.exe",
+      "bytes": 68801240,
+      "sha256": "54c2bb9962e8a30c8270e34c5efc3d5fee579f53087fa7d435b95fbba2af7b2b",
+      "github_release_digest": "sha256:54c2bb9962e8a30c8270e34c5efc3d5fee579f53087fa7d435b95fbba2af7b2b",
+      "digest_matches": true
+    },
+    {
+      "file": "cmake-4.5.0-windows-x86_64.zip",
+      "url": "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-windows-x86_64.zip",
+      "bytes": 56341654,
+      "sha256": "301b1728317ccd84e984b02e366a8293735bc5ac618757d3d8f58b578f062411",
+      "github_release_digest": "sha256:301b1728317ccd84e984b02e366a8293735bc5ac618757d3d8f58b578f062411",
+      "digest_matches": true
+    },
+    {
+      "file": "ninja-win.zip",
+      "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip",
+      "bytes": 291570,
+      "sha256": "07fc8261b42b20e71d1720b39068c2e14ffcee6396b76fb7a795fb460b78dc65",
+      "github_release_digest": "sha256:07fc8261b42b20e71d1720b39068c2e14ffcee6396b76fb7a795fb460b78dc65",
+      "digest_matches": true
+    }
+  ],
+  "compiler_path": "D:\\TTSS_Prj\\.tools\\w64devkit\\bin\\g++.exe",
+  "compiler_version": "g++.exe (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "cmake_path": "D:\\TTSS_Prj\\.tools\\cmake-4.5.0-windows-x86_64\\bin\\cmake.exe",
+  "ninja_path": "D:\\TTSS_Prj\\.tools\\ninja\\ninja.exe",
+  "runtime_probe": [
+    {
+      "mode": "normal",
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "OMP_PROC_BIND": "close",
+        "OMP_PLACES": "cores",
+        "OMP_DYNAMIC": "FALSE"
+      },
+      "returncode": 0,
+      "stdout": "PASS: minimal OpenMP runtime probe\n",
+      "stderr": "\nlibgomp: Affinity not supported on this configuration\nthread_limit=2147483647 dynamic=0\nrequested=1\nactual=1\nrequested=2\nactual=2\nrequested=4\nactual=4\nrequested=8\nactual=8\n"
+    },
+    {
+      "mode": "limited_team",
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "OMP_PROC_BIND": "close",
+        "OMP_PLACES": "cores",
+        "OMP_DYNAMIC": "FALSE",
+        "OMP_THREAD_LIMIT": "2"
+      },
+      "returncode": 0,
+      "stdout": "PASS: minimal OpenMP runtime probe\n",
+      "stderr": "\nlibgomp: Affinity not supported on this configuration\nthread_limit=2 dynamic=0\nrequested=1\nactual=1\nrequested=2\nactual=2\nrequested=4\nactual=2\nrequested=8\nactual=2\n"
+    },
+    {
+      "mode": "dynamic_team",
+      "environment": {
+        "OMP_NUM_THREADS": "4",
+        "OMP_PROC_BIND": "close",
+        "OMP_PLACES": "cores",
+        "OMP_DYNAMIC": "TRUE"
+      },
+      "returncode": 0,
+      "stdout": "PASS: minimal OpenMP runtime probe\n",
+      "stderr": "\nlibgomp: Affinity not supported on this configuration\nthread_limit=2147483647 dynamic=1\nrequested=1\nactual=1\nrequested=2\nactual=2\nrequested=4\nactual=4\nrequested=8\nactual=4\n"
+    }
+  ],
+  "runtime_linkage": {
+    "kind": "static GNU libgomp",
+    "libgomp_path": "D:\\TTSS_Prj\\.tools\\w64devkit\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\libgomp.a",
+    "libgomp_sha256": "07f686700f5a5082d36bb5af870b6f88726f8dc15eeedb1b99c702eb60cb4e0f",
+    "probe_exe_sha256": "0e9f67c3e8d835547eec64a4a9752d499279fdb438a2871480c0f5cd7fbb9458",
+    "probe_source_sha256": "db25285827455f754785c1e96f542ee2527d1ea368be653c60445950c59290d2",
+    "probe_dll_imports": [
+      "DLL Name: KERNEL32.dll",
+      "DLL Name: msvcrt.dll"
+    ]
+  },
+  "compiler_exe_sha256": "315c23bc298aba9eaf2aece174fa7fcb0e404247176663e6a4c7707a60f8e444"
+}

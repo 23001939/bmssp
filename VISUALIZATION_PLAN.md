@@ -1,8 +1,14 @@
 # Kế hoạch visualize và demo BMSSP
 
+Sửa lỗi20/11/2026: demo runner thiếu DLL sau đổi compiler, mã0xC0000135. Đã thêm provenance cache và môi trường PATH theo compiler cho từng native process, build lại và restart. 54 tests và8 API runs đều PASS/completed/verified. Tiến độ sửa lỗi hoàn tất100%; bằng chứng được dẫn trong PROJECT_MEMORY.md.
+
+Bổ sung 20/11/2026: đã hoàn tất đo kiểm Dijkstra v2 với scan tuần tự, hai scope thời gian, GCC/LLVM và CMake/CTest3/3 trên cả hai. Lỗi probe LLVM được ghi SKIPPED_RUNTIME_FAILURE, không tính PASS; Windows modal được tắt riêng tiến trình. Chi tiết `bmssp_parallel/DIJKSTRA_OPENMP_RESULTS.md`. Các mốc visualizer giữ nguyên100%, không đổi trọng số.
+
 Cập nhật: 13/11/2026, Asia/Saigon.
 
 **Tiến độ tổng: 100%.** Đã triển khai và kiểm chứng dữ liệu, giao diện, live runner, visualize kết quả, xuất file/mở lại và launcher cục bộ. Xem `bmssp_visualizer/README.md` và `bmssp_visualizer/VERIFICATION.md`.
+
+Bổ sung 19/11/2026: người dùng yêu cầu baseline Dijkstra OpenMP tại `bmssp_parallel/`, không thay đổi phạm vi/mốc visualizer trên. Đã tích hợp, rà soát nguồn/giấy phép và chạy đối chiếu; kết quả và giới hạn runtime ở `bmssp_parallel/DIJKSTRA_OPENMP_RESULTS.md`. Tiến độ visualizer giữ nguyên 100%.
 
 ## Kết quả người dùng cần
 

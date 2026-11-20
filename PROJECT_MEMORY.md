@@ -1,5 +1,33 @@
 # Bộ nhớ dự án BMSSP
 
+## Sửa demo không khởi chạy runner — 20/11/2026
+
+- Lỗi người dùng thấy: Runner kết thúc mã3221225781=0xC0000135. Đã tái hiện binary LLVM hiện có lỗi với PATH server, nhưng chạy đúng khi bổ sung LLVM bin; binary import libc++.dll/libunwind.dll. Đây là lỗi môi trường nạp DLL của visualizer, khác lỗi OpenMP probe0xc0000005.
+- Sửa build_native.py: chọn CXX/PATH/portable workspace GCC; cache theo compiler+hash nội dung nguồn/header và binary, ghi native/*.build.json (gitignored). runtime_environment(exe) lấy compiler từ provenance để prepend PATH riêng của tiến trình con. Server áp dụng cho cả runner animation và baseline subprocess.
+- Đã build lại bằng GCC, restart đúng server của repo tại127.0.0.1:8765. 54/54 tests PASS, gồm7 regression mới; 8 API runs BMSSP/Dijkstra × controlled/fast × demo/weighted_100 đều completed/verified. Logs tại bmssp_parallel/results/visualizer_dll_{repro,fix_verification}.json.
+- Tiến độ sửa lỗi demo hoàn tất; tiến độ phạm vi visualizer giữ100%. Không coi việc server HTTP trả200 là bằng chứng runner thành công: cần kiểm tra trạng thái completed và verification.
+
+## Đo kiểm Dijkstra v2 — 20/11/2026
+
+- Hoàn tất yêu cầu bổ sung: xác nhận steady_clock wall time cùng luồng; thêm scan tuần tự thuần, PreparedDijkstraGraph owning snapshot và hai scope API/prepared SSSP. Prepared vẫn gồm cấp phát/khởi tạo workspace/kết quả và vào/ra team. Không lấy API trừ setup.
+- Đã chạy GCC16.2/libgomp và LLVM-MinGW23.1.5/libomp lần lượt với affinity none, 4 đồ thị, 11 mode,2warmup/7samples. Không quan sát speedup2/4/8 so scan cùng scope. Các mẫu phân tán nhiều, không xếp hạng compiler. Báo cáo hiện tại `bmssp_parallel/DIJKSTRA_OPENMP_RESULTS.md`, JSON `results/dijkstra_openmp_v2_{gcc,llvm}.json`.
+- GCC PASS cả normal/limited/dynamic; LLVM chỉ normal PASS, hai cấu hình còn lại probe lỗi0xc0000005, đổi thành SKIPPED_RUNTIME_FAILURE; chưa xác định compiler/runtime/DLL root cause. Mỗi cấu hình PASS279132 checks/1943 comparisons.
+- Windows memory-read dialog xuất phát từ probe access violation, không phải thiếu RAM. Đã tắt modal riêng runner/probe bằng process error mode để trả exit code; không sửa registry/hệ thống, không che trạng thái lỗi.
+- Portable GCC/CMake/Ninja tại D:\TTSS_Prj\.tools, provenance release digests được lưu results/portable-toolchain-provenance.json. CMake configure/build và CTest3/3 PASS trên cả GCC và LLVM; logs results/cmake_ctest_{gcc,llvm}.json. Chưa chạy race detector.
+- Tiến độ visualizer vẫn100%; phần bổ sung đo kiểm đã hoàn tất với giới hạn runtime nêu trên.
+
+## Bổ sung Dijkstra OpenMP (19/11/2026, Asia/Saigon)
+
+- Demo theo yêu cầu: đã build/chạy `bmssp_parallel/examples/demo_dijkstra_openmp.cpp` (CMake target `demo_dijkstra_openmp`), so sáu đỉnh nguồn 0 với bốn luồng yêu cầu: `[0,35,15,45,49,41]`, tất cả khớp. Đã mở visualizer tại `http://127.0.0.1:8765/?demo=live`; giao diện hiện chỉ hiển thị BMSSP/Dijkstra tuần tự, chưa tích hợp nút OpenMP. Tiến độ visualizer giữ nguyên 100%.
+
+- Theo yêu cầu người dùng, đọc actumn/dijkstra-openmp (commit `32c1f44efe0e5fb68d77a5b0e7cef2b0afd7e78c`) và mẫu FSU của John Burkardt. Lưu nguồn nguyên bản, giấy phép MIT/notices, URL và SHA-256 tại `bmssp_parallel/references/dijkstra_openmp/`. Phân tích: `bmssp_parallel/DIJKSTRA_OPENMP_REVIEW.md`.
+- Phát hiện race biến shared `nth` trong FSU; actumn giữ đúng barrier ngầm nhưng có lỗi sentinel 100000, predecessor cạnh 0 và parser không an toàn.
+- Triển khai riêng `dijkstra_openmp` trong `bmssp_parallel`, dùng CSR/SSSPResult có sẵn, một team, gộp cạnh trùng đích trước relax để bảo đảm một luồng ghi mỗi đỉnh. Không sửa BMSSP core hay visualizer.
+- Kiểm chứng mới: 136.505 checks/836 full-result comparisons PASS; hạ tầng cũ 153.932/153.932 PASS. Benchmark 4 đồ thị đều khớp khoảng cách, OpenMP chậm hơn heap. Ca dày 1000 đỉnh/một triệu cạnh: heap 2,164 ms, OMP4 79,203 ms. Chỉ áp dụng môi trường và đồ thị đã đo.
+- LLVM-MinGW Clang 23.1.5 tại `D:\TTSS_CK\.tools\llvm-mingw-20261104-ucrt-x86_64\bin\g++.exe`. Probe omp-only cũng crash 0xc0000005 với OMP_DYNAMIC=TRUE hoặc OMP_THREAD_LIMIT=2; hai cấu hình ghi SKIPPED_RUNTIME_UNSUPPORTED, không tính PASS. Nested team nhận một luồng đã PASS; chưa chạy race detector.
+- Lệnh: `python bmssp_parallel/run_dijkstra_openmp.py --cxx <compiler>`. Bằng chứng: `bmssp_parallel/results/dijkstra_openmp.json`, báo cáo `bmssp_parallel/DIJKSTRA_OPENMP_RESULTS.md`. Không kết luận tăng tốc; giữ heap làm baseline hiệu năng.
+- Tiến độ visualizer cũ giữ nguyên 100%; phần bổ sung baseline đã triển khai/đo với các giới hạn môi trường nêu trên, không thay thang đo visualizer.
+
 Cập nhật: 15/11/2026, múi giờ Asia/Saigon.
 
 ## Mục tiêu và trạng thái

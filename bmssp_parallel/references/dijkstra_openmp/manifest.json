@@ -1,0 +1,44 @@
+{
+  "retrieved_date_local": "2026-11-19",
+  "timezone": "Asia/Saigon",
+  "actumn_commit": "32c1f44efe0e5fb68d77a5b0e7cef2b0afd7e78c",
+  "purpose": "Unmodified source snapshots for review; not compiled or linked into bmssp_core.",
+  "files": [
+    {
+      "path": "actumn_dijkstra.cpp",
+      "url": "https://raw.githubusercontent.com/actumn/dijkstra-openmp/32c1f44efe0e5fb68d77a5b0e7cef2b0afd7e78c/dijkstra.cpp",
+      "sha256": "f2136d85717e91164b41ab0b7d63e6fc73079dafe4e93aca246c14952e3da0de",
+      "bytes": 6153
+    },
+    {
+      "path": "actumn_LICENSE",
+      "url": "https://raw.githubusercontent.com/actumn/dijkstra-openmp/32c1f44efe0e5fb68d77a5b0e7cef2b0afd7e78c/LICENSE",
+      "sha256": "8d9732ab31ac58815739a67ea22d56f284cf91b280a4125657b6faf51f504c64",
+      "bytes": 1070
+    },
+    {
+      "path": "actumn_run.sh",
+      "url": "https://raw.githubusercontent.com/actumn/dijkstra-openmp/32c1f44efe0e5fb68d77a5b0e7cef2b0afd7e78c/run.sh",
+      "sha256": "194385149e4e9780c48be37cff653889643806c01439b26c9b9e7e04374fbd91",
+      "bytes": 104
+    },
+    {
+      "path": "actumn_commit.json",
+      "url": "https://api.github.com/repos/actumn/dijkstra-openmp/commits/master",
+      "sha256": "e0e3fa8ba7ab8d64f8e1d37f4e5e0d9c8346e6955933ca38c01a0ada8d94ddd0",
+      "bytes": 4690
+    },
+    {
+      "path": "burkardt_dijkstra_openmp.cpp",
+      "url": "https://people.sc.fsu.edu/~jburkardt/cpp_src/dijkstra_openmp/dijkstra_openmp.cpp",
+      "sha256": "fb81b5833822d3c73fcd97aee57873702afbcc3fa4c91c4c11200646cc3f6d91",
+      "bytes": 13359
+    },
+    {
+      "path": "burkardt_dijkstra_openmp.html",
+      "url": "https://people.sc.fsu.edu/~jburkardt/cpp_src/dijkstra_openmp/dijkstra_openmp.html",
+      "sha256": "962e236355def7184222c4c7177e0e00ea7ec6aa81851a96fdab42f9cbb265ec",
+      "bytes": 4077
+    }
+  ]
+}

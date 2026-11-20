@@ -22,6 +22,7 @@ include_directories(
 add_library(bmssp_core STATIC
     src/core/graph.cpp
     src/baseline/bmssp_seq.cpp
+    src/baseline/dijkstra_openmp.cpp
 )
 target_link_libraries(bmssp_core PUBLIC OpenMP::OpenMP_CXX)
 
@@ -30,3 +31,19 @@ add_executable(test_person1
     tests/test_person1_comprehensive.cpp
 )
 target_link_libraries(test_person1 PRIVATE bmssp_core OpenMP::OpenMP_CXX)
+
+enable_testing()
+add_executable(openmp_runtime_probe tests/openmp_runtime_probe.cpp)
+target_link_libraries(openmp_runtime_probe PRIVATE OpenMP::OpenMP_CXX)
+add_test(NAME openmp_runtime COMMAND openmp_runtime_probe)
+add_test(NAME person1 COMMAND test_person1)
+add_executable(test_dijkstra_openmp tests/test_dijkstra_openmp.cpp)
+target_link_libraries(test_dijkstra_openmp PRIVATE bmssp_core)
+add_test(NAME dijkstra_openmp COMMAND test_dijkstra_openmp)
+add_executable(bench_dijkstra_openmp benchmarks/bench_dijkstra_openmp.cpp)
+target_link_libraries(bench_dijkstra_openmp PRIVATE bmssp_core)
+add_executable(demo_dijkstra_openmp examples/demo_dijkstra_openmp.cpp)
+target_link_libraries(demo_dijkstra_openmp PRIVATE bmssp_core)
+set_tests_properties(person1 dijkstra_openmp openmp_runtime PROPERTIES
+    TIMEOUT 180
+    ENVIRONMENT "OMP_NUM_THREADS=4;OMP_DYNAMIC=FALSE")

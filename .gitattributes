@@ -1,0 +1,3 @@
+# Preserve original reference bytes (including line endings and whitespace)
+# so the committed snapshots match their recorded upstream SHA-256 hashes.
+bmssp_parallel/references/dijkstra_openmp/* -text -whitespace

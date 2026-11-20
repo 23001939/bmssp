@@ -1,0 +1,16 @@
+[
+  {
+    "case": "server_path",
+    "returncode": 3221225781,
+    "hex": "0xc0000135",
+    "stdout_tail": "",
+    "stderr": ""
+  },
+  {
+    "case": "llvm_runtime_path",
+    "returncode": 0,
+    "hex": "0x0",
+    "stdout_tail": "{\"type\":\"native_result\",\"distances\":[0,4,7,9,12,2,3,5,6,8,7,6,6,8,9,10,11,null],\"predecessors\":[null,0,1,2,3,0,5,6,7,8,5,6,11,12,13,10,12,null],\"compute_ms\":0.10829999999999999,\"control_wait_ms\":0,\"sample_every\":1,\"sampled\":false,\"events_seen\":0,\"events_emitted\":0,\"degree_transformation\":false,\"comparison_rounding\":false,\"patches\":[\"real_distance_comparison\",\"single_vertex_parameters\",\"deduplicate_pivot_frontier\",\"safe_bound_lookup\"],\"predecessor_origin\":\"solver\",\"predecessor_unresolved\":0}\n",
+    "stderr": ""
+  }
+]

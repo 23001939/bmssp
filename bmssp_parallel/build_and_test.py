@@ -39,7 +39,8 @@ def main():
     obj_files = []
     cpp_files = [
         ("src/core/graph.cpp", "src/core/graph.o"),
-        ("src/baseline/bmssp_seq.cpp", "src/baseline/bmssp_seq.o")
+        ("src/baseline/bmssp_seq.cpp", "src/baseline/bmssp_seq.o"),
+        ("src/baseline/dijkstra_openmp.cpp", "src/baseline/dijkstra_openmp.o")
     ]
 
     for src, obj in cpp_files:

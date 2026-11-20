@@ -1,5 +1,7 @@
 # BMSSP: demo, kiểm thử và khảo sát thực nghiệm
 
+Baseline Dijkstra OpenMP trên CSR: xem [bmssp_parallel/README.md](bmssp_parallel/README.md) để đọc phân tích đồng bộ, giấy phép, chạy kiểm chứng và benchmark với Dijkstra tuần tự.
+
 Dự án tái hiện BMSSP từ `2504.17033v2.pdf` và so sánh với Dijkstra C++ trên cùng đồ thị. Bản demo dùng bản sao đã sửa từ lcs147/bmssp; xem `bmssp_visualizer/native/README.md` để biết các thay đổi. Các kiểm thử không chứng minh đúng tổng quát hoặc chứng nhận cận worst-case của implementation.
 
 ## Chuẩn bị và kiểm tra

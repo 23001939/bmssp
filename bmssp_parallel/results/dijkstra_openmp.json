@@ -1,0 +1,447 @@
+{
+  "recorded_at": "2026-11-19T14:54:33.289753+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "machine": "AMD64",
+  "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+  "logical_cpus": 20,
+  "compiler": "clang version 23.1.5 (https://github.com/llvm/llvm-project.git 392dfff97d29b59d77e5cac6d4b6ef2585fe7117)\nTarget: x86_64-w64-windows-gnu\nThread model: posix\nInstalledDir: D:/TTSS_CK/.tools/llvm-mingw-20261104-ucrt-x86_64/bin\nConfiguration file: D:/TTSS_CK/.tools/llvm-mingw-20261104-ucrt-x86_64/bin/x86_64-w64-windows-gnu.cfg",
+  "compiler_path": "D:\\TTSS_CK\\.tools\\llvm-mingw-20261104-ucrt-x86_64\\bin\\g++.exe",
+  "flags": [
+    "-std=c++20",
+    "-O3",
+    "-mcx16",
+    "-fopenmp",
+    "-Wall",
+    "-Wextra",
+    "-Iinclude",
+    "-Iinclude/baseline/external",
+    "-Iinclude/baseline/upstream/include"
+  ],
+  "git_commit": "874775b976761db39d95f1288644fa732518ff5b",
+  "git_status": "M README.md\n M bmssp_parallel/CMakeLists.txt\n M bmssp_parallel/build_and_test.py\n?? bmssp_parallel/DIJKSTRA_OPENMP_REVIEW.md\n?? bmssp_parallel/README.md\n?? bmssp_parallel/benchmarks/\n?? bmssp_parallel/include/baseline/dijkstra_openmp.hpp\n?? bmssp_parallel/references/\n?? bmssp_parallel/results/\n?? bmssp_parallel/run_dijkstra_openmp.py\n?? bmssp_parallel/src/baseline/dijkstra_openmp.cpp\n?? bmssp_parallel/tests/openmp_runtime_probe.cpp\n?? bmssp_parallel/tests/test_dijkstra_openmp.cpp",
+  "environment": {
+    "OMP_NUM_THREADS": "4",
+    "OMP_DYNAMIC": "FALSE",
+    "OMP_PROC_BIND": "close",
+    "OMP_PLACES": "cores"
+  },
+  "timing_scope": "Solver call only: includes result allocation, solver setup, and OpenMP input validation/ownership preparation; excludes graph generation, file IO, result verification and destruction. Existing sequential heap baseline does not validate CSR.",
+  "source_sha256": {
+    "benchmarks/bench_dijkstra_openmp.cpp": "d7f7102f4e60df40d844290e599d8d9cf9a5d54e0d03c89faab2b88526497ee1",
+    "include/baseline/bmssp_seq.hpp": "24942a66f5de0eb537de2ac09d4e640c8532c73ae6e73330a31a70d919878589",
+    "include/baseline/dijkstra_openmp.hpp": "4d01eb096b3760767f0c802eb3ba81411a2128a3e3edbd4cacdf6ec1f3d76c6a",
+    "include/baseline/external/median_of_ninthers.h": "767ddda539535b7162e4e607764bf6b9198e91e9537ec06ebb97cea62381e36b",
+    "include/baseline/external/private/median_common.h": "3bb540f840155b3a886da38e27418ce3a6282fa426001f85c386a93564b3a17a",
+    "include/baseline/upstream/helpers/common.hpp": "d459417e7e8905b676e6d2c85da1729bb075c41538e1b315c0af1ae5da94fd57",
+    "include/baseline/upstream/helpers/dijkstra.hpp": "cefbd9c57b149180a5b78d7a9d4769c5cbf754193af430bcb0fdd2df1f51aafa",
+    "include/baseline/upstream/helpers/external/doctest.h": "fe0ac31915b60fab49f2d9eccc47c256a865511ddb8c27c327dd77c2654c6c23",
+    "include/baseline/upstream/helpers/external/json.hpp": "efd5ea8a4ec984df3ee7193653958bcf01c4aea683a1d7d40315ca5fe51363c3",
+    "include/baseline/upstream/helpers/external/nanobench.h": "64f4ba244c3a7aaea61668aec64faaa8ef6bdefe641d1591883aafa9c39ca201",
+    "include/baseline/upstream/include/bmssp-expected.hpp": "68b21b59f5c266a6c5f1151fa075ca7eebf273ebecbdda395b34aa140d930102",
+    "include/baseline/upstream/include/bmssp-worst-case.hpp": "72e25625ed62fad2a9f0a6264875b2a1a6336e69a69fbf4df0c7083ff85f43c0",
+    "include/baseline/upstream/include/bmssp.hpp": "00e4acc0451005bb32beeb0ae00d83399277defa03991bd97c3ebae5c938e92e",
+    "include/baseline/upstream/include/external/floyd_rivest_select.h": "520cc1ab1df65821576a71b419ad8afe2154255c70092eb8aab0e86ae71d1e5e",
+    "include/baseline/upstream/include/external/median_of_ninthers.h": "767ddda539535b7162e4e607764bf6b9198e91e9537ec06ebb97cea62381e36b",
+    "include/baseline/upstream/include/external/private/median_common.h": "3bb540f840155b3a886da38e27418ce3a6282fa426001f85c386a93564b3a17a",
+    "include/baseline/upstream/include/external/stl.h": "e7b380d70d312786d0b332abe8f73a6f4acfe633bd9ccb82bd4cac057e78a317",
+    "include/baseline/upstream/include/external/unordered_dense.h": "1d3a9bb9635d288340f3d54e78af670ede02aaa75d2804263649132f2829c0c1",
+    "include/core/frontier_interface.hpp": "bf8546404db60a6b046ade7c493b3267cf5aea058c0eaad26bc4ebef247b809a",
+    "include/core/graph.hpp": "2f53322292d80770a8c271bbe38d497e4560b2480142989ecff65e2fa5e063be",
+    "include/core/memory_pool.hpp": "0edeb333d7d4d4eb1f64519dca15fc98a1c230214dd305a8cd5234232f01f33b",
+    "include/core/primitives.hpp": "a59150d052213b134083b181152db80b31bca55a5dacdca35082607ad967036e",
+    "include/core/types.hpp": "d3f5797af16232f744e6f0f123acd7f525c85fff6985981d87455fa455c341b9",
+    "run_dijkstra_openmp.py": "d094da41c5b874f9c9680389116273c21f443fb7e26f9ba1f25c38c71ca50111",
+    "src/baseline/bmssp_seq.cpp": "8920aaf4ae01032480b4e5fa98ed17a21793a0f058ebecef5ff5f9410125d40c",
+    "src/baseline/dijkstra_openmp.cpp": "ff03f63ffc9fa9d7dfd4d16e5569ff4463463194a02983e12a6504273316446f",
+    "src/core/graph.cpp": "a9de17b8c35a9ec7ae8649b5583843e7cad1d22dd544590071bef2c37ba71c79",
+    "tests/openmp_runtime_probe.cpp": "b52b19ad5b0785897c117cd1b3d3364c9d12e5d32b2dec6a129f1de5d8d8a14a",
+    "tests/test_dijkstra_openmp.cpp": "fd498a47b1a8607c956a77ea5a1fac4eb6617052b2727ae3e2ce0594f2dd5f34"
+  },
+  "validation": [
+    {
+      "mode": "normal",
+      "environment": {},
+      "status": "PASS",
+      "probe": {
+        "returncode": 0,
+        "returncode_hex": "0x00000000",
+        "stdout": "PASS: minimal OpenMP runtime probe\n",
+        "stderr": "thread_limit=2147483647 dynamic=0\nrequested=1\nactual=1\nrequested=2\nactual=2\nrequested=4\nactual=4\nrequested=8\nactual=8\n"
+      },
+      "output": "PASS: 136505 checks, 836 full-result comparisons; seed=20261119"
+    },
+    {
+      "mode": "limited_team",
+      "environment": {
+        "OMP_THREAD_LIMIT": "2"
+      },
+      "status": "SKIPPED_RUNTIME_UNSUPPORTED",
+      "probe": {
+        "returncode": 3221225477,
+        "returncode_hex": "0xc0000005",
+        "stdout": "",
+        "stderr": "thread_limit=2 dynamic=0\nrequested=1\nactual=1\nrequested=2\nactual=2\nrequested=4\n"
+      },
+      "reason": "Independent omp-only probe failed before solver execution."
+    },
+    {
+      "mode": "dynamic_team",
+      "environment": {
+        "OMP_DYNAMIC": "TRUE"
+      },
+      "status": "SKIPPED_RUNTIME_UNSUPPORTED",
+      "probe": {
+        "returncode": 3221225477,
+        "returncode_hex": "0xc0000005",
+        "stdout": "",
+        "stderr": "thread_limit=2147483647 dynamic=1\nrequested=1\nactual=1\nrequested=2\n"
+      },
+      "reason": "Independent omp-only probe failed before solver execution."
+    }
+  ],
+  "benchmark": {
+    "seed": 20261119,
+    "warmup": 2,
+    "samples": 7,
+    "openmp": 202011,
+    "num_procs": 20,
+    "cases": [
+      {
+        "family": "sparse",
+        "n": 100,
+        "m": 900,
+        "source": 0,
+        "exact_distance_match": true,
+        "modes": [
+          {
+            "mode": "heap",
+            "actual_threads": 1,
+            "median_ms": 0.0205,
+            "speedup_vs_heap": 1,
+            "samples_ms": [
+              0.0192,
+              0.0175,
+              0.0236,
+              0.0153,
+              0.0223,
+              0.0218,
+              0.0205
+            ]
+          },
+          {
+            "mode": "omp1",
+            "actual_threads": 1,
+            "median_ms": 0.034,
+            "speedup_vs_heap": 0.602941176471,
+            "samples_ms": [
+              0.034,
+              0.0318,
+              0.0425,
+              0.0282,
+              0.0374,
+              0.0378,
+              0.0337
+            ]
+          },
+          {
+            "mode": "omp2",
+            "actual_threads": 2,
+            "median_ms": 3.0339,
+            "speedup_vs_heap": 0.00675697946537,
+            "samples_ms": [
+              2.925,
+              2.9133,
+              3.0339,
+              2.9329,
+              3.1795,
+              3.1375,
+              3.0372
+            ]
+          },
+          {
+            "mode": "omp4",
+            "actual_threads": 4,
+            "median_ms": 4.0319,
+            "speedup_vs_heap": 0.00508445149929,
+            "samples_ms": [
+              5.9545,
+              3.9928,
+              3.9158,
+              3.9414,
+              6.5211,
+              5.3165,
+              4.0319
+            ]
+          },
+          {
+            "mode": "omp8",
+            "actual_threads": 8,
+            "median_ms": 8.3485,
+            "speedup_vs_heap": 0.0024555309337,
+            "samples_ms": [
+              7.0516,
+              9.7197,
+              8.5331,
+              12.0815,
+              7.424,
+              7.2747,
+              8.3485
+            ]
+          }
+        ]
+      },
+      {
+        "family": "sparse",
+        "n": 1000,
+        "m": 9000,
+        "source": 0,
+        "exact_distance_match": true,
+        "modes": [
+          {
+            "mode": "heap",
+            "actual_threads": 1,
+            "median_ms": 0.2888,
+            "speedup_vs_heap": 1,
+            "samples_ms": [
+              0.2818,
+              0.297,
+              0.2986,
+              0.2845,
+              0.2888,
+              0.2819,
+              0.3066
+            ]
+          },
+          {
+            "mode": "omp1",
+            "actual_threads": 1,
+            "median_ms": 1.1696,
+            "speedup_vs_heap": 0.246922024624,
+            "samples_ms": [
+              1.1632,
+              1.1622,
+              1.1696,
+              1.1897,
+              1.2436,
+              1.1672,
+              1.2526
+            ]
+          },
+          {
+            "mode": "omp2",
+            "actual_threads": 2,
+            "median_ms": 32.399,
+            "speedup_vs_heap": 0.00891385536591,
+            "samples_ms": [
+              32.9467,
+              31.1486,
+              30.7764,
+              31.7542,
+              33.7284,
+              32.399,
+              36.9945
+            ]
+          },
+          {
+            "mode": "omp4",
+            "actual_threads": 4,
+            "median_ms": 45.612,
+            "speedup_vs_heap": 0.00633166710515,
+            "samples_ms": [
+              47.8133,
+              46.475,
+              45.612,
+              41.1481,
+              44.0197,
+              43.8695,
+              50.399
+            ]
+          },
+          {
+            "mode": "omp8",
+            "actual_threads": 8,
+            "median_ms": 78.6028,
+            "speedup_vs_heap": 0.00367416936801,
+            "samples_ms": [
+              95.2859,
+              77.9737,
+              81.9827,
+              78.1825,
+              95.1412,
+              78.6028,
+              76.6244
+            ]
+          }
+        ]
+      },
+      {
+        "family": "dense",
+        "n": 100,
+        "m": 10000,
+        "source": 0,
+        "exact_distance_match": true,
+        "modes": [
+          {
+            "mode": "heap",
+            "actual_threads": 1,
+            "median_ms": 0.0565,
+            "speedup_vs_heap": 1,
+            "samples_ms": [
+              0.0593,
+              0.0565,
+              0.0467,
+              0.0588,
+              0.0577,
+              0.0511,
+              0.0476
+            ]
+          },
+          {
+            "mode": "omp1",
+            "actual_threads": 1,
+            "median_ms": 0.1483,
+            "speedup_vs_heap": 0.380984490897,
+            "samples_ms": [
+              0.1581,
+              0.1454,
+              0.1429,
+              0.1483,
+              0.1564,
+              0.1483,
+              0.1528
+            ]
+          },
+          {
+            "mode": "omp2",
+            "actual_threads": 2,
+            "median_ms": 3.0778,
+            "speedup_vs_heap": 0.0183572681786,
+            "samples_ms": [
+              3.0446,
+              3.0778,
+              3.072,
+              3.0755,
+              3.151,
+              3.1958,
+              3.6764
+            ]
+          },
+          {
+            "mode": "omp4",
+            "actual_threads": 4,
+            "median_ms": 4.1867,
+            "speedup_vs_heap": 0.0134951154847,
+            "samples_ms": [
+              4.0464,
+              4.0621,
+              4.5219,
+              4.0992,
+              4.2613,
+              4.1867,
+              4.3544
+            ]
+          },
+          {
+            "mode": "omp8",
+            "actual_threads": 8,
+            "median_ms": 7.6824,
+            "speedup_vs_heap": 0.00735447256066,
+            "samples_ms": [
+              10.7453,
+              7.6824,
+              7.052,
+              7.8661,
+              10.5256,
+              7.5898,
+              7.5087
+            ]
+          }
+        ]
+      },
+      {
+        "family": "dense",
+        "n": 1000,
+        "m": 1000000,
+        "source": 0,
+        "exact_distance_match": true,
+        "modes": [
+          {
+            "mode": "heap",
+            "actual_threads": 1,
+            "median_ms": 2.164,
+            "speedup_vs_heap": 1,
+            "samples_ms": [
+              1.643,
+              1.5636,
+              3.0482,
+              2.164,
+              2.704,
+              1.5798,
+              2.575
+            ]
+          },
+          {
+            "mode": "omp1",
+            "actual_threads": 1,
+            "median_ms": 13.918,
+            "speedup_vs_heap": 0.155482109498,
+            "samples_ms": [
+              12.9859,
+              12.6735,
+              18.7557,
+              18.1855,
+              16.6979,
+              13.918,
+              13.5221
+            ]
+          },
+          {
+            "mode": "omp2",
+            "actual_threads": 2,
+            "median_ms": 60.0541,
+            "speedup_vs_heap": 0.0360341758514,
+            "samples_ms": [
+              44.9396,
+              48.0524,
+              46.5737,
+              61.6734,
+              60.0541,
+              69.2709,
+              67.5509
+            ]
+          },
+          {
+            "mode": "omp4",
+            "actual_threads": 4,
+            "median_ms": 79.2029,
+            "speedup_vs_heap": 0.027322231888,
+            "samples_ms": [
+              55.4139,
+              61.4728,
+              79.2029,
+              120.1635,
+              85.6262,
+              70.9149,
+              83.4303
+            ]
+          },
+          {
+            "mode": "omp8",
+            "actual_threads": 8,
+            "median_ms": 149.2956,
+            "speedup_vs_heap": 0.0144947339372,
+            "samples_ms": [
+              157.2846,
+              113.4962,
+              178.3592,
+              209.8593,
+              149.2956,
+              145.9033,
+              135.1901
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
