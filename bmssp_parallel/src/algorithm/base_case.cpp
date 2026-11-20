@@ -1,5 +1,10 @@
 #include "algorithm/base_case.hpp"
+#include <algorithm>
+#include <functional>
 #include <queue>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace bmssp {
 
@@ -13,38 +18,55 @@ BaseCaseResult base_case(
     BaseCaseResult result;
     result.new_bound = B;
 
-    if (source >= graph.n) return result;
+    if (static_cast<size_t>(source) >= graph.n || states == nullptr || k == 0) {
+        return result;
+    }
+
+    const double d_src = states[source].load_dist(std::memory_order_relaxed);
+    if (!(d_src < B)) {
+        return result;
+    }
 
     using Element = std::pair<double, uint32_t>;
     std::priority_queue<Element, std::vector<Element>, std::greater<Element>> heap;
-
-    double d_src = states[source].load(std::memory_order_relaxed).dist;
-    // Source vertex is the starting point of the interval, always enqueue it
     heap.emplace(d_src, source);
 
+    const size_t reserve_sz = std::min<size_t>(k, graph.n) + 1;
     std::vector<uint32_t> complete;
-    complete.reserve(k + 1);
+    complete.reserve(reserve_sz);
 
-    while (!heap.empty() && complete.size() < k + 1) {
-        auto [d, u] = heap.top();
+    std::unordered_set<uint32_t> settled;
+    settled.reserve(reserve_sz * 2 + 2);
+
+    while (!heap.empty() && complete.size() <= k) {
+        const auto [d, u] = heap.top();
         heap.pop();
 
-        double curr_d = states[u].load(std::memory_order_relaxed).dist;
-        if (d > curr_d) continue;
+        if (settled.count(u) > 0) {
+            continue;
+        }
 
+        const double curr_d = states[u].load_dist(std::memory_order_relaxed);
+        if (d > curr_d || !(d < B)) {
+            continue;
+        }
+
+        settled.insert(u);
         complete.push_back(u);
 
         for (uint64_t e = graph.edge_begin(u); e < graph.edge_end(u); ++e) {
-            uint32_t v = graph.edge_dest(e);
-            double w = graph.edge_weight(e);
-            double new_dist = d + w;
+            const uint32_t v = graph.edge_dest(e);
+            const double w = graph.edge_weight(e);
+            const double new_dist = d + w;
 
-            double curr_v = states[v].load(std::memory_order_relaxed).dist;
-            if (new_dist <= curr_v && new_dist < B) {
+            if (new_dist < B) {
+                const double curr_v = states[v].load_dist(std::memory_order_relaxed);
                 if (new_dist < curr_v) {
-                    relax_edge_atomic(states[v], new_dist, u, 0);
+                    static_cast<void>(relax_edge_atomic(states[v], new_dist, u, 0));
+                    heap.emplace(new_dist, v);
+                } else if (new_dist == curr_v && settled.count(v) == 0) {
+                    heap.emplace(new_dist, v);
                 }
-                heap.emplace(new_dist, v);
             }
         }
     }
@@ -53,11 +75,23 @@ BaseCaseResult base_case(
         result.new_bound = B;
         result.completed = std::move(complete);
     } else {
-        // We pulled exactly k + 1 vertices: the (k+1)-th vertex distance defines the new bound
-        uint32_t last_v = complete.back();
-        result.new_bound = states[last_v].load(std::memory_order_relaxed).dist;
-        complete.pop_back();
-        result.completed = std::move(complete);
+        // Pulled k + 1 vertices: determine new bound from the (k+1)-th vertex
+        const double last_d = states[complete.back()].load_dist(std::memory_order_relaxed);
+        if (last_d > d_src) {
+            result.new_bound = last_d;
+            result.completed.reserve(k);
+            for (uint32_t u : complete) {
+                if (states[u].load_dist(std::memory_order_relaxed) < last_d) {
+                    result.completed.push_back(u);
+                }
+            }
+        } else {
+            // All k + 1 settled vertices tie at d_src (e.g. zero-weight edges/cycle):
+            // drop complete.back() and keep the first k vertices to guarantee progress.
+            complete.pop_back();
+            result.new_bound = last_d;
+            result.completed = std::move(complete);
+        }
     }
 
     return result;

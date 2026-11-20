@@ -13,6 +13,7 @@
 #include <thread>
 #include <chrono>
 #include <iomanip>
+#include <cstdlib>
 
 using namespace bmssp;
 
@@ -24,7 +25,7 @@ static int g_tests_total = 0;
         g_tests_total++; \
         if (!(cond)) { \
             std::cerr << "[FAIL] Line " << __LINE__ << ": " << msg << std::endl; \
-            assert(false); \
+            std::exit(1); \
         } else { \
             g_tests_passed++; \
         } \

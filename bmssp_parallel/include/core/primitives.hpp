@@ -1,6 +1,8 @@
 #pragma once
 
 #include "types.hpp"
+#include <cstddef>
+#include <limits>
 #include <vector>
 #include <numeric>
 #include <algorithm>
@@ -17,6 +19,7 @@ namespace bmssp {
 class EpochDeduplicator {
 private:
     std::vector<std::atomic<uint32_t>> visited_epoch_;
+    uint32_t current_epoch_{0};
 
 public:
     explicit EpochDeduplicator(size_t n = 0) : visited_epoch_(n) {
@@ -30,12 +33,26 @@ public:
         for (auto& item : visited_epoch_) {
             item.store(0, std::memory_order_relaxed);
         }
+        current_epoch_ = 0;
     }
 
     void reset() {
         for (auto& item : visited_epoch_) {
             item.store(0, std::memory_order_relaxed);
         }
+        current_epoch_ = 0;
+    }
+
+    /**
+     * @brief Allocates a fresh epoch ID, resetting all vertex marks on wraparound.
+     */
+    uint32_t allocate_epoch() {
+        ++current_epoch_;
+        if (current_epoch_ == std::numeric_limits<uint32_t>::max()) {
+            reset();
+            current_epoch_ = 1;
+        }
+        return current_epoch_;
     }
 
     /**
@@ -53,6 +70,18 @@ public:
             }
         }
         return false;
+    }
+
+    /**
+     * @brief Checks whether vertex v has already been claimed for target_epoch.
+     */
+    [[nodiscard]] bool is_claimed(uint32_t v, uint32_t target_epoch) const noexcept {
+        return v < visited_epoch_.size() &&
+               visited_epoch_[v].load(std::memory_order_relaxed) == target_epoch;
+    }
+
+    [[nodiscard]] size_t size() const noexcept {
+        return visited_epoch_.size();
     }
 };
 
