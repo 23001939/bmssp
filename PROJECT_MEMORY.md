@@ -1,8 +1,17 @@
 # Bộ nhớ dự án BMSSP
 
-Cập nhật: 15/11/2026, múi giờ Asia/Saigon.
+Cập nhật: 20/11/2026, múi giờ Asia/Saigon.
 
 ## Mục tiêu và trạng thái
+
+**Tiến độ tổng Dự án Song song hóa BMSSP (Parallel BMSSP): 100%.** Đã hoàn thành toàn diện:
+- **Người 1 (Hạ tầng & Primitives):** Khởi tạo `CSRGraph` (SoA), `AtomicVertexState` 128-bit lock-free CAS (`cmpxchg16b`), `EpochDeduplicator`, `parallel_prefix_scan`, `parallel_sample_sort`, `parallel_gather`, `ThreadLocalMemoryPool`. 153.932/153.932 unit checks pass trong 12.81 ms.
+- **Người 2 (Cấu trúc dữ liệu đồng thời $\mathcal{D}$ - Lemma 3.3):** Hoàn thành `IFrontierD`, `MutexFrontierD` và `ConcurrentFrontierD` hỗ trợ `insert`, `batch_prepend`, `pull`, dọn rác lười biếng (Lazy Deletion) và chia tách khối không nghẽn (`SPLIT`).
+- **Người 3 (Lõi thuật toán BMSSP song song):** Hiện thực hóa `find_pivots_parallel` (k-bước Bellman-Ford đa luồng với OpenMP guided schedule), `base_case` (mini-queue có cận khoảng cách $B$), và vòng lặp đồng bộ cắt lát khoảng cách `bmssp_parallel` (Distance-Sliced Data Parallelism).
+- **Người 4 (Kiểm thử, QA & Đối chứng Dijkstra Oracle):** Xây dựng bộ test toàn diện `tests/verify_parallel_bmssp.cpp`. Toàn bộ 5 kịch bản kiểm thử: đồ thị mẫu 6 đỉnh, đồ thị cạnh trọng số 0, đồ thị ngẫu nhiên 200 đỉnh / 1.200 cạnh, đồ thị 2.000 đỉnh / 16.000 cạnh, và kiểm tra scaling đa luồng (1, 2, 4, 8 luồng) **ĐỀU ĐẠT 100% KHỚP BIT-EXACT VỚI DIJKSTRA ORACLE (Max diff = 0)**. Thời gian thực thi toàn bộ test chỉ mất ~1.5 giây.
+- Kịch bản tự động hóa 1-click: `python3 bmssp_parallel/build_and_test.py`.
+
+---
 
 Người dùng đang nghiên cứu BMSSP, muốn tìm repo GitHub có sẵn, hiểu README và so sánh tốc độ xử lý để phục vụ dự án. Đã đọc bài báo, khảo sát sáu repo, tải mã nguồn, chạy các bản có toolchain phù hợp và lưu kết quả.
 
@@ -612,3 +621,22 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
 
 
 
+
+---
+
+## Khắc Phục Toàn Diện & Tích Hợp Parallel BMSSP (20/11/2026)
+
+- **Nhánh làm việc:** `fix/parallel-bmssp-remediation` (tách từ `parallel-bmssp` `557fc80`, hợp nhất 8 file `ConcurrentFrontierD` chuẩn từ nhánh `Viet` `b0148bf`; chưa commit/push).
+- **Tiến độ kế hoạch Parallel BMSSP Remediation & Integration: 100%** (GĐ 1 Repro 15%, GĐ 2 Interface Lock 15%, GĐ 3 Parallel Code bởi 4 subagent `pro` 40%, GĐ 4 Verification + CMake/CTest + Benchmark A/B + Báo cáo 30%).
+- **Bằng chứng Trước khi sửa (`557fc80`):** Cả 2 ca repro thực nghiệm — chu trình trọng số 0 (`0 ↔ 1`, w=0) và `use_gadget_transform = true` trên đồ thị 12 đỉnh — đều **TREO VÔ HẠN** (bị kill sau 3s).
+- **Cải thiện chính (4 subagent `pro` theo RACI độc quyền):**
+  1. **SA-1 (`types.hpp`, `primitives.hpp`):** Thêm `AtomicVertexState::load_dist()` 64-bit atomic load nhẹ (tránh `lock cmpxchg16b` cache-line bouncing) + fast-path trong `relax_edge_atomic`; bổ sung `EpochDeduplicator::allocate_epoch()` tăng đơn điệu toàn cục có xử lý tràn.
+  2. **SA-2 (`find_pivots.{hpp,cpp}`, `base_case.{hpp,cpp}`):** Tái sử dụng `FindPivotsWorkspace` (bỏ cấp phát $O(n)$ mỗi lần gọi), khử 100% data race `root[v]` bằng dựng rừng tuần tự sau barrier trên `vis`, khử trùng `vis`, chuẩn hóa relax `<=`, chia việc edge-level cho hub; bổ sung `settled` trong `base_case` chống lặp vô hạn chu trình 0-weight.
+  3. **SA-3 (`bmssp.{hpp,cpp}`, `CMakeLists.txt`, `build_and_test.py`):** Tách `global_completed` (`uint8_t`) khỏi `local_complete_dedups` riêng từng tầng đệ quy, áp chặt ngưỡng `complete_B` vs `trying_B`, xóa fallback bỏ qua relax, tích hợp `ConcurrentFrontierD` nhánh `Viet` (cùng `FrontierType::{Concurrent, Mutex}`), tham số `(k, t)` + `safe_pow2_capped`, dựng cây `pred` hợp lệ trên đồ thị gốc cho gadget mode, đăng ký đủ `CMake + CTest`.
+  4. **SA-4 (`test_person1_comprehensive.cpp`, `verify_parallel_bmssp.cpp`, `test_parallel_edge_cases.cpp`, `bench_parallel_bmssp.cpp`):** Đổi `assert(false)` thành `std::exit(1)`, xây dựng 6 suite biên & stress 240 lượt chạy kèm kiểm tra cây `pred`, và benchmark A/B chuẩn phương pháp luận.
+- **Kết quả kiểm chứng thực tế:**
+  - `python bmssp_parallel/build_and_test.py` (`-O3 -march=native -mcx16 -Wall -Wextra -fopenmp`): **4/4 test suites PASS 100%** (`test_person1`: 153.932/153.932 checks; `test_d_stress`: 1.406.792/1.406.792 checks, 32T/10M ops, giảm 53,81% `SPLIT`; `verify_parallel_bmssp`: 24/24 PASS; `test_parallel_edge_cases`: 6/6 suite & 240/240 stress runs PASS, `MaxDiff = 0`).
+  - `CMake + MinGW Makefiles + CTest`: **4/4 tests PASSED** trong `3.42 sec`.
+  - `bench_parallel_bmssp.exe` (2 warmup + 7 mẫu trung vị, 24/24 tổ hợp `OK`, `MaxDiff = 0.00e+00`): `ConcurrentFrontierD` nhanh hơn `MutexFrontierD` **1,57×–1,84×** trên Sparse 20K (4T–8T) và **1,33×–1,44×** trên Hub 20K (4T–8T); trên 2D Grid 22.5K (frontier nhỏ dưới cutoff 2048) `Mutex` nhanh hơn (`0,54×–0,63×`); `dijkstra_sequential` vẫn nhanh nhất ở cỡ 20K đỉnh (`4,10–7,67 ms`).
+- **Báo cáo chi tiết:** `bmssp_parallel/REMEDIATION_CHANGE_REPORT.md`.
+- **Giới hạn:** Chưa chạy TSan/ASan do `w64devkit` trên Windows không hỗ trợ `-ltsan`/`-lasan`; test hữu hạn không thay thế chứng minh toán học tổng quát.
