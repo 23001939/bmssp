@@ -82,6 +82,7 @@ public:
 
     void init(size_t M, double B) override;
     void insert(uint32_t v, double dist) override;
+    void insert_batch(std::span<const VertexDist> items) override;
     void batch_prepend(std::span<const VertexDist> K) override;
     bool pull(std::vector<uint32_t>& S_i, double& B_i) override;
     [[nodiscard]] bool empty() const override;

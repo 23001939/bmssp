@@ -335,7 +335,7 @@ void D1SkipList::init_sentinel_and_tail_locked() {
     current_max_level_.store(1, std::memory_order_release);
 }
 
-void D1SkipList::destroy_all_locked() noexcept {
+void D1SkipList::destroy_all_locked(bool release_memory) noexcept {
     if (head_) {
         BlockNode* curr = head_->forward[0].load(std::memory_order_relaxed);
         while (curr != nullptr) {
@@ -355,7 +355,11 @@ void D1SkipList::destroy_all_locked() noexcept {
 
     for (auto& shard : shards_) {
         std::lock_guard<BlockSpinlock> lk(shard.lock);
-        shard.pool.clear();
+        if (release_memory) {
+            shard.pool.clear();
+        } else {
+            shard.pool.reset();
+        }
     }
     current_max_level_.store(1, std::memory_order_relaxed);
 }
@@ -363,7 +367,7 @@ void D1SkipList::destroy_all_locked() noexcept {
 void D1SkipList::init(size_t M, double B) {
     std::lock_guard<std::mutex> drain_lk(drain_mtx_);
     std::lock_guard<std::mutex> tower_lk(tower_mtx_);
-    destroy_all_locked();
+    destroy_all_locked(false);
     M_ = std::max<size_t>(M, 1);
     B_ = B;
     init_sentinel_and_tail_locked();
@@ -372,7 +376,7 @@ void D1SkipList::init(size_t M, double B) {
 void D1SkipList::clear() {
     std::lock_guard<std::mutex> drain_lk(drain_mtx_);
     std::lock_guard<std::mutex> tower_lk(tower_mtx_);
-    destroy_all_locked();
+    destroy_all_locked(false);
     init_sentinel_and_tail_locked();
 }
 
@@ -401,7 +405,7 @@ void D1SkipList::handle_overflow_locked(BlockNode* curr,
         for (size_t i = 0; i < curr->items.size(); ++i) {
             const VertexDist& entry = curr->items[i];
             if (entry.v < num_vertices) {
-                const double best = state_arr[entry.v].load(std::memory_order_acquire).dist;
+                const double best = state_arr[entry.v].load_dist(std::memory_order_acquire);
                 if (entry.dist > best) {
                     continue;
                 }
@@ -516,7 +520,7 @@ void D1SkipList::insert(uint32_t v,
     }
 
     if (state_arr != nullptr && v < num_vertices) {
-        if (dist > state_arr[v].load(std::memory_order_acquire).dist) {
+        if (dist > state_arr[v].load_dist(std::memory_order_acquire)) {
             stale_rejected_on_insert_.fetch_add(1, std::memory_order_relaxed);
             return;
         }
@@ -730,7 +734,7 @@ D1SkipList::DrainResult D1SkipList::drain_valid_up_to(size_t target_count,
 
             for (const auto& item : curr->items) {
                 if (state_arr != nullptr && item.v < num_vertices) {
-                    const double best = state_arr[item.v].load(std::memory_order_acquire).dist;
+                    const double best = state_arr[item.v].load_dist(std::memory_order_acquire);
                     if (item.dist > best) {
                         ++stale_dropped_counter;
                         continue;

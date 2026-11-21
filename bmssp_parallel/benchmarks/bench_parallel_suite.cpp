@@ -174,6 +174,7 @@ int main() {
     cases.push_back({"G10", "Sparse Random 100K", make_sparse_random(100000, 500000, 100000), 0, 1, 5});
     cases.push_back({"G11", "Hub 100K (deg0=50K)", make_hub_graph(100000, 50000, 400000, 100011), 0, 1, 5});
     cases.push_back({"G12", "Sparse Random 200K", make_sparse_random(200000, 1000000, 200000), 0, 1, 5});
+    cases.push_back({"G13", "Dense-20 Random 200K (4M edges)", make_sparse_random(200000, 4000000, 200013), 0, 1, 5});
 
     std::vector<RowResult> rows;
     rows.reserve(cases.size());

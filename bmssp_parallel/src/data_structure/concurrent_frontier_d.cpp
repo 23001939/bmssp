@@ -73,6 +73,13 @@ void ConcurrentFrontierD::insert(uint32_t v, double dist) {
     d1_.insert(v, dist, arr, n);
 }
 
+void ConcurrentFrontierD::insert_batch(std::span<const VertexDist> items) {
+    if (items.empty()) return;
+    const AtomicVertexState* arr = state_arr_.load(std::memory_order_acquire);
+    const size_t n = num_vertices_.load(std::memory_order_acquire);
+    d1_.insert_batch_sorted(items, arr, n);
+}
+
 void ConcurrentFrontierD::batch_prepend(std::span<const VertexDist> K) {
     if (K.empty()) return;
     std::lock_guard<std::mutex> lk(pull_mtx_);

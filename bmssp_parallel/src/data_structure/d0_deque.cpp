@@ -115,7 +115,7 @@ size_t D0Deque::drain_valid_up_to(size_t target_count,
 
         for (const auto& item : front.items) {
             if (state_arr != nullptr && item.v < num_vertices) {
-                const double best = state_arr[item.v].load(std::memory_order_acquire).dist;
+                const double best = state_arr[item.v].load_dist(std::memory_order_acquire);
                 if (item.dist > best) {
                     ++stale_dropped_counter;
                     continue;

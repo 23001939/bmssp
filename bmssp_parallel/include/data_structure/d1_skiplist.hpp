@@ -159,7 +159,7 @@ private:
     void collect_reclaimable_locked(std::vector<BlockNode*>& ready_to_free);
     void retire_and_reclaim_batch(const std::vector<BlockNode*>& unlinked_nodes);
     void try_reclaim_retired();
-    void destroy_all_locked() noexcept;
+    void destroy_all_locked(bool release_memory = true) noexcept;
     void init_sentinel_and_tail_locked();
 
 public:

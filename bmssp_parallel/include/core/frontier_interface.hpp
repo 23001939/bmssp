@@ -29,6 +29,17 @@ public:
     virtual void insert(uint32_t v, double dist) = 0;
 
     /**
+     * @brief Inserts a thread-local batch of (vertex, dist) pairs concurrently.
+     * Default implementation delegates to insert(); concurrent structures may override
+     * to amortize reader-guard / synchronization overhead across the batch.
+     */
+    virtual void insert_batch(std::span<const VertexDist> items) {
+        for (const auto& item : items) {
+            insert(item.v, item.dist);
+        }
+    }
+
+    /**
      * @brief Batch prepends a sorted set of vertices K.
      * Invoked sequentially on the Master thread after barrier synchronization.
      */

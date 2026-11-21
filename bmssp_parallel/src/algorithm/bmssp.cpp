@@ -28,11 +28,21 @@ inline size_t safe_pow2_capped(size_t shift, size_t cap) noexcept {
     return std::min<size_t>(static_cast<size_t>(uint64_t{1} << shift), cap);
 }
 
+struct LevelWorkspace {
+    std::unique_ptr<IFrontierD> frontier;
+    std::vector<std::vector<VertexDist>> thread_k_buffers;
+    std::vector<std::vector<VertexDist>> thread_d_buffers;
+    std::vector<uint32_t> miniS;
+    std::vector<uint64_t> edge_prefix;
+    std::vector<VertexDist> K;
+};
+
 struct BMSSPContext {
     const CSRGraph& graph;
     size_t k;
     size_t t;
     size_t max_level;
+    int max_threads;
     AtomicVertexState* states;
     EpochDeduplicator& deduplicator;
     std::vector<uint8_t> global_completed;
@@ -41,6 +51,9 @@ struct BMSSPContext {
     // One EpochDeduplicator per recursion level so a child call's epoch allocations
     // never clobber the parent call's my_complete_epoch.
     std::deque<EpochDeduplicator> local_complete_dedups;
+    // Reusable per-level frontier D and scratch buffers (Option 1 optimization:
+    // eliminates repeated ConcurrentFrontierD + 64-shard pool allocation per recursion).
+    std::vector<LevelWorkspace> level_workspaces;
 
     BMSSPContext(const CSRGraph& g,
                  size_t k_val,
@@ -53,13 +66,25 @@ struct BMSSPContext {
           k(k_val),
           t(t_val),
           max_level(max_lvl),
+          max_threads(std::max(1, omp_get_max_threads())),
           states(st),
           deduplicator(dedup),
           global_completed(g.n, 0),
           frontier_type(ftype),
-          fp_ws(g.n) {
+          fp_ws(g.n),
+          level_workspaces(max_lvl + 1) {
         for (size_t lvl = 0; lvl <= max_level; ++lvl) {
             local_complete_dedups.emplace_back(g.n);
+            if (lvl >= 1) {
+                auto& ws = level_workspaces[lvl];
+                if (frontier_type == FrontierType::Concurrent) {
+                    ws.frontier = std::make_unique<ConcurrentFrontierD>(states, g.n);
+                } else {
+                    ws.frontier = std::make_unique<MutexFrontierD>();
+                }
+                ws.thread_k_buffers.resize(static_cast<size_t>(max_threads));
+                ws.thread_d_buffers.resize(static_cast<size_t>(max_threads));
+            }
         }
     }
 };
@@ -73,7 +98,7 @@ inline void relax_outgoing_edge(
     uint32_t u,
     double du,
     uint64_t e,
-    IFrontierD* D,
+    std::vector<VertexDist>& local_d,
     std::vector<VertexDist>& local_k
 ) {
     const uint32_t v = ctx.graph.edge_dest(e);
@@ -87,7 +112,7 @@ inline void relax_outgoing_edge(
     if (new_dist < curr_v) {
         if (relax_edge_atomic(ctx.states[v], new_dist, u, static_cast<uint32_t>(level))) {
             if (new_dist >= trying_B) {
-                D->insert(v, new_dist);
+                local_d.push_back(VertexDist{v, new_dist});
             } else {
                 // Covers both [complete_B, trying_B) and strictly improved < complete_B.
                 local_k.push_back(VertexDist{v, new_dist});
@@ -95,12 +120,54 @@ inline void relax_outgoing_edge(
         }
     } else if (new_dist == curr_v && !ctx.global_completed[v]) {
         if (new_dist >= trying_B) {
-            D->insert(v, new_dist);
+            local_d.push_back(VertexDist{v, new_dist});
         } else if (new_dist >= complete_B) {
             // Algorithm 3: equal-distance uncompleted vertices in [complete_B, trying_B) go to K.
             local_k.push_back(VertexDist{v, new_dist});
         }
     }
+}
+
+inline void flush_local_d_to_frontier(
+    std::vector<VertexDist>& local_d,
+    const AtomicVertexState* states,
+    IFrontierD* D
+) {
+    if (local_d.empty()) {
+        return;
+    }
+
+    // Drop stale entries in-place before sorting/deduplicating.
+    size_t write = 0;
+    for (size_t i = 0; i < local_d.size(); ++i) {
+        const VertexDist& item = local_d[i];
+        if (item.dist <= states[item.v].load_dist()) {
+            local_d[write++] = item;
+        }
+    }
+    local_d.resize(write);
+    if (local_d.empty()) {
+        return;
+    }
+
+    if (local_d.size() > 1) {
+        // Deduplicate by vertex keeping minimum distance, then sort by distance ascending
+        // so D1SkipList::insert_batch_sorted inserts contiguous runs under a single ReaderGuard.
+        std::sort(local_d.begin(), local_d.end(), [](const VertexDist& a, const VertexDist& b) noexcept {
+            if (a.v != b.v) return a.v < b.v;
+            return a.dist < b.dist;
+        });
+        size_t uwrite = 0;
+        for (size_t i = 0; i < local_d.size(); ++i) {
+            if (uwrite == 0 || local_d[i].v != local_d[uwrite - 1].v) {
+                local_d[uwrite++] = local_d[i];
+            }
+        }
+        local_d.resize(uwrite);
+        std::sort(local_d.begin(), local_d.end());
+    }
+
+    D->insert_batch(local_d);
 }
 
 std::pair<double, std::vector<uint32_t>> bmssp_rec(
@@ -170,16 +237,12 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
     auto& level_dedup = ctx.local_complete_dedups[static_cast<size_t>(level)];
     const uint32_t my_complete_epoch = level_dedup.allocate_epoch();
 
-    // Step 2: Initialize Frontier D (Lemma 3.3)
+    // Step 2: Reuse Per-Level Frontier D and Workspace (Lemma 3.3)
     const size_t shift_batch = static_cast<size_t>(level - 1) * ctx.t;
     const size_t batch_size = std::max<size_t>(1, safe_pow2_capped(shift_batch, ctx.graph.n));
 
-    std::unique_ptr<IFrontierD> D;
-    if (ctx.frontier_type == FrontierType::Concurrent) {
-        D = std::make_unique<ConcurrentFrontierD>(ctx.states, ctx.graph.n);
-    } else {
-        D = std::make_unique<MutexFrontierD>();
-    }
+    auto& lvl_ws = ctx.level_workspaces[static_cast<size_t>(level)];
+    IFrontierD* D = lvl_ws.frontier.get();
     D->init(batch_size, B);
 
     double last_complete_B = B;
@@ -197,13 +260,21 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
     const size_t quota = (pow2_lvl > ctx.graph.n / ctx.k) ? ctx.graph.n : (ctx.k * pow2_lvl);
 
     std::vector<uint32_t> complete;
-    complete.reserve(std::min<size_t>(quota, ctx.graph.n));
+    const size_t initial_reserve = std::min<size_t>(
+        quota,
+        std::min<size_t>(ctx.graph.n, std::max<size_t>(S.size() * ctx.k, size_t{64}))
+    );
+    complete.reserve(initial_reserve);
 
-    const int max_threads = std::max(1, omp_get_max_threads());
-    std::vector<std::vector<VertexDist>> thread_k_buffers(static_cast<size_t>(max_threads));
-    std::vector<uint32_t> miniS;
-    std::vector<uint64_t> edge_prefix;
-    std::vector<VertexDist> K;
+    const int max_threads = ctx.max_threads;
+    auto& thread_k_buffers = lvl_ws.thread_k_buffers;
+    auto& thread_d_buffers = lvl_ws.thread_d_buffers;
+    auto& miniS = lvl_ws.miniS;
+    auto& edge_prefix = lvl_ws.edge_prefix;
+    auto& K = lvl_ws.K;
+    miniS.clear();
+    edge_prefix.clear();
+    K.clear();
 
     // Never truncate the root recursion level by quota while D still holds active vertices.
     const bool is_top_level = (static_cast<size_t>(level) == ctx.max_level);
@@ -251,6 +322,9 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         for (auto& buf : thread_k_buffers) {
             buf.clear();
         }
+        for (auto& buf : thread_d_buffers) {
+            buf.clear();
+        }
 
         edge_prefix.resize(nw_complete.size() + 1);
         edge_prefix[0] = 0;
@@ -265,6 +339,7 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                 const int tid = omp_get_thread_num();
                 const int nthreads = omp_get_num_threads();
                 auto& local_k = thread_k_buffers[static_cast<size_t>(tid)];
+                auto& local_d = thread_d_buffers[static_cast<size_t>(tid)];
 
                 const uint64_t t_begin =
                     (total_edges * static_cast<uint64_t>(tid)) / static_cast<uint64_t>(nthreads);
@@ -289,7 +364,7 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                                 for (uint64_t e = csr_base + local_begin; e < csr_base + local_end; ++e) {
                                     relax_outgoing_edge(
                                         ctx, level, B, trying_B, complete_B,
-                                        u, du, e, D.get(), local_k
+                                        u, du, e, local_d, local_k
                                     );
                                 }
                             }
@@ -298,9 +373,12 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                         ++vi;
                     }
                 }
+
+                flush_local_d_to_frontier(local_d, ctx.states, D);
             }
         } else {
             auto& local_k = thread_k_buffers[0];
+            auto& local_d = thread_d_buffers[0];
             for (uint32_t u : nw_complete) {
                 const double du = ctx.states[u].load_dist();
                 if (du >= B) {
@@ -309,14 +387,20 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                 for (uint64_t e = ctx.graph.edge_begin(u); e < ctx.graph.edge_end(u); ++e) {
                     relax_outgoing_edge(
                         ctx, level, B, trying_B, complete_B,
-                        u, du, e, D.get(), local_k
+                        u, du, e, local_d, local_k
                     );
                 }
             }
+            flush_local_d_to_frontier(local_d, ctx.states, D);
         }
 
         // Gather local_k buffers into K
+        size_t total_k = 0;
+        for (const auto& buf : thread_k_buffers) {
+            total_k += buf.size();
+        }
         K.clear();
+        K.reserve(total_k + miniS.size());
         for (const auto& buf : thread_k_buffers) {
             K.insert(K.end(), buf.begin(), buf.end());
         }

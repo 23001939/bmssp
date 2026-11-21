@@ -640,3 +640,30 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - `bench_parallel_bmssp.exe` (2 warmup + 7 mẫu trung vị, 24/24 tổ hợp `OK`, `MaxDiff = 0.00e+00`): `ConcurrentFrontierD` nhanh hơn `MutexFrontierD` **1,57×–1,84×** trên Sparse 20K (4T–8T) và **1,33×–1,44×** trên Hub 20K (4T–8T); trên 2D Grid 22.5K (frontier nhỏ dưới cutoff 2048) `Mutex` nhanh hơn (`0,54×–0,63×`); `dijkstra_sequential` vẫn nhanh nhất ở cỡ 20K đỉnh (`4,10–7,67 ms`).
 - **Báo cáo chi tiết:** `bmssp_parallel/REMEDIATION_CHANGE_REPORT.md`.
 - **Giới hạn:** Chưa chạy TSan/ASan do `w64devkit` trên Windows không hỗ trợ `-ltsan`/`-lasan`; test hữu hạn không thay thế chứng minh toán học tổng quát.
+
+---
+
+## Tối Ưu Cách 1 — Tái Sử Dụng Per-Level `LevelWorkspace` & `D1SkipList` Pool (21/11/2026)
+
+- **Phạm vi:** Chỉ thực hiện Cách 1 theo yêu cầu người dùng trên nhánh `Viet` (cục bộ, chưa commit/push):
+  - `bmssp_parallel/src/algorithm/bmssp.cpp`: thêm `LevelWorkspace` theo từng tầng `1..max_level` trong `BMSSPContext` tái sử dụng `IFrontierD`, `thread_k_buffers`, `miniS`, `edge_prefix`, `K`, không tạo/hủy mới trong mỗi lời gọi đệ quy.
+  - `bmssp_parallel/include/data_structure/d1_skiplist.hpp` & `src/data_structure/d1_skiplist.cpp`: thêm `destroy_all_locked(bool release_memory)` — dùng `shard.pool.reset()` trong `init()`/`clear()` giữ lại bộ nhớ chunk, chỉ `shard.pool.clear()` ở destructor `~D1SkipList()`.
+- **Kiểm chứng:** `build_and_test.py` đạt **4/4 test suites PASS 100%** (`test_person1`, `test_d_stress`, `verify_parallel_bmssp`, `test_parallel_edge_cases`).
+- **Kết quả benchmark 12 đồ thị (`bench_parallel_suite.exe`, 96/96 `OK`):** `Concurrent 8T` giảm **14% – 63%** trên mọi đồ thị:
+  - `weighted_100`: `1,021 ms` → `0,411 ms` (`2,48×` nhanh hơn).
+  - `weighted_1000`: `2,399 ms` → `0,979 ms` (`2,45×` nhanh hơn, vượt `bmssp_seq` `1,139 ms`).
+  - `2D Grid 300×300 (90K)`: `101,885 ms` → `67,620 ms` (`1,51×` nhanh hơn, vượt `Mutex 8T` `70,300 ms`).
+  - `Sparse Random 200K (1M cạnh)`: `242,696 ms` → `197,467 ms` (giảm `18,6%`, chỉ còn `1,50×` so với `Dijkstra 1T` `131,946 ms`).
+- **Báo cáo chi tiết:** `bmssp_parallel/OPTION1_OPTIMIZATION_REPORT.md`.
+
+---
+
+## Tối Ưu Cách 3 + 4 & Báo Cáo Tổng Hợp Cuối Cùng (21/11/2026)
+
+- **Thay đổi bổ sung trên nhánh `Viet`:**
+  - **Cách 3:** Đổi 4 vị trí đọc stale `.load().dist` (`lock cmpxchg16b`) trong `d0_deque.cpp` và `d1_skiplist.cpp` sang `load_dist()` 64-bit nhẹ.
+  - **Cách 4:** Bổ sung `IFrontierD::insert_batch()` nối thẳng vào `D1SkipList::insert_batch_sorted()` (1 `ReaderGuard` cho cả lô), gom `thread_d_buffers` cục bộ + khử trùng/lọc stale song song trên từng luồng trong `bmssp.cpp`.
+- **Kiểm chứng:** `build_and_test.py` 4/4 test suites PASS 100%; `bench_parallel_suite.exe` 13 đồ thị × 8 cấu hình = **104/104 `OK`**.
+  - `Sparse 200K (1M edges)`: `Conc 8T` giảm còn `179,749 ms` (`1T → 8T = 1,32×`).
+  - `Dense-20 200K (4M edges)`: `Conc 8T = 252,598 ms` (`1T → 8T = 1,58×`, nhanh hơn `Mutex 8T` `3,63×`, nhanh hơn `bmssp_seq` `5,09×`, chỉ còn `1,17×` so với `Dijkstra 1T` `216,776 ms`).
+- **Báo cáo tổng hợp cuối cùng:** `bmssp_parallel/PARALLEL_OPTIMIZATION_REPORT.md`.
