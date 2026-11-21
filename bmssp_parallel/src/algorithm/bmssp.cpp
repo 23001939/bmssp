@@ -3,6 +3,7 @@
 #include "algorithm/base_case.hpp"
 #include "core/frontier_interface.hpp"
 #include "core/primitives.hpp"
+#include "core/profiler.hpp"
 #include "data_structure/concurrent_frontier_d.hpp"
 
 #include <omp.h>
@@ -181,11 +182,19 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
     }
 
     if (level == 0) {
+#ifdef BMSSP_ENABLE_PROFILING
+        auto& prof = get_global_profile_stats();
+        prof.base_case_calls++;
+        const uint64_t bc_t0 = prof_now_ns();
+#endif
         if (S.size() == 1) {
             auto bc_res = base_case(ctx.graph, B, S[0], ctx.k, ctx.states);
             for (uint32_t u : bc_res.completed) {
                 ctx.global_completed[u] = 1;
             }
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.base_case_ns += (prof_now_ns() - bc_t0);
+#endif
             return {bc_res.new_bound, std::move(bc_res.completed)};
         }
 
@@ -226,6 +235,9 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                 }
             }
         }
+#ifdef BMSSP_ENABLE_PROFILING
+        prof.base_case_ns += (prof_now_ns() - bc_t0);
+#endif
         return {cur_B, std::move(merged)};
     }
 
@@ -243,7 +255,15 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
 
     auto& lvl_ws = ctx.level_workspaces[static_cast<size_t>(level)];
     IFrontierD* D = lvl_ws.frontier.get();
+#ifdef BMSSP_ENABLE_PROFILING
+    auto& prof = get_global_profile_stats();
+    prof.d_init_calls++;
+    const uint64_t d_init_t0 = prof_now_ns();
+#endif
     D->init(batch_size, B);
+#ifdef BMSSP_ENABLE_PROFILING
+    prof.d_init_ns += (prof_now_ns() - d_init_t0);
+#endif
 
     double last_complete_B = B;
     for (uint32_t p : P) {
@@ -281,7 +301,15 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
 
     while ((is_top_level || complete.size() < quota) && !D->empty()) {
         double trying_B = B;
-        if (!D->pull(miniS, trying_B)) {
+#ifdef BMSSP_ENABLE_PROFILING
+        prof.d_pull_calls++;
+        const uint64_t pull_t0 = prof_now_ns();
+#endif
+        const bool pulled = D->pull(miniS, trying_B);
+#ifdef BMSSP_ENABLE_PROFILING
+        prof.d_pull_ns += (prof_now_ns() - pull_t0);
+#endif
+        if (!pulled) {
             break;
         }
 
@@ -334,10 +362,23 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         const uint64_t total_edges = edge_prefix.back();
 
         if (total_edges >= DEFAULT_GRANULARITY_CUTOFF && max_threads > 1) {
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.relax_par_calls++;
+            prof.relax_par_edges += total_edges;
+            const uint64_t par_wall_t0 = prof_now_ns();
+            std::vector<uint64_t> tid_relax_ns(static_cast<size_t>(max_threads), 0);
+            std::vector<uint64_t> tid_ins_ns(static_cast<size_t>(max_threads), 0);
+            std::vector<uint64_t> tid_ins_items(static_cast<size_t>(max_threads), 0);
+            int par_used_threads = 1;
+#endif
             #pragma omp parallel
             {
                 const int tid = omp_get_thread_num();
                 const int nthreads = omp_get_num_threads();
+#ifdef BMSSP_ENABLE_PROFILING
+                const uint64_t t_rel0 = prof_now_ns();
+                if (tid == 0) par_used_threads = nthreads;
+#endif
                 auto& local_k = thread_k_buffers[static_cast<size_t>(tid)];
                 auto& local_d = thread_d_buffers[static_cast<size_t>(tid)];
 
@@ -374,9 +415,50 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                     }
                 }
 
+#ifdef BMSSP_ENABLE_PROFILING
+                const uint64_t t_ins0 = prof_now_ns();
+                tid_relax_ns[static_cast<size_t>(tid)] = t_ins0 - t_rel0;
+                tid_ins_items[static_cast<size_t>(tid)] = local_d.size();
+#endif
                 flush_local_d_to_frontier(local_d, ctx.states, D);
+#ifdef BMSSP_ENABLE_PROFILING
+                tid_ins_ns[static_cast<size_t>(tid)] = prof_now_ns() - t_ins0;
+#endif
             }
+#ifdef BMSSP_ENABLE_PROFILING
+            const uint64_t par_wall = prof_now_ns() - par_wall_t0;
+            prof.relax_par_wall_ns += par_wall;
+            uint64_t r_sum = 0, r_max = 0, i_sum = 0, i_max = 0, items_sum = 0;
+            for (int t = 0; t < par_used_threads; ++t) {
+                const size_t idx = static_cast<size_t>(t);
+                r_sum += tid_relax_ns[idx];
+                r_max = std::max(r_max, tid_relax_ns[idx]);
+                i_sum += tid_ins_ns[idx];
+                i_max = std::max(i_max, tid_ins_ns[idx]);
+                items_sum += tid_ins_items[idx];
+            }
+            prof.relax_par_thread_sum_ns += r_sum;
+            prof.relax_par_thread_max_ns += r_max;
+            prof.insert_par_thread_sum_ns += i_sum;
+            prof.insert_par_thread_max_ns += i_max;
+            prof.insert_batch_items += items_sum;
+            const uint64_t tot_work = r_sum + i_sum;
+            if (tot_work > 0) {
+                const uint64_t ins_share = static_cast<uint64_t>(
+                    (static_cast<double>(par_wall) * static_cast<double>(i_sum)) / static_cast<double>(tot_work)
+                );
+                prof.insert_par_est_wall_ns += ins_share;
+                prof.relax_par_est_wall_ns += (par_wall - ins_share);
+            } else {
+                prof.relax_par_est_wall_ns += par_wall;
+            }
+#endif
         } else {
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.relax_seq_calls++;
+            prof.relax_seq_edges += total_edges;
+            const uint64_t seq_rel_t0 = prof_now_ns();
+#endif
             auto& local_k = thread_k_buffers[0];
             auto& local_d = thread_d_buffers[0];
             for (uint32_t u : nw_complete) {
@@ -391,7 +473,15 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                     );
                 }
             }
+#ifdef BMSSP_ENABLE_PROFILING
+            const uint64_t seq_ins_t0 = prof_now_ns();
+            prof.relax_seq_ns += (seq_ins_t0 - seq_rel_t0);
+            prof.insert_batch_items += local_d.size();
+#endif
             flush_local_d_to_frontier(local_d, ctx.states, D);
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.insert_batch_seq_ns += (prof_now_ns() - seq_ins_t0);
+#endif
         }
 
         // Gather local_k buffers into K
@@ -420,8 +510,19 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         }
 
         if (!K.empty()) {
+#ifdef BMSSP_ENABLE_PROFILING
+            const uint64_t ksort_t0 = prof_now_ns();
+#endif
             parallel_sample_sort(K);
+#ifdef BMSSP_ENABLE_PROFILING
+            const uint64_t bp_t0 = prof_now_ns();
+            prof.k_sort_ns += (bp_t0 - ksort_t0);
+            prof.d_batch_prepend_calls++;
+#endif
             D->batch_prepend(K);
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.d_batch_prepend_ns += (prof_now_ns() - bp_t0);
+#endif
         }
 
         last_complete_B = complete_B;
@@ -573,7 +674,13 @@ SSSPResult run_bmssp_direct(
     BMSSPContext ctx(graph, k, t, max_level, atomic_states.data(), deduplicator, frontier_type);
 
     std::vector<uint32_t> initial_sources{source};
+#ifdef BMSSP_ENABLE_PROFILING
+    const uint64_t solve_t0 = prof_now_ns();
+#endif
     bmssp_rec(ctx, static_cast<int>(max_level), INF_DIST, initial_sources);
+#ifdef BMSSP_ENABLE_PROFILING
+    get_global_profile_stats().total_solve_ns += (prof_now_ns() - solve_t0);
+#endif
 
     SSSPResult res;
     res.dist.resize(n);

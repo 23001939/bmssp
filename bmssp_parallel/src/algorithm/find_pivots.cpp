@@ -1,4 +1,5 @@
 #include "algorithm/find_pivots.hpp"
+#include "core/profiler.hpp"
 #include <algorithm>
 #include <iterator>
 #include <limits>
@@ -83,6 +84,17 @@ PivotResult find_pivots_parallel(
         return result;
     }
 
+#ifdef BMSSP_ENABLE_PROFILING
+    auto& prof = get_global_profile_stats();
+    prof.fp_calls++;
+    const uint64_t fp_t0 = prof_now_ns();
+    struct FpTotalGuard {
+        BMSSPProfileStats& p;
+        uint64_t t0;
+        ~FpTotalGuard() { p.find_pivots_total_ns += (prof_now_ns() - t0); }
+    } fp_total_guard{prof, fp_t0};
+#endif
+
     const size_t n = graph.n;
     if (deduplicator.size() < n) {
         deduplicator.resize(n);
@@ -149,10 +161,21 @@ PivotResult find_pivots_parallel(
         }
 
         if (active_edges >= static_cast<uint64_t>(DEFAULT_GRANULARITY_CUTOFF) && max_threads > 1) {
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.fp_par_steps++;
+            prof.fp_par_edges += active_edges;
+            const uint64_t fp_par_t0 = prof_now_ns();
+            std::vector<uint64_t> fp_tid_ns(static_cast<size_t>(max_threads), 0);
+            int fp_used_threads = 1;
+#endif
             #pragma omp parallel
             {
                 const int tid = omp_get_thread_num();
                 const int num_threads = omp_get_num_threads();
+#ifdef BMSSP_ENABLE_PROFILING
+                const uint64_t t_local0 = prof_now_ns();
+                if (tid == 0) fp_used_threads = num_threads;
+#endif
                 auto& local_buf = ws.thread_buffers[static_cast<size_t>(tid)];
 
                 const uint64_t chunk_size =
@@ -208,11 +231,29 @@ PivotResult find_pivots_parallel(
                         }
                     }
                 }
+#ifdef BMSSP_ENABLE_PROFILING
+                fp_tid_ns[static_cast<size_t>(tid)] = prof_now_ns() - t_local0;
+#endif
             }
 
             parallel_gather(ws.thread_buffers, next_active);
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.fp_relax_par_ns += (prof_now_ns() - fp_par_t0);
+            uint64_t fp_sum = 0, fp_max = 0;
+            for (int t = 0; t < fp_used_threads; ++t) {
+                fp_sum += fp_tid_ns[static_cast<size_t>(t)];
+                fp_max = std::max(fp_max, fp_tid_ns[static_cast<size_t>(t)]);
+            }
+            prof.fp_par_thread_sum_ns += fp_sum;
+            prof.fp_par_thread_max_ns += fp_max;
+#endif
         } else {
             // Serial execution for small frontiers
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.fp_seq_steps++;
+            prof.fp_seq_edges += active_edges;
+            const uint64_t fp_seq_t0 = prof_now_ns();
+#endif
             auto& local_buf = ws.thread_buffers[0];
             for (uint32_t u : active) {
                 if (static_cast<size_t>(u) >= n) {
@@ -239,6 +280,9 @@ PivotResult find_pivots_parallel(
             }
 
             next_active.assign(local_buf.begin(), local_buf.end());
+#ifdef BMSSP_ENABLE_PROFILING
+            prof.fp_relax_seq_ns += (prof_now_ns() - fp_seq_t0);
+#endif
         }
 
         for (uint32_t v : next_active) {
@@ -258,6 +302,9 @@ PivotResult find_pivots_parallel(
     }
 
     // Sequential forest root resolution on vis (size <= k * |S|)
+#ifdef BMSSP_ENABLE_PROFILING
+    const uint64_t fp_forest_t0 = prof_now_ns();
+#endif
     const uint32_t s_epoch = ws.in_s_tracker.allocate_epoch();
     for (uint32_t s : unique_S) {
         static_cast<void>(ws.in_s_tracker.try_claim(s, s_epoch));
@@ -355,6 +402,9 @@ PivotResult find_pivots_parallel(
     }
 
     result.visited = std::move(vis);
+#ifdef BMSSP_ENABLE_PROFILING
+    prof.fp_forest_ns += (prof_now_ns() - fp_forest_t0);
+#endif
     return result;
 }
 

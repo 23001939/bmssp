@@ -253,16 +253,21 @@ inline void parallel_sample_sort(std::span<VertexDist> items) {
 
             auto children = partition(current);
 
-            if (!children.empty()) {
+            bool all_done = false;
+            {
                 std::lock_guard<std::mutex> lock(queue_mtx);
-                for (const auto& child : children) queue.push_back(child);
-                pending.fetch_add(children.size(), std::memory_order_relaxed);
+                if (!children.empty()) {
+                    for (const auto& child : children) queue.push_back(child);
+                    pending.fetch_add(children.size(), std::memory_order_relaxed);
+                }
+                if (pending.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+                    done.store(true, std::memory_order_release);
+                    all_done = true;
+                }
             }
-
-            if (pending.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-                done.store(true, std::memory_order_release);
+            if (all_done || !children.empty()) {
+                queue_cv.notify_all();
             }
-            queue_cv.notify_all();
         }
     };
 
