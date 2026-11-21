@@ -643,9 +643,21 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
 
 ---
 
+## Bổ Sung TSan Trên Nền `origin/Viet` Đã Có Remediation (20/11/2026)
+
+- **Phát hiện:** `origin/Viet` đã tiến thêm 3 commit (`557fc80`, `13e8b75`, `21fbf3f`) chứa một bản remediation riêng (cùng nhóm sửa lỗi với báo cáo, kèm `BENCHMARK_12_GRAPHS_REPORT.md` và `bench_parallel_suite.cpp`). Bản local đang giữ là implementation trùng mục tiêu; người dùng đã chọn **giữ bản remote và chỉ push phần độc đáo của local**.
+- **Đã làm:** reset local về `origin/Viet` (`21fbf3f`), sau đó reapply:
+  1. `include/core/primitives.hpp`: `parallel_prefix_scan`, `parallel_gather`, `parallel_sample_sort` đổi từ OpenMP barrier/task sang `std::thread` + `join`/mutex/condition variable. Không đụng vào các file remediation khác của remote.
+  2. `tests/test_person1_comprehensive.cpp` và `tests/test_d_stress.cpp`: tự động giảm quy mô khi `__SANITIZE_THREAD__` (scan/sort 4096; stress 8 luồng × 2 round × 256 ops). Bản thường giữ nguyên.
+  3. `README.md` mục 6 và mục này: ghi cách reproduce và giới hạn TSan.
+- **Kết quả kiểm chứng trên Linux:** Release `ctest` 4/4 (Person 1 153.932/153.932, stress 10.000.000 ops/756,59 ms); ASan `ctest` 4/4. Riêng TSan: `test_person1` và `test_d_stress` **PASS, 0 race**; `verify_parallel_bmssp` và `test_parallel_edge_cases` vẫn báo false positive do libgomp trong OpenMP của `find_pivots.cpp`/`bmssp.cpp` (138 cảnh báo trong verify) và edge suite vượt 600 giây. Vì vậy **không ghi nhận full CTest sạch TSan** trên bản remote.
+- **Lưu ý:** các báo cáo TSan là false positive do libgomp không được instrument, không phải race thật đã được xác nhận; đã đính chính trong README. Không suy rộng kết quả hữu hạn thành chứng minh đúng tổng quát.
+
+---
+
 ## Tối Ưu Cách 1 — Tái Sử Dụng Per-Level `LevelWorkspace` & `D1SkipList` Pool (21/11/2026)
 
-- **Phạm vi:** Chỉ thực hiện Cách 1 theo yêu cầu người dùng trên nhánh `Viet` (cục bộ, chưa commit/push):
+- **Phạm vi:** Chỉ thực hiện Cách 1 theo yêu cầu người dùng trên nhánh `Viet`:
   - `bmssp_parallel/src/algorithm/bmssp.cpp`: thêm `LevelWorkspace` theo từng tầng `1..max_level` trong `BMSSPContext` tái sử dụng `IFrontierD`, `thread_k_buffers`, `miniS`, `edge_prefix`, `K`, không tạo/hủy mới trong mỗi lời gọi đệ quy.
   - `bmssp_parallel/include/data_structure/d1_skiplist.hpp` & `src/data_structure/d1_skiplist.cpp`: thêm `destroy_all_locked(bool release_memory)` — dùng `shard.pool.reset()` trong `init()`/`clear()` giữ lại bộ nhớ chunk, chỉ `shard.pool.clear()` ở destructor `~D1SkipList()`.
 - **Kiểm chứng:** `build_and_test.py` đạt **4/4 test suites PASS 100%** (`test_person1`, `test_d_stress`, `verify_parallel_bmssp`, `test_parallel_edge_cases`).

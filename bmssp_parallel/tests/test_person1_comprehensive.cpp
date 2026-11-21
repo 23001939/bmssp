@@ -236,8 +236,14 @@ void test_parallel_primitives() {
     // Next epoch should allow a new claim
     TEST_ASSERT(dedup.try_claim(42, 6) == true, "Claiming next epoch must succeed");
 
-    // 2. Test Parallel Prefix Scan on multiple sizes (including edge sizes: 0, 1, prime, large)
-    for (size_t test_sz : {size_t{0}, size_t{1}, size_t{2}, size_t{7}, size_t{64}, size_t{2048}, size_t{100000}}) {
+    // 2. Test Parallel Prefix Scan on multiple sizes (including edge sizes: 0, 1, prime, large).
+    // TSan instruments every access, so keep the parallel case just above the 2048 cutoff.
+#if defined(__SANITIZE_THREAD__)
+    const std::vector<size_t> scan_sizes{0, 1, 2, 7, 64, 2048, 4096};
+#else
+    const std::vector<size_t> scan_sizes{0, 1, 2, 7, 64, 2048, 100000};
+#endif
+    for (size_t test_sz : scan_sizes) {
         std::vector<int64_t> data(test_sz, 1);
         parallel_prefix_scan<int64_t>(data);
         for (size_t i = 0; i < test_sz; ++i) {
@@ -246,7 +252,11 @@ void test_parallel_primitives() {
     }
 
     // 3. Test Parallel Sample Sort
+#if defined(__SANITIZE_THREAD__)
+    constexpr size_t SORT_SZ = 4096;
+#else
     constexpr size_t SORT_SZ = 50000;
+#endif
     std::vector<VertexDist> items(SORT_SZ);
     std::mt19937_64 rng(20261118);
     for (size_t i = 0; i < SORT_SZ; ++i) {

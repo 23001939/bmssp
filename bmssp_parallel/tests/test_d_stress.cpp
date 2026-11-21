@@ -836,9 +836,17 @@ void test_suite_3_eager_cleanup() {
 void test_suite_4_32thread_10m_stress() {
     std::cout << ">>> [Suite 4] Full 32-thread 10,000,000-operation concurrent stress test..." << std::endl;
 
+#if defined(__SANITIZE_THREAD__)
+    // TSan instrumentation makes the full 32-thread/10M-op run take over an hour.
+    // Keep the same concurrency shape with a bounded workload for race detection.
+    constexpr size_t NUM_THREADS = 8;
+    constexpr size_t NUM_ROUNDS = 2;
+    constexpr size_t OPS_PER_THREAD_PER_ROUND = 256;
+#else
     constexpr size_t NUM_THREADS = 32;
     constexpr size_t NUM_ROUNDS = 10;
     constexpr size_t OPS_PER_THREAD_PER_ROUND = 31250; // 32 * 31,250 * 10 = 10,000,000
+#endif
     constexpr uint32_t N = 16384;
     constexpr size_t M = 64;
     constexpr double B = 100000.0;
@@ -981,7 +989,7 @@ void test_suite_4_32thread_10m_stress() {
     auto t1 = std::chrono::high_resolution_clock::now();
     const double elapsed_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
     const uint64_t expected_total = NUM_THREADS * NUM_ROUNDS * OPS_PER_THREAD_PER_ROUND;
-    QA_ASSERT(total_ops_executed.load() == expected_total, "Exact 10,000,000 operations completed");
+    QA_ASSERT(total_ops_executed.load() == expected_total, "Exact configured operation count completed");
 
     auto stats = frontier.get_stats();
     std::cout << std::fixed << std::setprecision(2);
