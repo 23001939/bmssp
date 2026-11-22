@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <vector>
@@ -60,6 +61,16 @@ struct BMSSPProfileStats {
 };
 
 #ifdef BMSSP_ENABLE_PROFILING
+
+struct D1LockProfile {
+    std::atomic<uint64_t> contended_calls{0};
+    std::atomic<uint64_t> wait_ns{0};
+};
+
+inline D1LockProfile& get_d1_lock_profile() noexcept {
+    static D1LockProfile profile;
+    return profile;
+}
 
 inline BMSSPProfileStats& get_global_profile_stats() noexcept {
     static BMSSPProfileStats stats;

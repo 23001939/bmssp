@@ -16,6 +16,17 @@ enum class FrontierType : uint8_t {
     Mutex = 1
 };
 
+struct BMSSPOptions {
+    size_t granularity_cutoff = DEFAULT_GRANULARITY_CUTOFF;
+    size_t frontier_batch_cap = 0; // Zero uses the original per-level batch size.
+};
+
+struct BMSSPTimings {
+    double transform_ms = 0.0;
+    double solve_ms = 0.0;
+    double restore_ms = 0.0;
+};
+
 /**
  * @brief Multi-threaded parallel implementation of the Duan et al. (STOC 2025)
  * BMSSP algorithm for sparse directed graphs with non-negative weights.
@@ -40,7 +51,9 @@ SSSPResult bmssp_parallel(
     uint32_t source,
     size_t num_threads = 0,
     bool use_gadget_transform = false,
-    FrontierType frontier_type = FrontierType::Concurrent
+    FrontierType frontier_type = FrontierType::Concurrent,
+    const BMSSPOptions& options = {},
+    BMSSPTimings* timings = nullptr
 );
 
 } // namespace bmssp

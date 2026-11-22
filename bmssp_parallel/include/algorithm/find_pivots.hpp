@@ -54,7 +54,8 @@ PivotResult find_pivots_parallel(
     size_t k,
     AtomicVertexState* states,
     EpochDeduplicator& deduplicator,
-    FindPivotsWorkspace* workspace = nullptr
+    FindPivotsWorkspace* workspace = nullptr,
+    size_t granularity_cutoff = DEFAULT_GRANULARITY_CUTOFF
 );
 
 } // namespace bmssp

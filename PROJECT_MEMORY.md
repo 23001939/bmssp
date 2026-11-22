@@ -685,3 +685,25 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - `Sparse 200K (1M edges)`: `Conc 8T` giảm còn `179,749 ms` (`1T → 8T = 1,32×`).
   - `Dense-20 200K (4M edges)`: `Conc 8T = 252,598 ms` (`1T → 8T = 1,58×`, nhanh hơn `Mutex 8T` `3,63×`, nhanh hơn `bmssp_seq` `5,09×`, chỉ còn `1,17×` so với `Dijkstra 1T` `216,776 ms`).
 - **Báo cáo tổng hợp cuối cùng:** `bmssp_parallel/PARALLEL_OPTIMIZATION_REPORT.md`.
+
+## Kiểm thử BMSSP Mutex của Người 4 (22/11/2026)
+
+- Nhánh `feat/person4-qa` tích hợp `b3ffe2f` qua merge commit `8eaf63d`. CTest Release đạt **7/7**. `verify_correctness.cpp` đạt **72 lượt** đối chứng BMSSP Mutex so với Dijkstra ở 1, 2, 4 và 8 luồng. Hai bộ đếm FindPivots và relax xác nhận cutoff 2.048 cạnh. Ca dày có 4.096 cạnh hoạt động và nhiều cạnh cùng đích.
+- TSan đạt **3/3** trong Ubuntu WSL2 với Clang 18, `libomp` và Archer khi dùng `ignore_noninstrumented_modules=1`. Có log riêng của lượt cảnh báo runtime. Phạm vi lượt này gồm Mutex, atomic và gadget. [Báo cáo và bước chạy lại](bmssp_parallel/person4_results/mutex_verification.md)
+- Hai khác biệt ở định tuyến phía dưới `B′ᵢ` và cận phân tách các khóa đồng hạng được ghi để Người 3 đối chiếu. Mục 3 tiếp tục với lượt nghiệm thu `ConcurrentFrontierD` và log TSan riêng.
+
+## Kiểm thử ConcurrentFrontierD của Người 4 (22/11/2026)
+
+- CTest Release đạt **8/8**. Bộ đối chứng Concurrent đạt **72/72** lượt. Stress test hoàn thành **32 luồng / 10 triệu lời gọi frontier** trong **1.864,06 ms**, timeout 180 giây, mã thoát `0`. Eager Cleanup giảm **53,00%** số `SPLIT` trên ca dày của Người 2 (`666 → 313`).
+- TSan trong Ubuntu WSL2, Clang 18.1.3 và Archer với `ignore_noninstrumented_modules=1` đạt **2/2 Concurrent** và **3/3 Mutex**. Lượt stress TSan dùng 8 luồng / 4.096 lời gọi ngẫu nhiên. [Báo cáo và log](bmssp_parallel/person4_results/concurrent_verification.md)
+
+## Benchmark scaling của Người 4 (22/11/2026)
+
+- GCC 13.3.0 Release trong Ubuntu WSL, máy Windows i7-14650HX có 16 lõi vật lý. Đã chạy ma trận 1–32 luồng ở 1 triệu đỉnh, khảo sát 1 và 8 luồng ở 5–10 triệu đỉnh cho cả hai họ đồ thị và đo riêng hai lượt gadget ở 1 triệu đỉnh. CTest Release đạt **8/8** và các mẫu ghi log khớp Dijkstra.
+- Speedup cao nhất ở dải đo là **1,47×** với scale-free một triệu đỉnh ở 8 luồng. Quét 18 cấu hình cutoff/cap `M`, kiểm tra lại hai cấu hình đã chọn và giữ mặc định chung. Cap `M=16` có lượt timeout.
+- Profiling riêng ghi được context switch và chờ spinlock D1. `perf stat` trên kernel WSL hiện tại báo L1/LLC không được hỗ trợ. Mốc 3× và xác nhận chính thức mốc so sánh với nhóm còn mở. [Báo cáo, dữ liệu và biểu đồ](bmssp_parallel/person4_results/scaling_report.md)
+
+## Rà soát hồ sơ bàn giao Người 4 (22/11/2026)
+
+- Lượt bàn giao tại `feat/person4-qa` xác nhận Release **8/8**, stress **32 luồng / 10.000.000 lời gọi** trong **1.697,98 ms** và TSan **3/3 Mutex, 2/2 Concurrent** với Clang 18.1.3, Archer và `ignore_noninstrumented_modules=1`. Hồ sơ có lệnh chạy từng test, log và liên kết tới dữ liệu benchmark. [Hồ sơ bàn giao](bmssp_parallel/person4_results/handoff_person4.md)
+- Speedup tối đa **1,47×** trong dải đo, dưới mục tiêu **3×**. Số đo cache L1/L3 thực tế còn thiếu. `wpr -pmcsources` trên Windows có liệt kê `LLCMisses` và `LLCReference`, còn log benchmark WSL ghi bộ đếm cache không được hỗ trợ. [Nguồn đếm WPR](bmssp_parallel/person4_results/wpr_pmcsources.txt)

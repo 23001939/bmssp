@@ -77,7 +77,8 @@ PivotResult find_pivots_parallel(
     size_t k,
     AtomicVertexState* states,
     EpochDeduplicator& deduplicator,
-    FindPivotsWorkspace* workspace
+    FindPivotsWorkspace* workspace,
+    size_t granularity_cutoff
 ) {
     PivotResult result;
     if (S.empty() || k == 0 || graph.n == 0 || states == nullptr) {
@@ -160,7 +161,7 @@ PivotResult find_pivots_parallel(
             buf.clear();
         }
 
-        if (active_edges >= static_cast<uint64_t>(DEFAULT_GRANULARITY_CUTOFF) && max_threads > 1) {
+        if (active_edges >= granularity_cutoff && max_threads > 1) {
 #ifdef BMSSP_ENABLE_PROFILING
             prof.fp_par_steps++;
             prof.fp_par_edges += active_edges;

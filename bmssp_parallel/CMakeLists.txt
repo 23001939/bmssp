@@ -5,12 +5,26 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(BMSSP_ENABLE_TSAN "Build with ThreadSanitizer" OFF)
+option(BMSSP_ENABLE_PROFILING "Collect BMSSP phase counters" OFF)
+
 # Required hardware compile flags for 128-bit atomic CAS (cmpxchg16b) and high performance
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-O3 -march=native -mcx16 -Wall -Wextra)
+    add_compile_options(-march=native -mcx16 -Wall -Wextra)
+    if (BMSSP_ENABLE_TSAN)
+        add_compile_options(-fsanitize=thread -g -O1)
+        add_link_options(-fsanitize=thread)
+    else()
+        add_compile_options(-O3)
+    endif()
+elseif (BMSSP_ENABLE_TSAN)
+    message(FATAL_ERROR "ThreadSanitizer requires GCC or Clang")
 endif()
 
 find_package(OpenMP REQUIRED)
+if (BMSSP_ENABLE_PROFILING)
+    add_compile_definitions(BMSSP_ENABLE_PROFILING)
+endif()
 
 include_directories(
     include
@@ -51,6 +65,9 @@ add_executable(test_d_stress
     tests/test_d_stress.cpp
 )
 target_link_libraries(test_d_stress PRIVATE bmssp_data_structure bmssp_core OpenMP::OpenMP_CXX)
+if (BMSSP_ENABLE_TSAN)
+    target_compile_definitions(test_d_stress PRIVATE BMSSP_TSAN_TEST_RUN)
+endif()
 
 add_executable(verify_parallel_bmssp
     tests/verify_parallel_bmssp.cpp
@@ -73,9 +90,13 @@ add_executable(bench_parallel_bmssp
 )
 target_link_libraries(bench_parallel_bmssp PRIVATE bmssp_parallel_lib OpenMP::OpenMP_CXX)
 
+add_executable(bench_synthetic benchmarks/bench_synthetic.cpp)
+target_link_libraries(bench_synthetic PRIVATE bmssp_parallel_lib)
+
 enable_testing()
 add_test(NAME test_person1 COMMAND test_person1)
 add_test(NAME test_d_stress COMMAND test_d_stress)
+set_tests_properties(test_d_stress PROPERTIES TIMEOUT 180)
 add_test(NAME verify_parallel_bmssp COMMAND verify_parallel_bmssp)
 add_test(NAME test_parallel_edge_cases COMMAND test_parallel_edge_cases)
 
@@ -89,6 +110,10 @@ if (BUILD_TESTING)
         add_test(NAME ${test_target} COMMAND ${test_target})
     endforeach()
 
+    target_link_libraries(verify_correctness PRIVATE bmssp_parallel_lib)
+    target_include_directories(verify_correctness PRIVATE src/algorithm)
     target_link_libraries(test_atomic_state PRIVATE Threads::Threads)
     set_tests_properties(test_atomic_state PROPERTIES TIMEOUT 30)
+    add_test(NAME verify_correctness_concurrent COMMAND verify_correctness --frontier=concurrent)
+    set_tests_properties(verify_correctness verify_correctness_concurrent PROPERTIES TIMEOUT 120)
 endif()

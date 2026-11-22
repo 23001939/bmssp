@@ -1,17 +1,19 @@
 # Các bước tiếp theo của Người 4 trong dự án BMSSP
 
-Bạn phụ trách kiểm thử tính đúng, an toàn đa luồng và hiệu năng của `bmssp_parallel/`. Trên nhánh `feat/person4-qa`, **mục 1 đã hoàn tất**. Việc tiếp theo là lấy nhánh hoặc commit bàn giao của Người 3 cùng cách gọi API BMSSP song song với `MutexFrontierD`, rồi nối bộ đối chứng đã chuẩn bị vào solver.
+Bạn phụ trách kiểm thử tính đúng, an toàn đa luồng và hiệu năng của `bmssp_parallel/`. **Đã hoàn tất kiểm thử mục 1–3 và chạy benchmark mục 4.** Nhánh `feat/person4-qa` đã tích hợp lõi của Người 3 và `ConcurrentFrontierD` của Người 2 từ commit `b3ffe2f`. Kết quả scaling tốt nhất là **1,47×** trong các lượt đo, dưới mốc 3×. Kết quả cache phần cứng L1/L3 còn thiếu do WSL không hỗ trợ các bộ đếm trên máy đo. Các file kiểm thử của Người 4 dùng C++. [Bản tích hợp `b3ffe2f`](https://github.com/23001939/bmssp/tree/b3ffe2f) · [Báo cáo mục 4](bmssp_parallel/person4_results/scaling_report.md)
 
 [Phân công Người 4 và tiêu chí nghiệm thu](team_allocation_and_technical_workflow.md#34-người-4-kỹ-sư-kiểm-thử-threadsanitizer--tinh-chỉnh-hiệu-năng-giai-đoạn-3---làm-cuối) · [Thiết kế BMSSP song song](bmssp_parallelization_design_document.md) · [Bài báo gốc, Thuật toán 1–3 và Lemma 3.3](2504.17033v2.pdf)
 
-## Trạng thái ngày 20/11/2026
+## Trạng thái ngày 22/11/2026
 
 | Mốc | Trạng thái |
 | --- | --- |
 | 1. Kiểm thử hạ tầng | Hoàn tất. Log và lệnh chạy lại ở mục 1. |
-| 2. Kiểm thử BMSSP với `MutexFrontierD` | Chờ Người 3 bàn giao lõi và cách gọi API. Có thể chuẩn bị môi trường ThreadSanitizer trong lúc chờ. |
-| 3. Kiểm thử `ConcurrentFrontierD` | Chờ Người 2 bàn giao frontier đồng thời để chạy stress test và kiểm tra lại bản tích hợp. |
-| 4. Benchmark và profiling | Chờ bản tích hợp đạt kiểm thử tính đúng và đồng thời. |
+| 2. Kiểm thử BMSSP với `MutexFrontierD` | Đã chạy đối chứng, ca biên, cutoff và TSan cho bộ Mutex. Báo cáo ghi hai khác biệt cần Người 3 đối chiếu. |
+| 3. Kiểm thử `ConcurrentFrontierD` | Hoàn tất đối chứng, stress test 32 luồng và TSan với hai cấu hình. |
+| 4. Benchmark và profiling | Đã đo hai họ đồ thị từ 1 đến 10 triệu đỉnh, xuất dữ liệu và biểu đồ, quét cutoff và `M`. Tốc độ chưa đạt 3×. Cần nhóm xác nhận mốc nghiệm thu và môi trường có bộ đếm L1/L3. |
+
+Người 2 đã báo cáo stress test **32 luồng, 10 triệu thao tác** và số lần tách block giảm **55,05%** trong ca đo Eager Cleanup. README bản tích hợp ghi **4/4** test đạt ở Release và ASan. Phạm vi hạ tầng và stress test đã có kết quả TSan, còn toàn bộ suite BMSSP song song chưa được xác nhận sạch TSan. Các ô nghiệm thu bên dưới ghi kết quả chạy của Người 4. [Báo cáo Người 2](https://github.com/23001939/bmssp/blob/1285a81/bmssp_parallel/PERSON2_CONCURRENT_D_REPORT.md) · [Kết quả bản tích hợp](https://github.com/23001939/bmssp/blob/b3ffe2f/bmssp_parallel/README.md#6-kiểm-chứng-threadsanitizer)
 
 ## 1. Làm ngay với hạ tầng Người 1
 
@@ -42,30 +44,38 @@ ctest --test-dir bmssp_parallel/build/person4 --output-on-failure --no-tests=err
 | Đồ thị có đỉnh bậc cao | Chạy Dijkstra trên đồ thị gốc và đồ thị đã biến đổi, với nguồn tương ứng. So sánh toàn bộ kết quả sau khi hoàn nguyên. |
 | Đồ thị ngẫu nhiên và đồ thị dày | Đã cố định seed và đối chiếu Dijkstra với Bellman–Ford trên toàn bộ đỉnh. Dùng lại các ca này ở nhiều mức luồng khi tích hợp BMSSP ở mục 2. |
 
-## 2. Khi Người 3 bàn giao lõi chạy với MutexFrontierD
+## 2. Kiểm thử lõi BMSSP với MutexFrontierD
 
-- [ ] Nối `tests/verify_correctness.cpp` với API solver được bàn giao. Dùng cùng đồ thị gốc và nguồn cho hai solver. Kiểm tra trùng trạng thái tới được của mọi đỉnh và sai số tuyệt đối lớn nhất **nhỏ hơn `1e-9`** trên toàn bộ khoảng cách hữu hạn. Khi lỗi, in đỉnh, đáp án đối chứng, giá trị thực tế, seed và số luồng.
-- [ ] Thêm ca kiểm tra ứng viên đúng tại các cận `B′ᵢ`, `Bᵢ`, `B`, ứng viên có khoảng cách bằng giá trị hiện tại và `pull` rút hết frontier. Đối chiếu với Thuật toán 3 và Lemma 3.3. Báo lại nhóm nếu lõi hoặc mock cho kết quả khác hợp đồng đã thống nhất.
-- [ ] Cùng Người 3 xác nhận chế độ tuần tự và song song ở hai phía ngưỡng mặc định **2.048 cạnh hoạt động**. Nếu có cách quan sát nhánh thực thi, kiểm tra cả hành vi chọn nhánh và kết quả khoảng cách.
-- [ ] Tạo `tests/run_tsan.sh` với cờ biên dịch và liên kết `-fsanitize=thread -g -O1`. Dùng môi trường có hỗ trợ TSan, chẳng hạn Linux x86-64, rồi chạy bộ test đa luồng, gồm đồ thị dày. Lưu log riêng để đối chiếu lại sau khi thay frontier. [Tài liệu ThreadSanitizer](https://clang.llvm.org/docs/ThreadSanitizer.html)
+- [x] Nối `tests/verify_correctness.cpp` với `bmssp_parallel` và chọn `FrontierType::Mutex`. Đã đối chiếu mọi đỉnh với Dijkstra ở **1, 2, 4 và 8 luồng** trên 18 ca, gồm đồ thị dày có nhiều cạnh chung đích. Cả **72 lượt** đều đạt ngưỡng sai số **`< 1e-9`**. Ca near-tie khớp chính xác.
+- [x] Kiểm tra các cận `B′ᵢ`, `Bᵢ`, `B`, khoảng cách bằng nhau và `pull` rút hết frontier. Ghi các khác biệt với Thuật toán 3 và Lemma 3.3 để Người 3 đối chiếu.
+- [x] Dùng bộ đếm profiling xác nhận FindPivots và pha relax của BMSSP chuyển sang song song tại **2.048 cạnh hoạt động**. Đã kiểm tra **2.047, 2.048 và 2.049** cạnh và đối chiếu các khoảng cách với Dijkstra.
+- [x] Tạo `tests/run_tsan.sh` với `-fsanitize=thread -g -O1` và chạy trong Ubuntu WSL2 x86-64. CTest TSan đạt **3/3** với Clang 18, `libomp`, Archer và `ignore_noninstrumented_modules=1`. Đã lưu cả lượt đạt và lượt cảnh báo runtime để đối chiếu.
 
-## 3. Khi Người 2 bàn giao ConcurrentFrontierD
+**Kết quả mục 2** · [Báo cáo và lệnh chạy lại](bmssp_parallel/person4_results/mutex_verification.md) · [Log Release 7/7](bmssp_parallel/person4_results/ctest_mutex_release.txt) · [Log TSan 3/3](bmssp_parallel/person4_results/tsan_mutex.txt)
 
-- [ ] Viết `tests/test_d_stress.cpp`. Dùng nhiều luồng gọi `insert`. Xen kẽ các pha `batch_prepend` và `pull` với pha chèn, theo hợp đồng [`IFrontierD`](bmssp_parallel/include/core/frontier_interface.hpp). `batch_prepend` do luồng chính gọi sau điểm đồng bộ.
-- [ ] Dùng ca có đáp án biết trước để kiểm tra mục hợp lệ không bị mất, mục lỗi thời bị lọc, dãy `Bᵢ` không giảm qua các lần `pull` trong luồng xử lý hợp lệ, và cận cuối đúng theo hợp đồng. Dùng block nhỏ và nhiều lần giảm khoảng cách để ép `SPLIT` và kiểm tra Eager Cleanup. Nếu module cung cấp bộ đếm, ghi số lần split có và không có cleanup để đối chiếu mục tiêu giảm ít nhất **50%** trên đồ thị dày của Người 2.
-- [ ] Chạy mốc **32 luồng, 10 triệu thao tác**. Ghi seed, thời lượng, mã thoát và kết quả. Đặt timeout để ghi nhận lượt bị treo. Mốc đạt khi test hoàn tất và mọi kiểm tra bất biến đều qua.
-- [ ] Tích hợp frontier thật theo cờ `USE_CONCURRENT_D` khi nhóm cung cấp. Chạy lại toàn bộ đối chứng và TSan với frontier thật. Lưu log của hai cấu hình để truy lỗi theo lần bàn giao.
+## 3. Kiểm thử ConcurrentFrontierD trên bản tích hợp
+
+- [x] Rà soát và chạy lại `tests/test_d_stress.cpp`. Bổ sung ca C++ qua `IFrontierD` cho hai chế độ cleanup và siết kiểm tra lô/cận trong stress test.
+- [x] Ca `M=2` rút đủ và đúng thứ tự, bỏ mục lỗi thời, trả cận `4 → 100`. Cleanup tránh cả 2 lần `SPLIT`. Trên đồ thị dày của Người 2, số lần `SPLIT` giảm từ **666** xuống **313** (**53,00%**).
+- [x] Stress test Release hoàn thành **32 luồng, 10.000.000 lời gọi frontier** trong **1.864,06 ms**, seed `0x9e3779b97f4a7c15`, timeout CTest **180 giây**, mã thoát `0`.
+- [x] Đối chứng `FrontierType::Concurrent` đạt **72/72** lượt. CTest Release đạt **8/8**. ThreadSanitizer trên Ubuntu WSL2 với Clang 18.1.3 và Archer đạt **2/2 Concurrent**, **3/3 Mutex**, 0 báo cáo data race trong cấu hình đã ghi. Phần stress ngẫu nhiên trong lượt TSan dùng 8 luồng và 4.096 lời gọi.
+
+**Kết quả mục 3** · [Báo cáo và lệnh chạy lại](bmssp_parallel/person4_results/concurrent_verification.md) · [Log Release Concurrent](bmssp_parallel/person4_results/ctest_concurrent_release.txt) · [Log TSan Concurrent](bmssp_parallel/person4_results/tsan_concurrent.txt) · [Log TSan Mutex](bmssp_parallel/person4_results/tsan_mutex.txt)
 
 ## 4. Đo và tinh chỉnh hiệu năng bản tích hợp
 
-- [ ] Tạo `benchmarks/bench_synthetic.cpp` cho đồ thị ngẫu nhiên Erdős–Rényi và scale-free. Giữ cố định đồ thị, nguồn và seed khi đổi số luồng. Mốc nghiệm thu dùng đồ thị từ **1 triệu đỉnh**. Dải khảo sát trong phân công là **1 đến 10 triệu đỉnh**.
-- [ ] Tạo `benchmarks/run_scaling.py` để chạy build Release ở **1, 2, 4, 8, 16 và 32 luồng** với `OMP_PROC_BIND=close` và `OMP_PLACES=cores`. Ghi số luồng thực tế, CPU và số lõi vật lý, commit, compiler flags, `n`, `m`, nguồn, seed, từng mẫu đo và trung vị. Ghi riêng thời gian biến đổi đồ thị, thời gian solver và thời gian tổng.
-- [ ] Xác nhận với nhóm mốc so sánh dùng cho mục tiêu **≥ 3×**. Với biểu đồ scaling, dùng bản song song chạy 1 luồng làm mốc. Tính `speedup(p) = T(1) / T(p)` và `hiệu suất(p) = speedup(p) / p`. Nếu báo thêm so sánh với `bmssp_seq` hoặc Dijkstra, ghi rõ solver đối chuẩn và phạm vi đo ở từng bảng.
-- [ ] Thêm `benchmarks/profile_vtune.sh` hoặc dùng `perf stat` / `perf record` trên môi trường phù hợp. Thu số liệu cache miss L1/L3 và thời gian chờ hoặc tranh chấp khóa theo bộ đếm khả dụng. Chạy profiling riêng với lượt đo thời gian.
-- [ ] So sánh cutoff **1.024, 2.048 và 4.096 cạnh** và các giá trị `M` mà bản tích hợp hỗ trợ. Đo trên cùng đồ thị và phần cứng. Chạy lại đối chứng với cấu hình được chọn trước khi chốt kết quả.
+- [x] Tạo `benchmarks/bench_synthetic.cpp` cho Erdős–Rényi và scale-free. Đã đối chiếu fingerprint, nguồn và seed giữa các cấu hình ở **1, 5 và 10 triệu đỉnh**.
+- [x] Tạo `benchmarks/run_scaling.py` và đo Release ở **1, 2, 4, 8, 16 và 32 luồng** trên đồ thị một triệu đỉnh với `OMP_PROC_BIND=close` và `OMP_PLACES=cores`. Đã lưu từng mẫu, trung vị, cấu hình build, topology và các thời gian biến đổi, solver, hoàn nguyên, tổng.
+- [ ] Xác nhận chính thức với nhóm mốc so sánh cho mục tiêu **≥ 3×**. Báo cáo đã tính speedup `T(1) / T(p)` và hiệu suất `speedup(p) / p` theo mốc Concurrent BMSSP 1 luồng trên cùng cấu hình. Mức tốt nhất đo được là **1,47×**.
+- [ ] Thu số liệu cache miss L1/L3 phần cứng. Đã tạo `benchmarks/profile_perf.sh` và chạy riêng với `perf stat`. WSL trả `<not supported>` cho các sự kiện cache. Đã lưu số lần chuyển ngữ cảnh và số liệu chờ khóa D1 từ bản profiling riêng.
+- [x] So sánh **1.024, 2.048 và 4.096 cạnh** với cap `M` tự động, 256 và 1.024. Đã chạy lại với hai cấu hình tốt nhất trong lượt quét và đối chiếu đúng với Dijkstra. Cap `M=16` vượt timeout trong lượt thăm dò. Kết quả chạy lại chưa cho thấy lợi ích ổn định để đổi cấu hình mặc định chung.
+
+**Kết quả mục 4** · [Báo cáo và cách chạy lại](bmssp_parallel/person4_results/scaling_report.md) · [Biểu đồ](bmssp_parallel/person4_results/scaling_1m.png) · [Mẫu thô một triệu đỉnh](bmssp_parallel/person4_results/scaling_1m_final.json)
 
 ## 5. Kiểm tra hồ sơ bàn giao
 
-- [ ] Có lệnh build và chạy lại từng bộ test, cùng kết quả kiểm tra atomic, gadget và đối chứng với Dijkstra.
-- [ ] Có log stress test 32 luồng, 10 triệu thao tác và log TSan với **0 cảnh báo data race** trên các lượt nghiệm thu.
-- [ ] Có dữ liệu thô, biểu đồ speedup, đường cong scaling, hiệu suất song song và báo cáo cache L1/L3. Ghi giá trị đo được so với mục tiêu **≥ 3× trên CPU 8–16 lõi thực với đồ thị từ 1 triệu đỉnh**. Nếu chưa đạt, ghi cấu hình và kết quả thực tế.
+- [x] Hồ sơ có lệnh build, lệnh chạy từng bộ và log CTest Release đạt **8/8**, gồm atomic, gadget và đối chứng Dijkstra.
+- [x] Có log bàn giao stress **32 luồng, 10 triệu lời gọi**, mã thoát `0`. Hai lượt nghiệm thu TSan đạt **3/3 Mutex** và **2/2 Concurrent**, **0 báo cáo data race** với Clang 18.1.3, `libomp`, Archer và `ignore_noninstrumented_modules=1`. Lượt stress TSan dùng 8 luồng, 4.096 lời gọi.
+- [ ] Hồ sơ đã có dữ liệu thô, biểu đồ speedup và hiệu suất. Speedup tốt nhất **1,47×** dưới mục tiêu **≥ 3×**, với scale-free một triệu đỉnh và 8 luồng trong Ubuntu WSL trên máy 16 lõi vật lý. Còn thiếu số đo L1/L3 thực tế. Log `perf` ghi lỗi không hỗ trợ của WSL và danh sách WPR ghi các nguồn đếm Windows khả dụng để đối chiếu.
+
+**Hồ sơ bàn giao** · [Tổng hợp và lệnh tái lập](bmssp_parallel/person4_results/handoff_person4.md) · [Log Release](bmssp_parallel/person4_results/handoff_release.txt) · [Log TSan](bmssp_parallel/person4_results/handoff_tsan.txt)

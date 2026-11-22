@@ -1,0 +1,135 @@
+Frontier: mutex
+Compiler request: clang++
+TSAN_OPTIONS: halt_on_error=1:exitcode=66:external_symbolizer_path=/usr/bin/llvm-symbolizer-18:ignore_noninstrumented_modules=1
+OMP_TOOL_LIBRARIES: /usr/lib/llvm-18/lib/libarcher.so
+-- Configuring done (2.1s)
+-- Generating done (0.4s)
+-- Build files have been written to: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan
+ninja: no work to do.
+Internal ctest changing into directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan
+UpdateCTestConfiguration  from :/mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan/DartConfiguration.tcl
+Parse Config file:/mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan/DartConfiguration.tcl
+Parse Config file:/mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan/DartConfiguration.tcl
+Test project /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 5
+    Start 5: verify_correctness
+
+5: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan/verify_correctness
+5: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan
+5: Test timeout computed to be: 120
+5: [PASS] single vertex source=0 frontier=Mutex threads=1 vertices=1 edges=0
+5: [PASS] single vertex source=0 frontier=Mutex threads=2 vertices=1 edges=0
+5: [PASS] single vertex source=0 frontier=Mutex threads=4 vertices=1 edges=0
+5: [PASS] single vertex source=0 frontier=Mutex threads=8 vertices=1 edges=0
+5: [PASS] disconnected source=0 frontier=Mutex threads=1 vertices=4 edges=2
+5: [PASS] disconnected source=0 frontier=Mutex threads=2 vertices=4 edges=2
+5: [PASS] disconnected source=0 frontier=Mutex threads=4 vertices=4 edges=2
+5: [PASS] disconnected source=0 frontier=Mutex threads=8 vertices=4 edges=2
+5: [PASS] zero-weight cycle and tied paths source=0 frontier=Mutex threads=1 vertices=4 edges=5
+5: [PASS] zero-weight cycle and tied paths source=0 frontier=Mutex threads=2 vertices=4 edges=5
+5: [PASS] zero-weight cycle and tied paths source=0 frontier=Mutex threads=4 vertices=4 edges=5
+5: [PASS] zero-weight cycle and tied paths source=0 frontier=Mutex threads=8 vertices=4 edges=5
+5: [PASS] near-tie source=0 frontier=Mutex threads=1 vertices=3 edges=3
+5: [PASS] near-tie source=0 frontier=Mutex threads=2 vertices=3 edges=3
+5: [PASS] near-tie source=0 frontier=Mutex threads=4 vertices=3 edges=3
+5: [PASS] near-tie source=0 frontier=Mutex threads=8 vertices=3 edges=3
+5: [PASS] high-degree source and sink source=0 frontier=Mutex threads=1 vertices=6 edges=9
+5: [PASS] high-degree source and sink source=0 frontier=Mutex threads=2 vertices=6 edges=9
+5: [PASS] high-degree source and sink source=0 frontier=Mutex threads=4 vertices=6 edges=9
+5: [PASS] high-degree source and sink source=0 frontier=Mutex threads=8 vertices=6 edges=9
+5: [PASS] generated density=8% seed=20261118 source=0 frontier=Mutex threads=1 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=0 frontier=Mutex threads=2 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=0 frontier=Mutex threads=4 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=0 frontier=Mutex threads=8 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=24 frontier=Mutex threads=1 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=24 frontier=Mutex threads=2 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=24 frontier=Mutex threads=4 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=24 frontier=Mutex threads=8 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261119 source=0 frontier=Mutex threads=1 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=0 frontier=Mutex threads=2 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=0 frontier=Mutex threads=4 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=0 frontier=Mutex threads=8 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=24 frontier=Mutex threads=1 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=24 frontier=Mutex threads=2 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=24 frontier=Mutex threads=4 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=24 frontier=Mutex threads=8 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261120 source=0 frontier=Mutex threads=1 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=0 frontier=Mutex threads=2 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=0 frontier=Mutex threads=4 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=0 frontier=Mutex threads=8 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=24 frontier=Mutex threads=1 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=24 frontier=Mutex threads=2 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=24 frontier=Mutex threads=4 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=24 frontier=Mutex threads=8 vertices=48 edges=92
+5: [PASS] generated density=70% seed=20261118 source=0 frontier=Mutex threads=1 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=0 frontier=Mutex threads=2 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=0 frontier=Mutex threads=4 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=0 frontier=Mutex threads=8 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=24 frontier=Mutex threads=1 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=24 frontier=Mutex threads=2 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=24 frontier=Mutex threads=4 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=24 frontier=Mutex threads=8 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261119 source=0 frontier=Mutex threads=1 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=0 frontier=Mutex threads=2 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=0 frontier=Mutex threads=4 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=0 frontier=Mutex threads=8 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=24 frontier=Mutex threads=1 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=24 frontier=Mutex threads=2 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=24 frontier=Mutex threads=4 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=24 frontier=Mutex threads=8 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261120 source=0 frontier=Mutex threads=1 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=0 frontier=Mutex threads=2 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=0 frontier=Mutex threads=4 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=0 frontier=Mutex threads=8 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=24 frontier=Mutex threads=1 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=24 frontier=Mutex threads=2 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=24 frontier=Mutex threads=4 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=24 frontier=Mutex threads=8 vertices=48 edges=763
+5: [PASS] slice boundaries, equal-distance routing and empty frontier pull
+5: [INFO] cutoff active_edges=2047 threads=4 sequential=1 parallel=0
+5: [INFO] cutoff active_edges=2047 threads=4 BMSSP relax edges: sequential=6141 parallel=0
+5: [INFO] cutoff active_edges=2048 threads=4 sequential=0 parallel=1
+5: [INFO] cutoff active_edges=2048 threads=4 BMSSP relax edges: sequential=0 parallel=6144
+5: [INFO] cutoff active_edges=2049 threads=4 sequential=0 parallel=1
+5: [INFO] cutoff active_edges=2049 threads=4 BMSSP relax edges: sequential=0 parallel=6147
+5: [PASS] dense shared destinations seed=20261122 source=0 frontier=Mutex threads=1 vertices=129 edges=4160
+5: [PASS] dense shared destinations seed=20261122 source=0 frontier=Mutex threads=2 vertices=129 edges=4160
+5: [PASS] dense shared destinations seed=20261122 source=0 frontier=Mutex threads=4 vertices=129 edges=4160
+5: [PASS] dense shared destinations seed=20261122 source=0 frontier=Mutex threads=8 vertices=129 edges=4160
+5: [INFO] dense shared destinations seed=20261122 FindPivots threads=4 parallel_edges=4096
+1/3 Test #5: verify_correctness ...............   Passed    0.32 sec
+test 6
+    Start 6: test_atomic_state
+
+6: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan/test_atomic_state
+6: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan
+6: Test timeout computed to be: 30
+6: [PASS] atomic relaxation with 8 writers, 128 rounds, and acquire snapshots
+6: [PASS] atomic relaxation with 16 writers, 128 rounds, and acquire snapshots
+2/3 Test #6: test_atomic_state ................   Passed    0.16 sec
+test 7
+    Start 7: test_gadget_transform
+
+7: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan/test_gadget_transform
+7: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-tsan
+7: Test timeout computed to be: 1500
+7: [PASS] gadget mapping is valid and in-degree and out-degree are at most 2
+7: [PASS] gadget restored distances source=0
+7: [PASS] gadget restored distances source=12
+3/3 Test #7: test_gadget_transform ............   Passed    0.17 sec
+
+The following tests passed:
+	verify_correctness
+	test_atomic_state
+	test_gadget_transform
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   0.73 sec

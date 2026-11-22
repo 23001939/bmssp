@@ -5,9 +5,11 @@
 #include "core/primitives.hpp"
 #include "core/profiler.hpp"
 #include "data_structure/concurrent_frontier_d.hpp"
+#include "edge_relaxation.hpp"
 
 #include <omp.h>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <deque>
@@ -48,6 +50,7 @@ struct BMSSPContext {
     EpochDeduplicator& deduplicator;
     std::vector<uint8_t> global_completed;
     FrontierType frontier_type;
+    BMSSPOptions options;
     FindPivotsWorkspace fp_ws;
     // One EpochDeduplicator per recursion level so a child call's epoch allocations
     // never clobber the parent call's my_complete_epoch.
@@ -62,7 +65,8 @@ struct BMSSPContext {
                  size_t max_lvl,
                  AtomicVertexState* st,
                  EpochDeduplicator& dedup,
-                 FrontierType ftype)
+                 FrontierType ftype,
+                 const BMSSPOptions& config)
         : graph(g),
           k(k_val),
           t(t_val),
@@ -72,6 +76,7 @@ struct BMSSPContext {
           deduplicator(dedup),
           global_completed(g.n, 0),
           frontier_type(ftype),
+          options(config),
           fp_ws(g.n),
           level_workspaces(max_lvl + 1) {
         for (size_t lvl = 0; lvl <= max_level; ++lvl) {
@@ -103,29 +108,14 @@ inline void relax_outgoing_edge(
     std::vector<VertexDist>& local_k
 ) {
     const uint32_t v = ctx.graph.edge_dest(e);
-    const double w = ctx.graph.edge_weight(e);
-    const double new_dist = du + w;
-    if (new_dist >= B) {
-        return;
-    }
-
-    const double curr_v = ctx.states[v].load_dist();
-    if (new_dist < curr_v) {
-        if (relax_edge_atomic(ctx.states[v], new_dist, u, static_cast<uint32_t>(level))) {
-            if (new_dist >= trying_B) {
-                local_d.push_back(VertexDist{v, new_dist});
-            } else {
-                // Covers both [complete_B, trying_B) and strictly improved < complete_B.
-                local_k.push_back(VertexDist{v, new_dist});
-            }
-        }
-    } else if (new_dist == curr_v && !ctx.global_completed[v]) {
-        if (new_dist >= trying_B) {
-            local_d.push_back(VertexDist{v, new_dist});
-        } else if (new_dist >= complete_B) {
-            // Algorithm 3: equal-distance uncompleted vertices in [complete_B, trying_B) go to K.
-            local_k.push_back(VertexDist{v, new_dist});
-        }
+    const double new_dist = du + ctx.graph.edge_weight(e);
+    const auto route = detail::relax_and_route_edge(ctx.states[v], new_dist, u,
+                                                  static_cast<uint32_t>(level), B, trying_B,
+                                                  complete_B, ctx.global_completed[v]);
+    if (route == detail::EdgeRoute::Insert) {
+        local_d.push_back(VertexDist{v, new_dist});
+    } else if (route == detail::EdgeRoute::Prepend) {
+        local_k.push_back(VertexDist{v, new_dist});
     }
 }
 
@@ -243,7 +233,7 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
 
     // Step 1: Find Pivots (Algorithm 1)
     auto [P, bellman_vis] = find_pivots_parallel(
-        ctx.graph, B, S, ctx.k, ctx.states, ctx.deduplicator, &ctx.fp_ws
+        ctx.graph, B, S, ctx.k, ctx.states, ctx.deduplicator, &ctx.fp_ws, ctx.options.granularity_cutoff
     );
 
     auto& level_dedup = ctx.local_complete_dedups[static_cast<size_t>(level)];
@@ -251,7 +241,9 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
 
     // Step 2: Reuse Per-Level Frontier D and Workspace (Lemma 3.3)
     const size_t shift_batch = static_cast<size_t>(level - 1) * ctx.t;
-    const size_t batch_size = std::max<size_t>(1, safe_pow2_capped(shift_batch, ctx.graph.n));
+    const size_t natural_batch_size = std::max<size_t>(1, safe_pow2_capped(shift_batch, ctx.graph.n));
+    const size_t batch_size = ctx.options.frontier_batch_cap == 0
+        ? natural_batch_size : std::min(natural_batch_size, ctx.options.frontier_batch_cap);
 
     auto& lvl_ws = ctx.level_workspaces[static_cast<size_t>(level)];
     IFrontierD* D = lvl_ws.frontier.get();
@@ -319,7 +311,9 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         }
 
         // Recursive call down to level - 1
-        auto [complete_B, nw_complete] = bmssp_rec(ctx, level - 1, trying_B, miniS);
+        auto child_result = bmssp_rec(ctx, level - 1, trying_B, miniS);
+        const double complete_B = child_result.first;
+        auto& nw_complete = child_result.second;
 
         for (uint32_t u : nw_complete) {
             ctx.global_completed[u] = 1;
@@ -361,7 +355,7 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         }
         const uint64_t total_edges = edge_prefix.back();
 
-        if (total_edges >= DEFAULT_GRANULARITY_CUTOFF && max_threads > 1) {
+        if (total_edges >= ctx.options.granularity_cutoff && max_threads > 1) {
 #ifdef BMSSP_ENABLE_PROFILING
             prof.relax_par_calls++;
             prof.relax_par_edges += total_edges;
@@ -659,7 +653,8 @@ void reconstruct_valid_predecessors(
 SSSPResult run_bmssp_direct(
     const CSRGraph& graph,
     uint32_t source,
-    FrontierType frontier_type
+    FrontierType frontier_type,
+    const BMSSPOptions& options
 ) {
     const size_t n = graph.n;
     std::vector<AtomicVertexState> atomic_states(n);
@@ -671,7 +666,7 @@ SSSPResult run_bmssp_direct(
     const size_t max_level = std::max<size_t>(1, static_cast<size_t>(std::ceil(lg / static_cast<double>(t))));
 
     EpochDeduplicator deduplicator(n);
-    BMSSPContext ctx(graph, k, t, max_level, atomic_states.data(), deduplicator, frontier_type);
+    BMSSPContext ctx(graph, k, t, max_level, atomic_states.data(), deduplicator, frontier_type, options);
 
     std::vector<uint32_t> initial_sources{source};
 #ifdef BMSSP_ENABLE_PROFILING
@@ -701,8 +696,17 @@ SSSPResult bmssp_parallel(
     uint32_t source,
     size_t num_threads,
     bool use_gadget_transform,
-    FrontierType frontier_type
+    FrontierType frontier_type,
+    const BMSSPOptions& options,
+    BMSSPTimings* timings
 ) {
+    using Clock = std::chrono::steady_clock;
+    const auto elapsed_ms = [](Clock::time_point start) {
+        return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
+    };
+    if (timings) {
+        *timings = {};
+    }
     SSSPResult res;
     if (original_graph.n == 0 || source >= original_graph.n) {
         res.dist.assign(original_graph.n, INF_DIST);
@@ -721,17 +725,34 @@ SSSPResult bmssp_parallel(
     }
 
     if (use_gadget_transform) {
+        const auto transform_start = timings ? Clock::now() : Clock::time_point{};
         TransformedGraphInfo info = transform_to_constant_degree(original_graph);
+        if (timings) {
+            timings->transform_ms = elapsed_ms(transform_start);
+        }
         const uint32_t transformed_source = info.orig_to_transformed_repr[source];
-        SSSPResult trans_res = run_bmssp_direct(info.graph, transformed_source, frontier_type);
+        const auto solve_start = timings ? Clock::now() : Clock::time_point{};
+        SSSPResult trans_res = run_bmssp_direct(info.graph, transformed_source, frontier_type, options);
+        if (timings) {
+            timings->solve_ms = elapsed_ms(solve_start);
+        }
 
+        const auto restore_start = timings ? Clock::now() : Clock::time_point{};
         res.dist.resize(original_graph.n);
         restore_distances(trans_res.dist, res.dist, info);
         reconstruct_valid_predecessors(original_graph, source, res.dist, res.pred);
+        if (timings) {
+            timings->restore_ms = elapsed_ms(restore_start);
+        }
         return res;
     }
 
-    return run_bmssp_direct(original_graph, source, frontier_type);
+    const auto solve_start = timings ? Clock::now() : Clock::time_point{};
+    res = run_bmssp_direct(original_graph, source, frontier_type, options);
+    if (timings) {
+        timings->solve_ms = elapsed_ms(solve_start);
+    }
+    return res;
 }
 
 } // namespace bmssp

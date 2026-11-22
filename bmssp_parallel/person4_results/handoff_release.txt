@@ -1,0 +1,405 @@
+Commit: 8eaf63d9a2f5ed3af3bd84c68a9466ab0b5fbc4e
+g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+ninja: no work to do.
+Internal ctest changing into directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+UpdateCTestConfiguration  from :/mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/DartConfiguration.tcl
+Parse Config file:/mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/DartConfiguration.tcl
+Parse Config file:/mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/DartConfiguration.tcl
+Test project /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: test_person1
+
+1: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/test_person1
+1: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+1: Test timeout computed to be: 1500
+1: ==================================================================
+1:   BMSSP Parallel - Person 1 Comprehensive Verification Test Suite
+1: ==================================================================
+1: >>> Running Test Suite 1: 128-bit Atomic VertexState & Memory Integrity...
+1:     [PASS] 128-bit Atomic CAS & Torn-Write Prevention verified.
+1: >>> Running Test Suite 2: CSRGraph & Gadget Constant-Degree Transform...
+1:     [PASS] Gadget Transformation max degree <= 2 and exact distance restoration verified.
+1: >>> Running Test Suite 3: Thread-Local Memory Pool...
+1:     [PASS] Thread-Local Memory Pool allocation and recycling verified.
+1: >>> Running Test Suite 4: MutexFrontierD Mockup Interface...
+1:     [PASS] MutexFrontierD concurrent insertions and pull monotonicity verified.
+1: >>> Running Test Suite 5: Parallel Primitives (Scan, Sort, Epoch Deduplication)...
+1:     [PASS] Epoch deduplication, parallel scan, and sample sort verified.
+1: >>> Running Test Suite 6: Baseline BMSSP Sequential Against Dijkstra Oracle...
+1:     [PASS] Sequential BMSSP produces 100% exact match with Dijkstra oracle.
+1: ==================================================================
+1:   ALL PERSON 1 TESTS PASSED SUCCESSFULLY! (153932/153932 checks)
+1:   Total execution time: 5.04 ms
+1: ==================================================================
+1/8 Test #1: test_person1 .....................   Passed    0.01 sec
+test 2
+    Start 2: test_d_stress
+
+2: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/test_d_stress
+2: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+2: Test timeout computed to be: 180
+2: ==================================================================
+2:   BMSSP Parallel - Person 2 ConcurrentFrontierD QA Stress Suite
+2: ==================================================================
+2: >>> [Suite 1] Edge cases for D0Deque & ConcurrentFrontierD...
+2:     [PASS] Suite 1 passed.
+2: >>> [Suite 2] Phased BMSSP-style frontier simulation (8 & 16 threads)...
+2:     [PASS] Suite 2A (8T layered exact pull): 244 pulls, 7801 vertices 100% exact & extracted once.
+2:     [PASS] Suite 2A (16T layered exact pull): 244 pulls, 7801 vertices 100% exact & extracted once.
+2:     [PASS] Suite 2B (8T cyclic BMSSP sim): 124 pulls, overflows=967, splits=288, saved=679, stale_ins=1, stale_pull=2098
+2:     [PASS] Suite 2B (16T cyclic BMSSP sim): 126 pulls, overflows=980, splits=293, saved=687, stale_ins=1, stale_pull=1849
+2:     [PASS] Suite 2 passed.
+2: >>> [Suite 3] Eager Cleanup split-reduction verification...
+2:     [PASS] M=2 eager=off splits=2 saved=0 batches=[2,3],[0,1] bounds=4,100
+2:     [PASS] M=2 eager=on splits=0 saved=2 batches=[2,3],[0,1] bounds=4,100
+2:     [Eager Cleanup OFF] overflow_events=686, actual_splits=686, eager_cleanup_saved_splits=0, stale_dropped_on_insert=1
+2:     [Eager Cleanup ON ] overflow_events=1419, actual_splits=309, eager_cleanup_saved_splits=1110, stale_dropped_on_insert=4
+2:     [Split Reduction  ] 54.96% (686 -> 309)
+2:     [PASS] Suite 3 passed (>= 50% split reduction verified).
+2: >>> [Suite 4] 32 threads, 10000000 frontier calls, base seed=0x9e3779b97f4a7c15
+2:     Total ops: 10000000 (inserts=9750000, pulls=125000, batch_prepends=125000)
+2:     Rounds: 10 | Threads: 32 | Elapsed: 1697.98 ms (5.89 Mops/s)
+2:     Stats: overflow_events=89252, actual_splits=46296, saved_splits=42956, stale_ins=7303333, stale_pull=1374472
+2:     [PASS] Suite 4 passed (zero deadlocks, zero crashes, full cleanup).
+2: ==================================================================
+2:   ALL PERSON 2 STRESS TESTS PASSED! (1718505/1718505 checks)
+2:   Total execution time: 1784.82 ms
+2: ==================================================================
+2/8 Test #2: test_d_stress ....................   Passed    1.79 sec
+test 3
+    Start 3: verify_parallel_bmssp
+
+3: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/verify_parallel_bmssp
+3: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+3: Test timeout computed to be: 1500
+3: ==================================================================
+3:   PARALLEL BMSSP VERIFICATION & GROUND TRUTH ORACLE TEST SUITE
+3: ==================================================================
+3: >>> Test 1: Hand-crafted 6-vertex directed graph...
+3:     [PASS] Toy Graph 6-vertex [Concurrent, 4T] (Max diff: 0, pred tree OK)
+3:     [PASS] Toy Graph 6-vertex [Concurrent, 1T] (Max diff: 0, pred tree OK)
+3:     [PASS] Toy Graph 6-vertex [Mutex, 4T] (Max diff: 0, pred tree OK)
+3:     [PASS] Toy Graph 6-vertex [Mutex, 1T] (Max diff: 0, pred tree OK)
+3: >>> Test 2: Graph with 0-weight edges and near-ties...
+3:     [PASS] Graph with Zero-Weight Edges [Concurrent, 4T] (Max diff: 0, pred tree OK)
+3:     [PASS] Graph with Zero-Weight Edges [Concurrent, 1T] (Max diff: 0, pred tree OK)
+3:     [PASS] Graph with Zero-Weight Edges [Mutex, 4T] (Max diff: 0, pred tree OK)
+3:     [PASS] Graph with Zero-Weight Edges [Mutex, 1T] (Max diff: 0, pred tree OK)
+3: >>> Test 3: Random Sparse Graph (n=200, m=1200)...
+3:     [PASS] Random Graph (n=200, m=1200) [Concurrent, 4T] (Max diff: 0, pred tree OK)
+3:     [PASS] Random Graph (n=200, m=1200) [Concurrent, 1T] (Max diff: 0, pred tree OK)
+3:     [PASS] Random Graph (n=200, m=1200) [Mutex, 4T] (Max diff: 0, pred tree OK)
+3:     [PASS] Random Graph (n=200, m=1200) [Mutex, 1T] (Max diff: 0, pred tree OK)
+3: >>> Test 4: Medium Scale Graph (n=2000, m=16000)...
+3:     [TIMING] Dijkstra: 0.314801 ms | Parallel BMSSP (Concurrent, 4T): 3.15554 ms
+3:     [PASS] Medium Graph (n=2000, m=16000) [Concurrent, 4T] (Max diff: 0, pred tree OK)
+3:     [TIMING] Dijkstra: 0.314801 ms | Parallel BMSSP (Mutex, 4T): 2.9436 ms
+3:     [PASS] Medium Graph (n=2000, m=16000) [Mutex, 4T] (Max diff: 0, pred tree OK)
+3: >>> Test 5: Multi-threaded scaling consistency (n=1000, m=8000)...
+3:     [PASS] Scale Check [Concurrent, 1T, 1.450702 ms] (Max diff: 0, pred tree OK)
+3:     [PASS] Scale Check [Concurrent, 2T, 1.536566 ms] (Max diff: 0, pred tree OK)
+3:     [PASS] Scale Check [Concurrent, 4T, 1.631306 ms] (Max diff: 0, pred tree OK)
+3:     [PASS] Scale Check [Concurrent, 8T, 3.412992 ms] (Max diff: 0, pred tree OK)
+3:     [PASS] Scale Check [Mutex, 1T, 1.041717 ms] (Max diff: 0, pred tree OK)
+3:     [PASS] Scale Check [Mutex, 2T, 1.029393 ms] (Max diff: 0, pred tree OK)
+3:     [PASS] Scale Check [Mutex, 4T, 1.330380 ms] (Max diff: 0, pred tree OK)
+3:     [PASS] Scale Check [Mutex, 8T, 2.593331 ms] (Max diff: 0, pred tree OK)
+3: ==================================================================
+3:   ALL PARALLEL BMSSP VERIFICATION TESTS PASSED SUCCESSFULLY!
+3: ==================================================================
+3/8 Test #3: verify_parallel_bmssp ............   Passed    0.05 sec
+test 4
+    Start 4: test_parallel_edge_cases
+
+4: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/test_parallel_edge_cases
+4: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+4: Test timeout computed to be: 1500
+4: ==================================================================
+4:   PARALLEL BMSSP COMPREHENSIVE EDGE-CASE & STRESS TEST SUITE
+4: ==================================================================
+4:
+4: >>> Suite 1: Zero-weight cycles & all-zero graphs...
+4:     [PASS] S1a 2-vertex 0-cycle [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S1a 2-vertex 0-cycle [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S1a 2-vertex 0-cycle [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S1a 2-vertex 0-cycle [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S1b 5-vertex 0-cycle + exit [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S1b 5-vertex 0-cycle + exit [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S1b 5-vertex 0-cycle + exit [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S1b 5-vertex 0-cycle + exit [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S1c Zero self-loops [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S1c Zero self-loops [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S1c Zero self-loops [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S1c Zero self-loops [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S1d All-zero graph n=50, m=200 [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S1d All-zero graph n=50, m=200 [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S1d All-zero graph n=50, m=200 [Concurrent, 8T] (MaxDiff: 0)
+4:     [PASS] S1d All-zero graph n=50, m=200 [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S1d All-zero graph n=50, m=200 [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S1d All-zero graph n=50, m=200 [Mutex, 8T] (MaxDiff: 0)
+4:
+4: >>> Suite 2: Exact ties & Near-ties...
+4:     [PASS] S2a Near-tie 4e-11 vs 0+0 [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S2a Near-tie 4e-11 vs 0+0 [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S2a Near-tie 4e-11 vs 0+0 [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S2a Near-tie 4e-11 vs 0+0 [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S2b Multi-layer integer diamond [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S2b Multi-layer integer diamond [Concurrent, 2T] (MaxDiff: 0)
+4:     [PASS] S2b Multi-layer integer diamond [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S2b Multi-layer integer diamond [Concurrent, 8T] (MaxDiff: 0)
+4:     [PASS] S2b Multi-layer integer diamond [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S2b Multi-layer integer diamond [Mutex, 2T] (MaxDiff: 0)
+4:     [PASS] S2b Multi-layer integer diamond [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S2b Multi-layer integer diamond [Mutex, 8T] (MaxDiff: 0)
+4:
+4: >>> Suite 3: Disconnected, Isolated, Edge sizes & Non-zero Source...
+4:     [PASS] S3a n=1 no edges [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S3a n=1 self-loop [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S3a n=1 no edges [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S3a n=1 self-loop [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S3a n=1 no edges [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S3a n=1 self-loop [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S3a n=1 no edges [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S3a n=1 self-loop [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (30 isolated) src=17 [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (isolated src=99) [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (30 isolated) connected src=99 [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (30 isolated) src=17 [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (isolated src=99) [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (30 isolated) connected src=99 [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (30 isolated) src=17 [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (isolated src=99) [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (30 isolated) connected src=99 [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (30 isolated) src=17 [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (isolated src=99) [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S3b n=100 (30 isolated) connected src=99 [Mutex, 4T] (MaxDiff: 0)
+4:
+4: >>> Suite 4: High-degree Hub / Power-law Skew (out-degree 20,000)...
+4:     [PASS] S4 Hub 20000-fanout -> 20001 [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S4 Hub 20000-fanout -> 20001 [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S4 Hub 20000-fanout -> 20001 [Concurrent, 8T] (MaxDiff: 0)
+4:     [PASS] S4 Hub 20000-fanout -> 20001 [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S4 Hub 20000-fanout -> 20001 [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S4 Hub 20000-fanout -> 20001 [Mutex, 8T] (MaxDiff: 0)
+4:
+4: >>> Suite 5: Gadget Constant-Degree Transformation (use_gadget_transform=true)...
+4:     [PASS] S5a Gadget High-Degree n=60 [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S5a Gadget High-Degree n=60 [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S5a Gadget High-Degree n=60 [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S5a Gadget High-Degree n=60 [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S5b Gadget Random n=300, m=2000 [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S5b Gadget Random n=300, m=2000 [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S5b Gadget Random n=300, m=2000 [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S5b Gadget Random n=300, m=2000 [Mutex, 4T] (MaxDiff: 0)
+4:     [PASS] S5c Gadget 0-Weight Cycles [Concurrent, 1T] (MaxDiff: 0)
+4:     [PASS] S5c Gadget 0-Weight Cycles [Concurrent, 4T] (MaxDiff: 0)
+4:     [PASS] S5c Gadget 0-Weight Cycles [Mutex, 1T] (MaxDiff: 0)
+4:     [PASS] S5c Gadget 0-Weight Cycles [Mutex, 4T] (MaxDiff: 0)
+4:
+4: >>> Suite 6: Concurrency Stress (n=1000, m=8000, 30 reps x 4T x 2F = 240 runs)...
+4:     [PASS] S6 [Concurrent, 1T]: 30/30 consecutive runs matched Oracle (dist + pred)
+4:     [PASS] S6 [Concurrent, 2T]: 30/30 consecutive runs matched Oracle (dist + pred)
+4:     [PASS] S6 [Concurrent, 4T]: 30/30 consecutive runs matched Oracle (dist + pred)
+4:     [PASS] S6 [Concurrent, 8T]: 30/30 consecutive runs matched Oracle (dist + pred)
+4:     [PASS] S6 [Mutex, 1T]: 30/30 consecutive runs matched Oracle (dist + pred)
+4:     [PASS] S6 [Mutex, 2T]: 30/30 consecutive runs matched Oracle (dist + pred)
+4:     [PASS] S6 [Mutex, 4T]: 30/30 consecutive runs matched Oracle (dist + pred)
+4:     [PASS] S6 [Mutex, 8T]: 30/30 consecutive runs matched Oracle (dist + pred)
+4:     [SUMMARY] Total stress runs verified: 240/240
+4:
+4: ==================================================================
+4:   ALL 6 EDGE-CASE & CONCURRENCY STRESS SUITES PASSED 100%!
+4: ==================================================================
+4/8 Test #4: test_parallel_edge_cases .........   Passed    0.42 sec
+test 5
+    Start 5: verify_correctness
+
+5: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/verify_correctness
+5: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+5: Test timeout computed to be: 120
+5: [PASS] single vertex source=0 frontier=Mutex threads=1 vertices=1 edges=0
+5: [PASS] single vertex source=0 frontier=Mutex threads=2 vertices=1 edges=0
+5: [PASS] single vertex source=0 frontier=Mutex threads=4 vertices=1 edges=0
+5: [PASS] single vertex source=0 frontier=Mutex threads=8 vertices=1 edges=0
+5: [PASS] disconnected source=0 frontier=Mutex threads=1 vertices=4 edges=2
+5: [PASS] disconnected source=0 frontier=Mutex threads=2 vertices=4 edges=2
+5: [PASS] disconnected source=0 frontier=Mutex threads=4 vertices=4 edges=2
+5: [PASS] disconnected source=0 frontier=Mutex threads=8 vertices=4 edges=2
+5: [PASS] zero-weight cycle and tied paths source=0 frontier=Mutex threads=1 vertices=4 edges=5
+5: [PASS] zero-weight cycle and tied paths source=0 frontier=Mutex threads=2 vertices=4 edges=5
+5: [PASS] zero-weight cycle and tied paths source=0 frontier=Mutex threads=4 vertices=4 edges=5
+5: [PASS] zero-weight cycle and tied paths source=0 frontier=Mutex threads=8 vertices=4 edges=5
+5: [PASS] near-tie source=0 frontier=Mutex threads=1 vertices=3 edges=3
+5: [PASS] near-tie source=0 frontier=Mutex threads=2 vertices=3 edges=3
+5: [PASS] near-tie source=0 frontier=Mutex threads=4 vertices=3 edges=3
+5: [PASS] near-tie source=0 frontier=Mutex threads=8 vertices=3 edges=3
+5: [PASS] high-degree source and sink source=0 frontier=Mutex threads=1 vertices=6 edges=9
+5: [PASS] high-degree source and sink source=0 frontier=Mutex threads=2 vertices=6 edges=9
+5: [PASS] high-degree source and sink source=0 frontier=Mutex threads=4 vertices=6 edges=9
+5: [PASS] high-degree source and sink source=0 frontier=Mutex threads=8 vertices=6 edges=9
+5: [PASS] generated density=8% seed=20261118 source=0 frontier=Mutex threads=1 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=0 frontier=Mutex threads=2 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=0 frontier=Mutex threads=4 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=0 frontier=Mutex threads=8 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=24 frontier=Mutex threads=1 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=24 frontier=Mutex threads=2 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=24 frontier=Mutex threads=4 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261118 source=24 frontier=Mutex threads=8 vertices=48 edges=100
+5: [PASS] generated density=8% seed=20261119 source=0 frontier=Mutex threads=1 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=0 frontier=Mutex threads=2 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=0 frontier=Mutex threads=4 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=0 frontier=Mutex threads=8 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=24 frontier=Mutex threads=1 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=24 frontier=Mutex threads=2 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=24 frontier=Mutex threads=4 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261119 source=24 frontier=Mutex threads=8 vertices=48 edges=84
+5: [PASS] generated density=8% seed=20261120 source=0 frontier=Mutex threads=1 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=0 frontier=Mutex threads=2 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=0 frontier=Mutex threads=4 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=0 frontier=Mutex threads=8 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=24 frontier=Mutex threads=1 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=24 frontier=Mutex threads=2 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=24 frontier=Mutex threads=4 vertices=48 edges=92
+5: [PASS] generated density=8% seed=20261120 source=24 frontier=Mutex threads=8 vertices=48 edges=92
+5: [PASS] generated density=70% seed=20261118 source=0 frontier=Mutex threads=1 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=0 frontier=Mutex threads=2 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=0 frontier=Mutex threads=4 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=0 frontier=Mutex threads=8 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=24 frontier=Mutex threads=1 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=24 frontier=Mutex threads=2 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=24 frontier=Mutex threads=4 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261118 source=24 frontier=Mutex threads=8 vertices=48 edges=769
+5: [PASS] generated density=70% seed=20261119 source=0 frontier=Mutex threads=1 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=0 frontier=Mutex threads=2 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=0 frontier=Mutex threads=4 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=0 frontier=Mutex threads=8 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=24 frontier=Mutex threads=1 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=24 frontier=Mutex threads=2 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=24 frontier=Mutex threads=4 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261119 source=24 frontier=Mutex threads=8 vertices=48 edges=815
+5: [PASS] generated density=70% seed=20261120 source=0 frontier=Mutex threads=1 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=0 frontier=Mutex threads=2 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=0 frontier=Mutex threads=4 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=0 frontier=Mutex threads=8 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=24 frontier=Mutex threads=1 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=24 frontier=Mutex threads=2 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=24 frontier=Mutex threads=4 vertices=48 edges=763
+5: [PASS] generated density=70% seed=20261120 source=24 frontier=Mutex threads=8 vertices=48 edges=763
+5: [PASS] slice boundaries, equal-distance routing and empty frontier pull
+5: [PASS] dense shared destinations seed=20261122 source=0 frontier=Mutex threads=1 vertices=129 edges=4160
+5: [PASS] dense shared destinations seed=20261122 source=0 frontier=Mutex threads=2 vertices=129 edges=4160
+5: [PASS] dense shared destinations seed=20261122 source=0 frontier=Mutex threads=4 vertices=129 edges=4160
+5: [PASS] dense shared destinations seed=20261122 source=0 frontier=Mutex threads=8 vertices=129 edges=4160
+5/8 Test #5: verify_correctness ...............   Passed    0.05 sec
+test 6
+    Start 6: test_atomic_state
+
+6: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/test_atomic_state
+6: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+6: Test timeout computed to be: 30
+6: [PASS] atomic relaxation with 8 writers, 128 rounds, and acquire snapshots
+6: [PASS] atomic relaxation with 16 writers, 128 rounds, and acquire snapshots
+6/8 Test #6: test_atomic_state ................   Passed    0.06 sec
+test 7
+    Start 7: test_gadget_transform
+
+7: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/test_gadget_transform
+7: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+7: Test timeout computed to be: 1500
+7: [PASS] gadget mapping is valid and in-degree and out-degree are at most 2
+7: [PASS] gadget restored distances source=0
+7: [PASS] gadget restored distances source=12
+7/8 Test #7: test_gadget_transform ............   Passed    0.01 sec
+test 8
+    Start 8: verify_correctness_concurrent
+
+8: Test command: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling/verify_correctness "--frontier=concurrent"
+8: Working Directory: /mnt/c/Users/dtai168/VScode/bmssp/bmssp_parallel/build/person4-scaling
+8: Test timeout computed to be: 120
+8: [PASS] single vertex source=0 frontier=Concurrent threads=1 vertices=1 edges=0
+8: [PASS] single vertex source=0 frontier=Concurrent threads=2 vertices=1 edges=0
+8: [PASS] single vertex source=0 frontier=Concurrent threads=4 vertices=1 edges=0
+8: [PASS] single vertex source=0 frontier=Concurrent threads=8 vertices=1 edges=0
+8: [PASS] disconnected source=0 frontier=Concurrent threads=1 vertices=4 edges=2
+8: [PASS] disconnected source=0 frontier=Concurrent threads=2 vertices=4 edges=2
+8: [PASS] disconnected source=0 frontier=Concurrent threads=4 vertices=4 edges=2
+8: [PASS] disconnected source=0 frontier=Concurrent threads=8 vertices=4 edges=2
+8: [PASS] zero-weight cycle and tied paths source=0 frontier=Concurrent threads=1 vertices=4 edges=5
+8: [PASS] zero-weight cycle and tied paths source=0 frontier=Concurrent threads=2 vertices=4 edges=5
+8: [PASS] zero-weight cycle and tied paths source=0 frontier=Concurrent threads=4 vertices=4 edges=5
+8: [PASS] zero-weight cycle and tied paths source=0 frontier=Concurrent threads=8 vertices=4 edges=5
+8: [PASS] near-tie source=0 frontier=Concurrent threads=1 vertices=3 edges=3
+8: [PASS] near-tie source=0 frontier=Concurrent threads=2 vertices=3 edges=3
+8: [PASS] near-tie source=0 frontier=Concurrent threads=4 vertices=3 edges=3
+8: [PASS] near-tie source=0 frontier=Concurrent threads=8 vertices=3 edges=3
+8: [PASS] high-degree source and sink source=0 frontier=Concurrent threads=1 vertices=6 edges=9
+8: [PASS] high-degree source and sink source=0 frontier=Concurrent threads=2 vertices=6 edges=9
+8: [PASS] high-degree source and sink source=0 frontier=Concurrent threads=4 vertices=6 edges=9
+8: [PASS] high-degree source and sink source=0 frontier=Concurrent threads=8 vertices=6 edges=9
+8: [PASS] generated density=8% seed=20261118 source=0 frontier=Concurrent threads=1 vertices=48 edges=100
+8: [PASS] generated density=8% seed=20261118 source=0 frontier=Concurrent threads=2 vertices=48 edges=100
+8: [PASS] generated density=8% seed=20261118 source=0 frontier=Concurrent threads=4 vertices=48 edges=100
+8: [PASS] generated density=8% seed=20261118 source=0 frontier=Concurrent threads=8 vertices=48 edges=100
+8: [PASS] generated density=8% seed=20261118 source=24 frontier=Concurrent threads=1 vertices=48 edges=100
+8: [PASS] generated density=8% seed=20261118 source=24 frontier=Concurrent threads=2 vertices=48 edges=100
+8: [PASS] generated density=8% seed=20261118 source=24 frontier=Concurrent threads=4 vertices=48 edges=100
+8: [PASS] generated density=8% seed=20261118 source=24 frontier=Concurrent threads=8 vertices=48 edges=100
+8: [PASS] generated density=8% seed=20261119 source=0 frontier=Concurrent threads=1 vertices=48 edges=84
+8: [PASS] generated density=8% seed=20261119 source=0 frontier=Concurrent threads=2 vertices=48 edges=84
+8: [PASS] generated density=8% seed=20261119 source=0 frontier=Concurrent threads=4 vertices=48 edges=84
+8: [PASS] generated density=8% seed=20261119 source=0 frontier=Concurrent threads=8 vertices=48 edges=84
+8: [PASS] generated density=8% seed=20261119 source=24 frontier=Concurrent threads=1 vertices=48 edges=84
+8: [PASS] generated density=8% seed=20261119 source=24 frontier=Concurrent threads=2 vertices=48 edges=84
+8: [PASS] generated density=8% seed=20261119 source=24 frontier=Concurrent threads=4 vertices=48 edges=84
+8: [PASS] generated density=8% seed=20261119 source=24 frontier=Concurrent threads=8 vertices=48 edges=84
+8: [PASS] generated density=8% seed=20261120 source=0 frontier=Concurrent threads=1 vertices=48 edges=92
+8: [PASS] generated density=8% seed=20261120 source=0 frontier=Concurrent threads=2 vertices=48 edges=92
+8: [PASS] generated density=8% seed=20261120 source=0 frontier=Concurrent threads=4 vertices=48 edges=92
+8: [PASS] generated density=8% seed=20261120 source=0 frontier=Concurrent threads=8 vertices=48 edges=92
+8: [PASS] generated density=8% seed=20261120 source=24 frontier=Concurrent threads=1 vertices=48 edges=92
+8: [PASS] generated density=8% seed=20261120 source=24 frontier=Concurrent threads=2 vertices=48 edges=92
+8: [PASS] generated density=8% seed=20261120 source=24 frontier=Concurrent threads=4 vertices=48 edges=92
+8: [PASS] generated density=8% seed=20261120 source=24 frontier=Concurrent threads=8 vertices=48 edges=92
+8: [PASS] generated density=70% seed=20261118 source=0 frontier=Concurrent threads=1 vertices=48 edges=769
+8: [PASS] generated density=70% seed=20261118 source=0 frontier=Concurrent threads=2 vertices=48 edges=769
+8: [PASS] generated density=70% seed=20261118 source=0 frontier=Concurrent threads=4 vertices=48 edges=769
+8: [PASS] generated density=70% seed=20261118 source=0 frontier=Concurrent threads=8 vertices=48 edges=769
+8: [PASS] generated density=70% seed=20261118 source=24 frontier=Concurrent threads=1 vertices=48 edges=769
+8: [PASS] generated density=70% seed=20261118 source=24 frontier=Concurrent threads=2 vertices=48 edges=769
+8: [PASS] generated density=70% seed=20261118 source=24 frontier=Concurrent threads=4 vertices=48 edges=769
+8: [PASS] generated density=70% seed=20261118 source=24 frontier=Concurrent threads=8 vertices=48 edges=769
+8: [PASS] generated density=70% seed=20261119 source=0 frontier=Concurrent threads=1 vertices=48 edges=815
+8: [PASS] generated density=70% seed=20261119 source=0 frontier=Concurrent threads=2 vertices=48 edges=815
+8: [PASS] generated density=70% seed=20261119 source=0 frontier=Concurrent threads=4 vertices=48 edges=815
+8: [PASS] generated density=70% seed=20261119 source=0 frontier=Concurrent threads=8 vertices=48 edges=815
+8: [PASS] generated density=70% seed=20261119 source=24 frontier=Concurrent threads=1 vertices=48 edges=815
+8: [PASS] generated density=70% seed=20261119 source=24 frontier=Concurrent threads=2 vertices=48 edges=815
+8: [PASS] generated density=70% seed=20261119 source=24 frontier=Concurrent threads=4 vertices=48 edges=815
+8: [PASS] generated density=70% seed=20261119 source=24 frontier=Concurrent threads=8 vertices=48 edges=815
+8: [PASS] generated density=70% seed=20261120 source=0 frontier=Concurrent threads=1 vertices=48 edges=763
+8: [PASS] generated density=70% seed=20261120 source=0 frontier=Concurrent threads=2 vertices=48 edges=763
+8: [PASS] generated density=70% seed=20261120 source=0 frontier=Concurrent threads=4 vertices=48 edges=763
+8: [PASS] generated density=70% seed=20261120 source=0 frontier=Concurrent threads=8 vertices=48 edges=763
+8: [PASS] generated density=70% seed=20261120 source=24 frontier=Concurrent threads=1 vertices=48 edges=763
+8: [PASS] generated density=70% seed=20261120 source=24 frontier=Concurrent threads=2 vertices=48 edges=763
+8: [PASS] generated density=70% seed=20261120 source=24 frontier=Concurrent threads=4 vertices=48 edges=763
+8: [PASS] generated density=70% seed=20261120 source=24 frontier=Concurrent threads=8 vertices=48 edges=763
+8: [PASS] slice boundaries, equal-distance routing and empty frontier pull
+8: [PASS] dense shared destinations seed=20261122 source=0 frontier=Concurrent threads=1 vertices=129 edges=4160
+8: [PASS] dense shared destinations seed=20261122 source=0 frontier=Concurrent threads=2 vertices=129 edges=4160
+8: [PASS] dense shared destinations seed=20261122 source=0 frontier=Concurrent threads=4 vertices=129 edges=4160
+8: [PASS] dense shared destinations seed=20261122 source=0 frontier=Concurrent threads=8 vertices=129 edges=4160
+8/8 Test #8: verify_correctness_concurrent ....   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 8
+
+Total Test time (real) =   2.55 sec
+
+Release exit code: 0

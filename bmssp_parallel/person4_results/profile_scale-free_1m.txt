@@ -1,0 +1,93 @@
+Linux 5.15.167.4-microsoft-standard-WSL2
+Command: bmssp_parallel/build/person4-profile/bench_synthetic scale-free 1000000 4 20261122 0 8 2048 0 0 0 1
+perf version 6.8.12
+
+Probe L1-dcache-load-misses
+
+ Performance counter stats for 'true':
+
+   <not supported>      L1-dcache-load-misses
+
+       0.000409705 seconds time elapsed
+
+       0.000107000 seconds user
+       0.000000000 seconds sys
+Probe exit code: 1
+
+Probe LLC-load-misses
+
+ Performance counter stats for 'true':
+
+   <not supported>      LLC-load-misses
+
+       0.000404494 seconds time elapsed
+
+       0.000119000 seconds user
+       0.000000000 seconds sys
+Probe exit code: 1
+
+Probe cycles
+
+ Performance counter stats for 'true':
+
+   <not supported>      cycles
+
+       0.000458733 seconds time elapsed
+
+       0.000111000 seconds user
+       0.000000000 seconds sys
+Probe exit code: 1
+
+Probe instructions
+
+ Performance counter stats for 'true':
+
+   <not supported>      instructions
+
+       0.000457614 seconds time elapsed
+
+       0.000074000 seconds user
+       0.000000000 seconds sys
+Probe exit code: 1
+
+Probe context-switches
+
+ Performance counter stats for 'true':
+
+                 0      context-switches
+
+       0.000476734 seconds time elapsed
+
+       0.000069000 seconds user
+       0.000000000 seconds sys
+Probe exit code: 0
+
+Probe lock:contention_begin
+event syntax error: 'lock:contention_begin'
+                     \___ unknown tracepoint
+
+Error:	File /sys/kernel/tracing//events/lock/contention_begin not found.
+Hint:	Perhaps this kernel misses some CONFIG_ setting to enable this feature?.
+
+Run 'perf list' for a list of valid events
+
+ Usage: perf stat [<options>] [<command>]
+
+    -e, --event <event>   event selector. use 'perf list' to list available events
+Probe exit code: 129
+
+Process-level counters: context-switches
+family,n,m,seed,source,graph_hash,reachable,threads_requested,threads_actual,omp_places,cutoff,block_cap,gadget,sample,generation_ms,oracle_ms,transform_ms,solve_ms,restore_ms,total_ms,max_error,fp_parallel_steps,relax_parallel_calls,insert_parallel_thread_ms,insert_serial_ms,frontier_pull_ms,d1_contended_calls,d1_wait_thread_ms
+scale-free,1000000,3999990,20261122,0,3647747499091963088,1000000,8,8,12,2048,0,0,1,168.217789,371.452621,0,847.209382,0,847.212962,0,113,112,319.244799,12.413237,435.116312,3207,99.797976
+
+ Performance counter stats for 'bmssp_parallel/build/person4-profile/bench_synthetic scale-free 1000000 4 20261122 0 8 2048 0 0 0 1':
+
+              2255      context-switches
+
+       1.428514420 seconds time elapsed
+
+       6.551519000 seconds user
+       0.168708000 seconds sys
+
+
+Profile command exit code: 0

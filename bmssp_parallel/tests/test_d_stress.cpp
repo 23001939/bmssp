@@ -699,8 +699,59 @@ void test_suite_2_phased_bmssp() {
 // ============================================================================
 // SUITE 3: Eager Cleanup Split-Reduction Verification (>= 50% target)
 // ============================================================================
+void test_small_block_cleanup() {
+    constexpr double B = 100.0;
+    for (bool eager : {false, true}) {
+        std::vector<AtomicVertexState> states(4);
+        ConcurrentFrontierD implementation(states.data(), states.size());
+        implementation.set_eager_cleanup(eager);
+        IFrontierD& frontier = implementation;
+        frontier.init(2, B);
+        states[0].store({40.0, NO_PRED, 0});
+        states[1].store({50.0, NO_PRED, 0});
+        frontier.insert(0, 40.0);
+        frontier.insert(1, 50.0);
+
+        states[0].store({4.0, NO_PRED, 1});
+        frontier.insert(0, 4.0);
+        states[1].store({6.0, NO_PRED, 1});
+        frontier.insert(1, 6.0);
+        const auto stats = implementation.get_stats();
+        if (eager) {
+            QA_ASSERT(stats.actual_splits == 0 && stats.eager_cleanup_saved_splits == 2,
+                      "M=2: cleanup avoids both stale-driven splits");
+        } else {
+            QA_ASSERT(stats.actual_splits > 0, "M=2: stale entries force a split with cleanup off");
+        }
+
+        states[2].store({1.0, NO_PRED, 0});
+        states[3].store({2.0, NO_PRED, 0});
+        const VertexDist prepended[] = {{2, 1.0}, {3, 2.0}};
+        frontier.batch_prepend(prepended);
+        states[2].store({0.0, NO_PRED, 1});
+        frontier.insert(2, 0.0);
+
+        const std::vector<uint32_t> first{2, 3};
+        const std::vector<uint32_t> last{0, 1};
+        std::vector<uint32_t> pulled;
+        double separator = -INF_DIST;
+        QA_ASSERT(frontier.pull(pulled, separator) && pulled == first && separator == 4.0,
+                  "M=2: first batch merges both tiers and observes the next live key");
+        QA_ASSERT(frontier.pull(pulled, separator) && pulled == last && separator == B,
+                  "M=2: second batch contains all remaining live keys and ends at B");
+        QA_ASSERT(!frontier.pull(pulled, separator) && pulled.empty() && separator == B && frontier.empty(),
+                  "M=2: exhausted frontier returns false, an empty batch and B");
+        QA_ASSERT(implementation.get_stats().stale_dropped_on_pull > 0,
+                  "M=2: pull accounts for stale prepended copy of a live D1 vertex");
+        std::cout << "    [PASS] M=2 eager=" << (eager ? "on" : "off")
+                  << " splits=" << stats.actual_splits << " saved=" << stats.eager_cleanup_saved_splits
+                  << " batches=[2,3],[0,1] bounds=4,100\n";
+    }
+}
+
 void test_suite_3_eager_cleanup() {
     std::cout << ">>> [Suite 3] Eager Cleanup split-reduction verification..." << std::endl;
+    test_small_block_cleanup();
 
     constexpr uint32_t N = 2048;
     constexpr uint64_t TARGET_EDGES = 200000;
@@ -806,7 +857,7 @@ void test_suite_3_eager_cleanup() {
 
     QA_ASSERT(stats_off.actual_splits > 0, "Eager-OFF must trigger splits");
     const double split_reduction_pct =
-        100.0 * static_cast<double>(stats_off.actual_splits - stats_on.actual_splits) /
+        100.0 * (static_cast<double>(stats_off.actual_splits) - static_cast<double>(stats_on.actual_splits)) /
         static_cast<double>(stats_off.actual_splits);
 
     std::cout << std::fixed << std::setprecision(2);
@@ -822,9 +873,10 @@ void test_suite_3_eager_cleanup() {
               << "% (" << stats_off.actual_splits << " -> " << stats_on.actual_splits << ")"
               << std::endl;
 
-    QA_ASSERT(pulled_off.size() == N && pulled_on.size() == N,
-              "Both modes must drain all N active vertices exactly once");
-    QA_ASSERT(pulled_off == pulled_on, "Both modes must extract identical vertex set");
+    std::vector<uint32_t> expected_vertices(N);
+    std::iota(expected_vertices.begin(), expected_vertices.end(), 0);
+    QA_ASSERT(pulled_off == expected_vertices, "Eager-OFF must drain each live vertex exactly once");
+    QA_ASSERT(pulled_on == expected_vertices, "Eager-ON must drain each live vertex exactly once");
     QA_ASSERT(split_reduction_pct >= 50.0, "Eager Cleanup split reduction must be >= 50.0%");
 
     std::cout << "    [PASS] Suite 3 passed (>= 50% split reduction verified)." << std::endl;
@@ -834,9 +886,7 @@ void test_suite_3_eager_cleanup() {
 // SUITE 4: 32-Thread 10,000,000-Operation Concurrent Stress Test
 // ============================================================================
 void test_suite_4_32thread_10m_stress() {
-    std::cout << ">>> [Suite 4] Full 32-thread 10,000,000-operation concurrent stress test..." << std::endl;
-
-#if defined(__SANITIZE_THREAD__)
+#if defined(BMSSP_TSAN_TEST_RUN) || defined(__SANITIZE_THREAD__)
     // TSan instrumentation makes the full 32-thread/10M-op run take over an hour.
     // Keep the same concurrency shape with a bounded workload for race detection.
     constexpr size_t NUM_THREADS = 8;
@@ -850,6 +900,10 @@ void test_suite_4_32thread_10m_stress() {
     constexpr uint32_t N = 16384;
     constexpr size_t M = 64;
     constexpr double B = 100000.0;
+    constexpr uint64_t BASE_SEED = 0x9E3779B97F4A7C15ULL;
+    std::cout << ">>> [Suite 4] " << NUM_THREADS << " threads, "
+              << NUM_THREADS * NUM_ROUNDS * OPS_PER_THREAD_PER_ROUND
+              << " frontier calls, base seed=0x" << std::hex << BASE_SEED << std::dec << std::endl;
 
     std::vector<AtomicVertexState> states(N);
     ConcurrentFrontierD frontier(states.data(), N);
@@ -875,7 +929,7 @@ void test_suite_4_32thread_10m_stress() {
 
         for (size_t tid = 0; tid < NUM_THREADS; ++tid) {
             workers.emplace_back([&, tid, round]() {
-                uint64_t rng_s = 0x9E3779B97F4A7C15ULL ^ (tid * 1000003ULL + round * 131071ULL + 17ULL);
+                uint64_t rng_s = BASE_SEED ^ (tid * 1000003ULL + round * 131071ULL + 17ULL);
                 auto next_u64 = [&rng_s]() noexcept -> uint64_t {
                     rng_s ^= rng_s >> 12;
                     rng_s ^= rng_s << 25;
@@ -907,8 +961,9 @@ void test_suite_4_32thread_10m_stress() {
                         double Bi = -1.0;
                         bool pulled = frontier.pull(local_S, Bi);
                         QA_ASSERT(local_S.size() <= M, "Concurrent pull size <= M");
-                        QA_ASSERT(!std::isnan(Bi) && Bi <= B, "Concurrent pull Bi finite/bounded");
+                        QA_ASSERT(std::isfinite(Bi) && Bi <= B, "Concurrent pull Bi finite/bounded");
                         if (pulled) {
+                            QA_ASSERT(!local_S.empty(), "Successful pull must return a nonempty batch");
                             for (uint32_t v : local_S) {
                                 QA_ASSERT(v < N, "Pulled vertex in range");
                             }
@@ -927,19 +982,17 @@ void test_suite_4_32thread_10m_stress() {
                                 local_K.push_back(VertexDist{v, d});
                             }
                         }
-                        if (!local_K.empty()) {
-                            frontier.batch_prepend(local_K);
-                        }
+                        frontier.batch_prepend(local_K);
                         ++ops_prep;
                     } else {
                         uint32_t v = static_cast<uint32_t>(r % N);
                         double progress = static_cast<double>(op) / static_cast<double>(OPS_PER_THREAD_PER_ROUND);
                         double d = 1.0 + (1.0 - 0.92 * progress) * 90000.0 +
                                    static_cast<double>((r >> 16) % 5000) * 0.01;
-                        if (relax_edge_atomic(states[v], d, static_cast<uint32_t>(tid),
-                                              static_cast<uint32_t>(round + 1))) {
-                            frontier.insert(v, d);
-                        }
+                        // Submit stale candidates too so each counted operation calls the frontier.
+                        relax_edge_atomic(states[v], d, static_cast<uint32_t>(tid),
+                                          static_cast<uint32_t>(round + 1));
+                        frontier.insert(v, d);
                         ++ops_ins;
                     }
                 }

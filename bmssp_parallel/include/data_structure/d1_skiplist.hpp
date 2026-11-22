@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef BMSSP_ENABLE_PROFILING
+#include "core/profiler.hpp"
+#endif
+
 #include "core/types.hpp"
 #include "core/memory_pool.hpp"
 
@@ -35,11 +39,26 @@ struct alignas(CACHE_LINE_SIZE) BlockSpinlock {
     std::atomic_flag flag{};
 
     void lock() noexcept {
+#ifdef BMSSP_ENABLE_PROFILING
+        if (!flag.test_and_set(std::memory_order_acquire)) {
+            return;
+        }
+        const uint64_t start = prof_now_ns();
+        do {
+            while (flag.test(std::memory_order_relaxed)) {
+                cpu_pause();
+            }
+        } while (flag.test_and_set(std::memory_order_acquire));
+        auto& stats = get_d1_lock_profile();
+        stats.wait_ns.fetch_add(prof_now_ns() - start, std::memory_order_relaxed);
+        stats.contended_calls.fetch_add(1, std::memory_order_relaxed);
+#else
         while (flag.test_and_set(std::memory_order_acquire)) {
             while (flag.test(std::memory_order_relaxed)) {
                 cpu_pause();
             }
         }
+#endif
     }
 
     bool try_lock() noexcept {
