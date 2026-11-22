@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <cmath>
@@ -89,6 +90,28 @@ public:
         return curr;
     }
 
+    /**
+     * @brief Fast 64-bit atomic distance load without issuing lock cmpxchg16b.
+     * Avoids cache-line ownership invalidation (RFO) on read-only checks.
+     */
+    [[nodiscard]] double load_dist(std::memory_order order = std::memory_order_relaxed) const noexcept {
+        static_assert(offsetof(VertexState, dist) == 0, "VertexState::dist must be at offset 0");
+        static_assert(sizeof(double) == 8, "double must be 8 bytes");
+        const auto* ptr = reinterpret_cast<const uint64_t*>(&state_.dist);
+        uint64_t bits = 0;
+        if (order == std::memory_order_acquire || order == std::memory_order_acq_rel ||
+            order == std::memory_order_consume) {
+            bits = __atomic_load_n(ptr, __ATOMIC_ACQUIRE);
+        } else if (order == std::memory_order_seq_cst) {
+            bits = __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+        } else {
+            bits = __atomic_load_n(ptr, __ATOMIC_RELAXED);
+        }
+        double dist = 0.0;
+        std::memcpy(&dist, &bits, sizeof(dist));
+        return dist;
+    }
+
     void store(VertexState desired, std::memory_order = std::memory_order_relaxed) noexcept {
         VertexState curr = load();
         while (!raw_cmpxchg16b(&state_, &curr, desired)) {
@@ -119,6 +142,9 @@ inline bool relax_edge_atomic(AtomicVertexState& target,
                               double new_dist,
                               uint32_t from_u,
                               uint32_t current_epoch) noexcept {
+    if (new_dist >= target.load_dist()) {
+        return false;
+    }
     VertexState curr = target.load(std::memory_order_relaxed);
     while (new_dist < curr.dist) {
         VertexState next;

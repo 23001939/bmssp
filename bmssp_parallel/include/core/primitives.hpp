@@ -1,11 +1,17 @@
 #pragma once
 
 #include "types.hpp"
+#include <cstddef>
+#include <limits>
 #include <vector>
 #include <numeric>
 #include <algorithm>
 #include <atomic>
 #include <span>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <deque>
 #include <omp.h>
 
 namespace bmssp {
@@ -17,6 +23,7 @@ namespace bmssp {
 class EpochDeduplicator {
 private:
     std::vector<std::atomic<uint32_t>> visited_epoch_;
+    uint32_t current_epoch_{0};
 
 public:
     explicit EpochDeduplicator(size_t n = 0) : visited_epoch_(n) {
@@ -30,12 +37,26 @@ public:
         for (auto& item : visited_epoch_) {
             item.store(0, std::memory_order_relaxed);
         }
+        current_epoch_ = 0;
     }
 
     void reset() {
         for (auto& item : visited_epoch_) {
             item.store(0, std::memory_order_relaxed);
         }
+        current_epoch_ = 0;
+    }
+
+    /**
+     * @brief Allocates a fresh epoch ID, resetting all vertex marks on wraparound.
+     */
+    uint32_t allocate_epoch() {
+        ++current_epoch_;
+        if (current_epoch_ == std::numeric_limits<uint32_t>::max()) {
+            reset();
+            current_epoch_ = 1;
+        }
+        return current_epoch_;
     }
 
     /**
@@ -54,6 +75,18 @@ public:
         }
         return false;
     }
+
+    /**
+     * @brief Checks whether vertex v has already been claimed for target_epoch.
+     */
+    [[nodiscard]] bool is_claimed(uint32_t v, uint32_t target_epoch) const noexcept {
+        return v < visited_epoch_.size() &&
+               visited_epoch_[v].load(std::memory_order_relaxed) == target_epoch;
+    }
+
+    [[nodiscard]] size_t size() const noexcept {
+        return visited_epoch_.size();
+    }
 };
 
 /**
@@ -65,52 +98,53 @@ template <typename T>
 void parallel_prefix_scan(std::span<T> arr) {
     const size_t n = arr.size();
     if (n == 0) return;
-    if (n < DEFAULT_GRANULARITY_CUTOFF || omp_get_max_threads() <= 1) {
+    const int requested = omp_get_max_threads();
+    if (n < DEFAULT_GRANULARITY_CUTOFF || requested <= 1) {
         for (size_t i = 1; i < n; ++i) {
             arr[i] += arr[i - 1];
         }
         return;
     }
 
-    int num_threads = omp_get_max_threads();
-    std::vector<T> block_sums(num_threads, 0);
+    // std::thread joins give TSan explicit happens-before edges. libgomp
+    // barriers do not, so the previous OpenMP version produced false positives.
+    const size_t p = std::min<size_t>(static_cast<size_t>(requested), 32);
+    const size_t chunk = (n + p - 1) / p;
+    std::vector<T> block_sums(p, T{0});
 
-    #pragma omp parallel
-    {
-        int tid = omp_get_thread_num();
-        int p = omp_get_num_threads();
-
-        size_t chunk = (n + p - 1) / p;
-        size_t start = std::min(static_cast<size_t>(tid) * chunk, n);
-        size_t end = std::min(start + chunk, n);
-
-        // Phase 1: Local prefix scan within chunk
+    auto local_scan = [&](size_t tid) {
+        const size_t start = std::min(tid * chunk, n);
+        const size_t end = std::min(start + chunk, n);
         for (size_t i = start + 1; i < end; ++i) {
             arr[i] += arr[i - 1];
         }
+        if (start < end) block_sums[tid] = arr[end - 1];
+    };
 
-        if (start < end) {
-            block_sums[tid] = arr[end - 1];
-        }
+    std::vector<std::thread> workers;
+    workers.reserve(p);
+    for (size_t tid = 0; tid < p; ++tid) workers.emplace_back(local_scan, tid);
+    for (auto& w : workers) w.join();
 
-        #pragma omp barrier
-
-        // Phase 2: Single-thread scan over block sums
-        #pragma omp single
-        {
-            for (int i = 1; i < p; ++i) {
-                block_sums[i] += block_sums[i - 1];
-            }
-        }
-
-        // Phase 3: Add base offset to all elements in chunk
-        if (tid > 0 && start < end) {
-            T offset = block_sums[tid - 1];
-            for (size_t i = start; i < end; ++i) {
-                arr[i] += offset;
-            }
-        }
+    std::vector<T> offsets(p, T{0});
+    T running = T{0};
+    for (size_t i = 0; i < p; ++i) {
+        offsets[i] = running;
+        running += block_sums[i];
     }
+
+    auto add_offset = [&](size_t tid) {
+        const size_t start = std::min(tid * chunk, n);
+        const size_t end = std::min(start + chunk, n);
+        if (tid > 0 && start < end) {
+            for (size_t i = start; i < end; ++i) arr[i] += offsets[tid];
+        }
+    };
+
+    workers.clear();
+    workers.reserve(p);
+    for (size_t tid = 0; tid < p; ++tid) workers.emplace_back(add_offset, tid);
+    for (auto& w : workers) w.join();
 }
 
 /**
@@ -132,12 +166,16 @@ void parallel_gather(const std::vector<std::vector<T>>& thread_buffers, std::vec
     size_t total_count = offsets.back();
     output.resize(total_count);
 
-    #pragma omp parallel for schedule(static)
+    std::vector<std::thread> workers;
+    workers.reserve(num_threads);
     for (size_t t = 0; t < num_threads; ++t) {
-        size_t dest_start = offsets[t];
-        const auto& buf = thread_buffers[t];
-        std::copy(buf.begin(), buf.end(), output.begin() + dest_start);
+        workers.emplace_back([&, t] {
+            const size_t dest_start = offsets[t];
+            const auto& buf = thread_buffers[t];
+            std::copy(buf.begin(), buf.end(), output.begin() + dest_start);
+        });
     }
+    for (auto& w : workers) w.join();
 }
 
 /**
@@ -145,28 +183,41 @@ void parallel_gather(const std::vector<std::vector<T>>& thread_buffers, std::vec
  * Sorts array of VertexDist in ascending order of distance.
  */
 inline void parallel_sample_sort(std::span<VertexDist> items) {
+    using It = std::span<VertexDist>::iterator;
     const size_t n = items.size();
-    if (n < DEFAULT_GRANULARITY_CUTOFF || omp_get_max_threads() <= 1) {
+    const int requested_threads = omp_get_max_threads();
+    if (n < DEFAULT_GRANULARITY_CUTOFF || requested_threads <= 1) {
         std::sort(items.begin(), items.end());
         return;
     }
 
-    // Task-based parallel quicksort with serial cutoff
-    auto parallel_qsort_rec = [](auto& self, auto first, auto last) -> void {
-        auto count = std::distance(first, last);
+    // Quicksort over a shared range queue. std::thread + mutex are used instead
+    // of OpenMP tasks because libgomp task bookkeeping is invisible to TSan;
+    // this keeps every relevant happens-before edge visible to the detector.
+    struct Range { It first; It last; };
+
+    std::deque<Range> queue;
+    queue.push_back({items.begin(), items.end()});
+    std::mutex queue_mtx;
+    std::condition_variable queue_cv;
+    std::atomic<size_t> pending{1};
+    std::atomic<bool> done{false};
+
+    auto partition = [](const Range& range) {
+        auto first = range.first;
+        auto last = range.last;
+        const auto count = std::distance(first, last);
         if (count <= 1024) {
             std::sort(first, last);
-            return;
+            return std::vector<Range>{};
         }
 
-        // Median-of-three pivot selection
         auto mid = first + count / 2;
         if (*mid < *first) std::iter_swap(first, mid);
         if (*(last - 1) < *first) std::iter_swap(first, last - 1);
         if (*(last - 1) < *mid) std::iter_swap(mid, last - 1);
-        auto pivot = *mid;
+        const auto pivot = *mid;
 
-        // Partition
         auto left = first;
         auto right = last - 1;
         while (true) {
@@ -178,20 +229,56 @@ inline void parallel_sample_sort(std::span<VertexDist> items) {
             --right;
         }
 
-        #pragma omp task default(none) firstprivate(first, left) shared(self)
-        self(self, first, left);
-
-        #pragma omp task default(none) firstprivate(right, last) shared(self)
-        self(self, right + 1, last);
+        std::vector<Range> children;
+        if (left > first) children.push_back({first, left});
+        if (right + 1 < last) children.push_back({right + 1, last});
+        return children;
     };
 
-    #pragma omp parallel
-    {
-        #pragma omp single nowait
-        {
-            parallel_qsort_rec(parallel_qsort_rec, items.begin(), items.end());
+    auto worker = [&]() {
+        for (;;) {
+            Range current;
+            {
+                std::unique_lock<std::mutex> lock(queue_mtx);
+                queue_cv.wait(lock, [&] {
+                    return !queue.empty() || done.load(std::memory_order_acquire);
+                });
+                if (queue.empty()) {
+                    if (done.load(std::memory_order_acquire)) return;
+                    continue;
+                }
+                current = queue.front();
+                queue.pop_front();
+            }
+
+            auto children = partition(current);
+
+            bool all_done = false;
+            {
+                std::lock_guard<std::mutex> lock(queue_mtx);
+                if (!children.empty()) {
+                    for (const auto& child : children) queue.push_back(child);
+                    pending.fetch_add(children.size(), std::memory_order_relaxed);
+                }
+                if (pending.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+                    done.store(true, std::memory_order_release);
+                    all_done = true;
+                }
+            }
+            if (all_done || !children.empty()) {
+                queue_cv.notify_all();
+            }
         }
+    };
+
+    const size_t worker_count = std::min<size_t>(static_cast<size_t>(requested_threads), 32);
+    std::vector<std::thread> workers;
+    workers.reserve(worker_count - 1);
+    for (size_t i = 1; i < worker_count; ++i) {
+        workers.emplace_back(worker);
     }
+    worker(); // calling thread participates
+    for (auto& w : workers) w.join();
 }
 
 } // namespace bmssp
