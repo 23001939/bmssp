@@ -150,7 +150,27 @@ LoadedSnapGraph load_snap_edgelist(const std::string& path) {
 }
 
 uint32_t select_giant_source(const CSRGraph& g, SSSPResult& out_oracle, size_t& out_reachable) {
-    for (uint32_t cand = 0; cand < std::min<uint32_t>(g.n, 64U); ++cand) {
+    out_reachable = 0;
+    uint32_t best_cand = 0;
+
+    std::vector<uint32_t> cands;
+    for (uint32_t c = 0; c < std::min<uint32_t>(g.n, 32U); ++c) {
+        cands.push_back(c);
+    }
+    // Also sample evenly across ID range and highest out-degree hubs (essential for citation DAGs like cit-HepPh)
+    const uint32_t step = std::max<uint32_t>(1U, g.n / 32U);
+    for (uint32_t c = step; c < g.n; c += step) {
+        cands.push_back(c);
+    }
+    std::vector<uint32_t> by_deg(g.n);
+    for (uint32_t i = 0; i < g.n; ++i) by_deg[i] = i;
+    const size_t top_k = std::min<size_t>(16, g.n);
+    std::partial_sort(by_deg.begin(), by_deg.begin() + top_k, by_deg.end(), [&](uint32_t a, uint32_t b) {
+        return g.degree(a) > g.degree(b);
+    });
+    for (size_t i = 0; i < top_k; ++i) cands.push_back(by_deg[i]);
+
+    for (uint32_t cand : cands) {
         if (g.degree(cand) == 0) continue;
         SSSPResult r = dijkstra_sequential(g, cand);
         const size_t reach = static_cast<size_t>(
@@ -164,9 +184,15 @@ uint32_t select_giant_source(const CSRGraph& g, SSSPResult& out_oracle, size_t& 
         if (reach > out_reachable) {
             out_oracle = std::move(r);
             out_reachable = reach;
+            best_cand = cand;
         }
     }
-    return 0;
+    if (out_reachable == 0 && g.n > 0) {
+        out_oracle = dijkstra_sequential(g, 0);
+        out_reachable = 1;
+        return 0;
+    }
+    return best_cand;
 }
 
 bool verify_oracle(const SSSPResult& oracle, const SSSPResult& res, double tol, double& max_diff) {

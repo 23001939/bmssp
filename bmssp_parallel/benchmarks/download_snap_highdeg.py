@@ -8,6 +8,9 @@ OUT_DIR = "bmssp_parallel/data/snap"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 DATASETS = [
+    ("cit-HepPh", "https://snap.stanford.edu/data/cit-HepPh.txt.gz", "cit-HepPh.txt"),
+    ("soc-Slashdot0811", "https://snap.stanford.edu/data/soc-Slashdot0811.txt.gz", "soc-Slashdot0811.txt"),
+    ("web-BerkStan", "https://snap.stanford.edu/data/web-BerkStan.txt.gz", "web-BerkStan.txt"),
     ("wiki-topcats", "https://snap.stanford.edu/data/wiki-topcats.txt.gz", "wiki-topcats.txt"),
     ("soc-Pokec", "https://snap.stanford.edu/data/soc-pokec-relationships.txt.gz", "soc-Pokec.txt"),
 ]
@@ -15,7 +18,7 @@ DATASETS = [
 for name, url, txt_name in DATASETS:
     txt_path = os.path.join(OUT_DIR, txt_name)
     gz_path = txt_path + ".gz"
-    if os.path.exists(txt_path) and os.path.getsize(txt_path) > 100_000_000:
+    if os.path.exists(txt_path) and os.path.getsize(txt_path) > 1_000_000:
         print(f"[SKIP] {name} already extracted: {txt_path} ({os.path.getsize(txt_path)/1e6:.1f} MB)", flush=True)
         continue
 
