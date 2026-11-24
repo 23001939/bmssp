@@ -92,3 +92,46 @@ Từ số liệu trên, hai việc mang lại hiệu quả lớn nhất (chiếm
 2. **Tối ưu `D.Pull` (`35,6% – 44,0%` tổng thời gian — nút thắt tuần tự lớn nhất):**
    - Trong [concurrent_frontier_d.cpp](file:///c:/ttss/bmssp_parallel/src/data_structure/concurrent_frontier_d.cpp#L82-L120), `pull()` đang gọi `deduplicate_min_dist` (`std::sort` theo `v`) lặp lại trong vòng `while`, rồi lại `std::sort(merged_buf_)` theo `dist`, rồi đẩy phần dư ngược về `D0`/`D1`. Có thể thay `deduplicate_min_dist` bằng bảng epoch/hash $O(1)$ theo `v` (tránh `std::sort` thừa trong vòng `while`) và dùng `std::nth_element` thay cho full `std::sort` khi chỉ cần tách top-$M$ phần tử nhỏ nhất.
 3. **Không cần ưu tiên `BaseCase` hay `D.BatchPrepend`:** Profiling đã chứng minh chúng chỉ chiếm `0,1% – 3,3%` trên đồ thị lớn.
+
+---
+
+## 4. Kiểm Chứng Sau Khi Tối Ưu `FindPivots` (24/11/2026 — Linux GCC 13.3.0)
+
+### 4.1. Thay đổi mã nguồn
+- Tại `bmssp_parallel/src/algorithm/find_pivots.cpp`: bỏ lời gọi `parallel_gather(ws.thread_buffers, next_active)` nằm ngoài khối OpenMP (vốn tạo/hủy `std::thread` mới của OS ở mỗi bước `step`).
+- Khai báo sẵn `gather_offsets` ngoài vòng `for (step = 1..k)` và gom trực tiếp bên trong khối `#pragma omp parallel` đang mở sẵn bằng `#pragma omp barrier` $\to$ `#pragma omp single` tính offset + `resize` $\to$ các luồng OpenMP copy song song vào `next_active`.
+
+### 4.2. Kiểm chứng tính đúng đắn (Release CTest + Dijkstra Oracle)
+- **Môi trường:** Linux x86-64, GCC `13.3.0`, CMake + Ninja, flags `-std=c++20 -O3 -march=native -mcx16 -Wall -Wextra -fopenmp`, CPU `12` luồng logic.
+- **Kết quả CTest (`4/4 PASS` trong `1,11s`):**
+  - `test_person1`: PASS (`0,01s`)
+  - `test_d_stress`: PASS (`0,75s`)
+  - `verify_parallel_bmssp`: PASS (`0,03s`)
+  - `test_parallel_edge_cases`: PASS (`0,32s`)
+- **Đối chiếu Oracle trong `profile_parallel_bmssp`:** 100% lượt đo trên 4 đồ thị × `{1T, 4T, 8T}` khớp `dijkstra_sequential` (`tol = 1e-9`).
+
+### 4.3. Đối chiếu hiệu năng Trước vs Sau (cùng máy Linux, cùng build flags `-DBMSSP_ENABLE_PROFILING`)
+
+*(1 warmup + trung bình 3 lượt chạy tuần tự, `ConcurrentFrontierD`.)*
+
+**Riêng pha `FindPivots` ở 8 luồng (8T):**
+
+| Đồ thị | `FindPivots` Trước (8T) | `FindPivots` Sau (8T) | Nhánh `par` (Trước → Sau) | Mức giảm `FindPivots` |
+|---|---:|---:|---:|---:|
+| **Sparse Random 200K** (`m=1M`) | 36,54 ms | **18,23 ms** | `20,21 ms` → **`7,00 ms`** (`2,89×`) | **-50,1%** |
+| **Dense-20 Random 200K** (`m=4M`) | 44,80 ms | **28,88 ms** | `27,33 ms` → **`16,79 ms`** (`1,63×`) | **-35,5%** |
+| **Hub 100K** (`deg0=50K`) | 12,70 ms | **9,11 ms** | `7,40 ms` → **`4,67 ms`** (`1,58×`) | **-28,3%** |
+| **2D Grid 300×300** (`m=359K`) | 3,88 ms | 3,92 ms | `0,68 ms` → `0,77 ms` | ~không đổi (`par_edges = 2,25%`) |
+
+**Tổng thời gian `total_solve` và tỷ lệ tự tăng tốc `1T → 8T`:**
+
+| Đồ thị | `1T → 4T → 8T` **Trước** (ms) | `1T → 4T → 8T` **Sau** (ms) | Speedup `1T → 8T` (Trước → Sau) | Tỷ trọng `D.Pull` ở 8T (Sau) |
+|---|---|---|---|---:|
+| **Sparse Random 200K** | `144,08 → 133,46 → 136,24` | `124,86 → 109,56 →` **`99,45`** | `1,06×` → **`1,26×`** | 51,10% |
+| **Dense-20 Random 200K** | `250,93 → 189,71 → 190,07` | `211,23 → 151,00 →` **`145,88`** | `1,32×` → **`1,45×`** | 40,52% |
+| **Hub 100K** | `71,68 → 67,93 → 62,47` | `74,54 → 60,81 →` **`57,04`** | `1,15×` → **`1,31×`** | 52,04% |
+| **2D Grid 300×300** | `32,59 → 33,49 → 33,05` | `32,16 → 33,64 → 34,07` | `0,99×` → `0,94×` | 31,05% |
+
+### 4.4. Kết luận và giới hạn đo
+- **Hết chậm ngược ở 8T:** Trên `Sparse 200K`, 8T đã nhanh hơn rõ rệt so với 4T (`99,45 ms` vs `109,56 ms`), đảo ngược tình trạng chậm ngược trước đó (`136,24 ms` vs `133,46 ms`).
+- **Giới hạn đo:** Giữa hai lượt chạy có dao động tải nền/turbo CPU khoảng 10–15% ở mức `1T`; tuy nhiên tỷ lệ nội tại `1T → 8T` và thời gian nhánh `par` trong `FindPivots` (`20,21 → 7,00 ms`) xác nhận lợi ích trực tiếp của thay đổi. Nút thắt tuần tự lớn nhất còn lại là `D.Pull` (`40,5% – 52,0%` ở 8T). Chưa chạy lại TSan với Clang+Archer cho riêng bản vá này.

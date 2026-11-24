@@ -128,6 +128,7 @@ PivotResult find_pivots_parallel(
 
     std::vector<uint32_t> active = unique_S;
     std::vector<uint32_t> next_active;
+    std::vector<size_t> gather_offsets(ws.thread_buffers.size() + 1, 0);
 
     const int max_threads = std::max(1, omp_get_max_threads());
     const size_t cutoff = (k <= (std::numeric_limits<size_t>::max() / unique_S.size()))
@@ -234,9 +235,27 @@ PivotResult find_pivots_parallel(
 #ifdef BMSSP_ENABLE_PROFILING
                 fp_tid_ns[static_cast<size_t>(tid)] = prof_now_ns() - t_local0;
 #endif
+                #pragma omp barrier
+                #pragma omp single
+                {
+                    const size_t nbuf = ws.thread_buffers.size();
+                    gather_offsets[0] = 0;
+                    for (size_t b = 0; b < nbuf; ++b) {
+                        gather_offsets[b + 1] = gather_offsets[b] + ws.thread_buffers[b].size();
+                    }
+                    next_active.resize(gather_offsets[nbuf]);
+                }
+                if (static_cast<size_t>(tid) < ws.thread_buffers.size()) {
+                    const auto& buf = ws.thread_buffers[static_cast<size_t>(tid)];
+                    if (!buf.empty()) {
+                        std::copy(
+                            buf.begin(),
+                            buf.end(),
+                            next_active.begin() + static_cast<std::ptrdiff_t>(gather_offsets[static_cast<size_t>(tid)])
+                        );
+                    }
+                }
             }
-
-            parallel_gather(ws.thread_buffers, next_active);
 #ifdef BMSSP_ENABLE_PROFILING
             prof.fp_relax_par_ns += (prof_now_ns() - fp_par_t0);
             uint64_t fp_sum = 0, fp_max = 0;

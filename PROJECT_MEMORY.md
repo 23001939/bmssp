@@ -679,3 +679,15 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - `Sparse 200K (1M edges)`: `Conc 8T` giảm còn `179,749 ms` (`1T → 8T = 1,32×`).
   - `Dense-20 200K (4M edges)`: `Conc 8T = 252,598 ms` (`1T → 8T = 1,58×`, nhanh hơn `Mutex 8T` `3,63×`, nhanh hơn `bmssp_seq` `5,09×`, chỉ còn `1,17×` so với `Dijkstra 1T` `216,776 ms`).
 - **Báo cáo tổng hợp cuối cùng:** `bmssp_parallel/PARALLEL_OPTIMIZATION_REPORT.md`.
+
+---
+
+## Tối Ưu `FindPivots` — Gom Buffer Trực Tiếp Trong OpenMP (24/11/2026)
+
+- **Thay đổi trên nhánh `parallel-bmssp`:** Tại `bmssp_parallel/src/algorithm/find_pivots.cpp`, thay lời gọi `parallel_gather` (tạo/hủy `std::thread` mỗi bước `step`) bằng gom buffer trực tiếp trong khối `#pragma omp parallel` đang mở sẵn (`#pragma omp barrier` + `#pragma omp single` tính `gather_offsets` + copy song song).
+- **Kiểm chứng (Linux GCC 13.3.0, Release):** CTest đạt **4/4 PASS** (`1,11s`); `profile_parallel_bmssp` khớp 100% `dijkstra_sequential` (`tol = 1e-9`).
+- **Hiệu quả đo đối chiếu Trước/Sau (8T, `ConcurrentFrontierD`):**
+  - `Sparse Random 200K`: `FindPivots` giảm `36,54 → 18,23 ms` (**-50,1%**, riêng nhánh `par`: `20,21 → 7,00 ms`); tổng `total_solve` giảm `136,24 → 99,45 ms`, speedup `1T → 8T` tăng `1,06× → 1,26×` (hết chậm ngược so với 4T).
+  - `Dense-20 Random 200K`: `FindPivots` giảm `44,80 → 28,88 ms` (**-35,5%**); tổng giảm `190,07 → 145,88 ms`, speedup `1T → 8T` tăng `1,32× → 1,45×`.
+  - `Hub 100K`: `FindPivots` giảm `12,70 → 9,11 ms` (**-28,3%**); tổng giảm `62,47 → 57,04 ms`, speedup `1T → 8T` tăng `1,15× → 1,31×`.
+- **Chi tiết & giới hạn:** Xem mục 4 trong `bmssp_parallel/PROFILING_PHASE_REPORT.md`. Nút thắt lớn nhất còn lại là `D.Pull` tuần tự (`40,5% – 52,0%` ở 8T).
