@@ -83,6 +83,11 @@ add_executable(bench_dimacs_road
 )
 target_link_libraries(bench_dimacs_road PRIVATE bmssp_parallel_lib OpenMP::OpenMP_CXX)
 
+add_executable(bench_snap_highdeg
+    benchmarks/bench_snap_highdeg.cpp
+)
+target_link_libraries(bench_snap_highdeg PRIVATE bmssp_parallel_lib OpenMP::OpenMP_CXX)
+
 enable_testing()
 add_test(NAME test_person1 COMMAND test_person1)
 add_test(NAME test_d_stress COMMAND test_d_stress)

@@ -727,3 +727,16 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - `NE` (`1,52M` đỉnh, `3,86M` cung): `Dijkstra 1T = 445,99 ms` | `BMSSP tối ưu = 758,88 ms` (`8T`, `Self-Scale = 1,23×`, tỷ số thu hẹp còn **`1,70×`**).
   - `CAL` (`1,89M` đỉnh, `4,62M` cung): `Dijkstra 1T = 482,93 ms` (sát ước tính `380–480 ms`) | `BMSSP tối ưu = 891,43 ms` (`12T`, `Self-Scale = 1,21×`, tỷ số **`1,85×`**).
 - **Nhận định:** Khác với đồ thị ngẫu nhiên/scale-free (nơi `BMSSP` vượt `Dijkstra` `1,41× – 2,20×` từ 200K–2M đỉnh), đồ thị giao thông đường bộ 2D có tính cục bộ không gian cao và mặt sóng hẹp nên cực kỳ thuận lợi cho binary heap của `Dijkstra` (`~3,3×` nhanh hơn cùng số đỉnh ER), đồng thời hạn chế độ rộng song song của `BMSSP`. Tuy vậy, khi quy mô vượt ngưỡng L3 cache (`NE 1,52M`, `CAL 1,89M`), khoảng cách `BMSSP / Dijkstra` thu hẹp rõ rệt từ `2,67×` xuống còn `1,70× – 1,85×`. Tài liệu chi tiết: `bmssp_parallel/DIMACS_ROAD_7_BENCHMARK_REPORT.md` và `bmssp_parallel/dimacs_road_7_results.csv`.
+
+
+---
+
+## Thực Nghiệm Đồ Thị Thực Tế Bậc Cao Stanford SNAP (`wiki-topcats` & `soc-Pokec`) (25/11/2026)
+
+- **Bối cảnh:** Kiểm chứng giả thuyết của người dùng rằng nguyên nhân `BMSSP` chậm hơn `Dijkstra` trên mạng đường bộ là do bậc trung bình quá thấp (`~2,5`) và mặt sóng phẳng hẹp, bằng cách chạy nguyên bản mã trên nhánh `Viet` (`4796b93`, không sửa thuật toán) trên hai đồ thị thực tế của Stanford SNAP có bậc trung bình `15 – 20` (gán trọng số nguyên dương tất định GAPBS `[1, 255]` qua `SplitMix64`).
+- **Kết quả đo tuần tự (`1 warmup + 5 samples` trung vị, `MaxDiff = 0.000 [OK]` trên 100% của `3.424.292` đỉnh và `59,13M` cung):**
+  - **`wiki-topcats`** (`n = 1.791.489`, `m = 28.508.141`, **`avg_deg = 15,91`**, `max_out_deg = 3.907`, `reachable = 100%`):
+    - `Dijkstra 1T = 2.219,93 ms` | `BMSSP 1T = 2.535,15 ms`, `2T = 1.906,69 ms`, `4T = 1.421,54 ms`, `8T = 1.336,99 ms`, **`12T = 1.315,10 ms`** (**nhanh hơn `Dijkstra` `1,69×`**, tự tăng tốc nội tại **`1,93×`**).
+  - **`soc-Pokec`** (`n = 1.632.803`, `m = 30.622.564`, **`avg_deg = 18,75`**, `max_out_deg = 8.763`, `reachable = 92,13%`):
+    - `Dijkstra 1T = 2.474,98 ms` | `BMSSP 1T = 2.520,72 ms` (1 luồng đã ngang ngửa Dijkstra, lệch 1,8%), `2T = 1.859,25 ms`, `4T = 1.442,74 ms`, `8T = 1.462,64 ms`, **`12T = 1.351,73 ms`** (**nhanh hơn `Dijkstra` `1,83×`**, tự tăng tốc nội tại **`1,86×`**).
+- **Kết luận định lượng:** So với `CAL` (`1,89M` đỉnh, bậc `2,44`), khi số cung tăng `6,63×` lên `soc-Pokec` (`1,63M` đỉnh, bậc `18,75`), `Dijkstra 1T` chậm đi `5,12×` (`482,93 → 2.474,98 ms`) trong khi `BMSSP 12T` chỉ tăng thời gian `1,52×` (`891,43 → 1.351,73 ms`), xác nhận trọn vẹn giả thuyết về mật độ bậc và độ rộng mặt sóng. Tài liệu: `bmssp_parallel/SNAP_HIGH_DEGREE_REPORT.md` và `bmssp_parallel/snap_highdeg_results.csv`.
