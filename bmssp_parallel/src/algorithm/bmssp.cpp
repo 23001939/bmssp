@@ -13,6 +13,7 @@
 #include <deque>
 #include <limits>
 #include <memory>
+#include <new>
 #include <queue>
 #include <span>
 #include <utility>
@@ -28,6 +29,57 @@ inline size_t safe_pow2_capped(size_t shift, size_t cap) noexcept {
     }
     return std::min<size_t>(static_cast<size_t>(uint64_t{1} << shift), cap);
 }
+
+struct AlignedStateDeleter {
+    void operator()(AtomicVertexState* ptr) const noexcept {
+        ::operator delete[](ptr, std::align_val_t{alignof(AtomicVertexState)});
+    }
+};
+
+#if !defined(__SANITIZE_THREAD__)
+void sort_k_openmp(std::vector<VertexDist>& K, int max_threads) {
+    const size_t n = K.size();
+    if (n < 4096 || max_threads <= 1) {
+        std::sort(K.begin(), K.end());
+        return;
+    }
+
+    const size_t num_chunks = std::min<size_t>(static_cast<size_t>(max_threads), 16);
+    std::vector<size_t> bounds(num_chunks + 1, 0);
+    for (size_t c = 0; c <= num_chunks; ++c) {
+        bounds[c] = (n * c) / num_chunks;
+    }
+
+    #pragma omp parallel for schedule(static)
+    for (ptrdiff_t c = 0; c < static_cast<ptrdiff_t>(num_chunks); ++c) {
+        const size_t b = bounds[static_cast<size_t>(c)];
+        const size_t e = bounds[static_cast<size_t>(c) + 1];
+        if (b < e) {
+            std::sort(K.begin() + static_cast<ptrdiff_t>(b),
+                      K.begin() + static_cast<ptrdiff_t>(e));
+        }
+    }
+
+    for (size_t step = 1; step < num_chunks; step *= 2) {
+        const size_t merge_pairs = (num_chunks + 2 * step - 1) / (2 * step);
+        #pragma omp parallel for schedule(static) if(merge_pairs > 1)
+        for (ptrdiff_t p = 0; p < static_cast<ptrdiff_t>(merge_pairs); ++p) {
+            const size_t c0 = static_cast<size_t>(p) * 2 * step;
+            const size_t c1 = c0 + step;
+            if (c1 >= num_chunks) continue;
+            const size_t c2 = std::min(c0 + 2 * step, num_chunks);
+            const size_t left = bounds[c0];
+            const size_t mid = bounds[c1];
+            const size_t right = bounds[c2];
+            if (left < mid && mid < right) {
+                std::inplace_merge(K.begin() + static_cast<ptrdiff_t>(left),
+                                   K.begin() + static_cast<ptrdiff_t>(mid),
+                                   K.begin() + static_cast<ptrdiff_t>(right));
+            }
+        }
+    }
+}
+#endif
 
 struct LevelWorkspace {
     std::unique_ptr<IFrontierD> frontier;
@@ -46,14 +98,12 @@ struct BMSSPContext {
     int max_threads;
     AtomicVertexState* states;
     EpochDeduplicator& deduplicator;
-    std::vector<uint8_t> global_completed;
+    std::unique_ptr<uint8_t[]> global_completed;
+    // Bitmask (1 << level) for levels 0..7; cleared in O(|complete|) on exit from bmssp_rec.
+    std::unique_ptr<uint8_t[]> level_complete_mask;
+    std::deque<EpochDeduplicator> overflow_dedups;
     FrontierType frontier_type;
     FindPivotsWorkspace fp_ws;
-    // One EpochDeduplicator per recursion level so a child call's epoch allocations
-    // never clobber the parent call's my_complete_epoch.
-    std::deque<EpochDeduplicator> local_complete_dedups;
-    // Reusable per-level frontier D and scratch buffers (Option 1 optimization:
-    // eliminates repeated ConcurrentFrontierD + 64-shard pool allocation per recursion).
     std::vector<LevelWorkspace> level_workspaces;
 
     BMSSPContext(const CSRGraph& g,
@@ -70,22 +120,40 @@ struct BMSSPContext {
           max_threads(std::max(1, omp_get_max_threads())),
           states(st),
           deduplicator(dedup),
-          global_completed(g.n, 0),
+          global_completed(std::make_unique_for_overwrite<uint8_t[]>(g.n)),
+          level_complete_mask(std::make_unique_for_overwrite<uint8_t[]>(g.n)),
           frontier_type(ftype),
-          fp_ws(g.n),
+          fp_ws(0),
           level_workspaces(max_lvl + 1) {
-        for (size_t lvl = 0; lvl <= max_level; ++lvl) {
-            local_complete_dedups.emplace_back(g.n);
-            if (lvl >= 1) {
-                auto& ws = level_workspaces[lvl];
-                if (frontier_type == FrontierType::Concurrent) {
-                    ws.frontier = std::make_unique<ConcurrentFrontierD>(states, g.n);
-                } else {
-                    ws.frontier = std::make_unique<MutexFrontierD>();
-                }
-                ws.thread_k_buffers.resize(static_cast<size_t>(max_threads));
-                ws.thread_d_buffers.resize(static_cast<size_t>(max_threads));
+        fp_ws.vertex_flags.resize(g.n, 0);
+        fp_ws.thread_buffers.resize(static_cast<size_t>(max_threads));
+
+        if (g.n >= DEFAULT_GRANULARITY_CUTOFF && max_threads > 1) {
+            #pragma omp parallel for schedule(static)
+            for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(g.n); ++i) {
+                global_completed[static_cast<size_t>(i)] = 0;
+                level_complete_mask[static_cast<size_t>(i)] = 0;
             }
+        } else {
+            std::fill_n(global_completed.get(), g.n, uint8_t{0});
+            std::fill_n(level_complete_mask.get(), g.n, uint8_t{0});
+        }
+
+        if (max_level >= 8) {
+            for (size_t lvl = 8; lvl <= max_level; ++lvl) {
+                overflow_dedups.emplace_back(g.n);
+            }
+        }
+
+        for (size_t lvl = 1; lvl <= max_level; ++lvl) {
+            auto& ws = level_workspaces[lvl];
+            if (frontier_type == FrontierType::Concurrent) {
+                ws.frontier = std::make_unique<ConcurrentFrontierD>(states, g.n);
+            } else {
+                ws.frontier = std::make_unique<MutexFrontierD>();
+            }
+            ws.thread_k_buffers.resize(static_cast<size_t>(max_threads));
+            ws.thread_d_buffers.resize(static_cast<size_t>(max_threads));
         }
     }
 };
@@ -132,7 +200,9 @@ inline void relax_outgoing_edge(
 inline void flush_local_d_to_frontier(
     std::vector<VertexDist>& local_d,
     const AtomicVertexState* states,
-    IFrontierD* D
+    IFrontierD* D,
+    int tid = 0,
+    int nthreads = 1
 ) {
     if (local_d.empty()) {
         return;
@@ -166,6 +236,19 @@ inline void flush_local_d_to_frontier(
         }
         local_d.resize(uwrite);
         std::sort(local_d.begin(), local_d.end());
+    }
+
+    // Stagger starting distance offset across threads to scatter concurrent inserts
+    // across distinct skip-list blocks instead of forming a lockstep convoy at block 0.
+    if (nthreads > 1 && local_d.size() >= 64) {
+        const size_t offset =
+            (local_d.size() * static_cast<size_t>(tid)) / static_cast<size_t>(nthreads);
+        const std::span<const VertexDist> full_span(local_d);
+        if (offset > 0 && offset < local_d.size()) {
+            D->insert_batch(full_span.subspan(offset));
+            D->insert_batch(full_span.subspan(0, offset));
+            return;
+        }
     }
 
     D->insert_batch(local_d);
@@ -206,8 +289,6 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
             return a < b;
         });
 
-        auto& dedup0 = ctx.local_complete_dedups[0];
-        const uint32_t my_epoch = dedup0.allocate_epoch();
         double cur_B = B;
         std::vector<std::pair<uint32_t, double>> candidates;
         candidates.reserve(sorted_S.size() * ctx.k);
@@ -226,14 +307,19 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
 
         std::vector<uint32_t> merged;
         merged.reserve(candidates.size());
+        constexpr uint8_t bit0 = uint8_t{1};
         for (const auto& [u, call_bound] : candidates) {
             const double du = ctx.states[u].load_dist();
             if (du < cur_B || (cur_B == call_bound && du == cur_B)) {
-                if (dedup0.try_claim(u, my_epoch)) {
+                if ((ctx.level_complete_mask[u] & bit0) == 0) {
+                    ctx.level_complete_mask[u] |= bit0;
                     ctx.global_completed[u] = 1;
                     merged.push_back(u);
                 }
             }
+        }
+        for (uint32_t u : merged) {
+            ctx.level_complete_mask[u] &= static_cast<uint8_t>(~bit0);
         }
 #ifdef BMSSP_ENABLE_PROFILING
         prof.base_case_ns += (prof_now_ns() - bc_t0);
@@ -246,8 +332,23 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         ctx.graph, B, S, ctx.k, ctx.states, ctx.deduplicator, &ctx.fp_ws
     );
 
-    auto& level_dedup = ctx.local_complete_dedups[static_cast<size_t>(level)];
-    const uint32_t my_complete_epoch = level_dedup.allocate_epoch();
+    const bool use_bitmask = (level < 8);
+    const uint8_t lvl_bit = use_bitmask ? static_cast<uint8_t>(1U << level) : uint8_t{0};
+    uint32_t overflow_epoch = 0;
+    if (!use_bitmask) {
+        overflow_epoch = ctx.overflow_dedups[static_cast<size_t>(level - 8)].allocate_epoch();
+    }
+
+    auto try_claim_level = [&](uint32_t u) noexcept -> bool {
+        if (use_bitmask) {
+            if ((ctx.level_complete_mask[u] & lvl_bit) == 0) {
+                ctx.level_complete_mask[u] |= lvl_bit;
+                return true;
+            }
+            return false;
+        }
+        return ctx.overflow_dedups[static_cast<size_t>(level - 8)].try_claim(u, overflow_epoch);
+    };
 
     // Step 2: Reuse Per-Level Frontier D and Workspace (Lemma 3.3)
     const size_t shift_batch = static_cast<size_t>(level - 1) * ctx.t;
@@ -287,6 +388,10 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
     complete.reserve(initial_reserve);
 
     const int max_threads = ctx.max_threads;
+    const uint64_t par_edge_cutoff = std::max<uint64_t>(
+        DEFAULT_GRANULARITY_CUTOFF,
+        512ULL * static_cast<uint64_t>(max_threads)
+    );
     auto& thread_k_buffers = lvl_ws.thread_k_buffers;
     auto& thread_d_buffers = lvl_ws.thread_d_buffers;
     auto& miniS = lvl_ws.miniS;
@@ -298,8 +403,9 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
 
     // Never truncate the root recursion level by quota while D still holds active vertices.
     const bool is_top_level = (static_cast<size_t>(level) == ctx.max_level);
+    bool d_exhausted = false;
 
-    while ((is_top_level || complete.size() < quota) && !D->empty()) {
+    while (is_top_level || complete.size() < quota) {
         double trying_B = B;
 #ifdef BMSSP_ENABLE_PROFILING
         prof.d_pull_calls++;
@@ -310,6 +416,7 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         prof.d_pull_ns += (prof_now_ns() - pull_t0);
 #endif
         if (!pulled) {
+            d_exhausted = true;
             break;
         }
 
@@ -323,7 +430,7 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
 
         for (uint32_t u : nw_complete) {
             ctx.global_completed[u] = 1;
-            if (level_dedup.try_claim(u, my_complete_epoch)) {
+            if (try_claim_level(u)) {
                 complete.push_back(u);
             }
         }
@@ -338,7 +445,7 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                 const double dx = ctx.states[x].load_dist();
                 if (dx == trying_B && dx < B) {
                     ctx.global_completed[x] = 1;
-                    if (level_dedup.try_claim(x, my_complete_epoch)) {
+                    if (try_claim_level(x)) {
                         complete.push_back(x);
                     }
                     nw_complete.push_back(x);
@@ -347,13 +454,6 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         }
 
         // Relax outgoing edges from nw_complete using edge-level partitioning
-        for (auto& buf : thread_k_buffers) {
-            buf.clear();
-        }
-        for (auto& buf : thread_d_buffers) {
-            buf.clear();
-        }
-
         edge_prefix.resize(nw_complete.size() + 1);
         edge_prefix[0] = 0;
         for (size_t i = 0; i < nw_complete.size(); ++i) {
@@ -361,7 +461,13 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         }
         const uint64_t total_edges = edge_prefix.back();
 
-        if (total_edges >= DEFAULT_GRANULARITY_CUTOFF && max_threads > 1) {
+        if (total_edges >= par_edge_cutoff && max_threads > 1) {
+            for (auto& buf : thread_k_buffers) {
+                buf.clear();
+            }
+            for (auto& buf : thread_d_buffers) {
+                buf.clear();
+            }
 #ifdef BMSSP_ENABLE_PROFILING
             prof.relax_par_calls++;
             prof.relax_par_edges += total_edges;
@@ -420,7 +526,7 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                 tid_relax_ns[static_cast<size_t>(tid)] = t_ins0 - t_rel0;
                 tid_ins_items[static_cast<size_t>(tid)] = local_d.size();
 #endif
-                flush_local_d_to_frontier(local_d, ctx.states, D);
+                flush_local_d_to_frontier(local_d, ctx.states, D, tid, nthreads);
 #ifdef BMSSP_ENABLE_PROFILING
                 tid_ins_ns[static_cast<size_t>(tid)] = prof_now_ns() - t_ins0;
 #endif
@@ -453,24 +559,39 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
                 prof.relax_par_est_wall_ns += par_wall;
             }
 #endif
+            // Gather local_k buffers into K
+            size_t total_k = 0;
+            for (const auto& buf : thread_k_buffers) {
+                total_k += buf.size();
+            }
+            K.clear();
+            if (total_k + miniS.size() > K.capacity()) {
+                K.reserve(total_k + miniS.size());
+            }
+            for (const auto& buf : thread_k_buffers) {
+                K.insert(K.end(), buf.begin(), buf.end());
+            }
         } else {
 #ifdef BMSSP_ENABLE_PROFILING
             prof.relax_seq_calls++;
             prof.relax_seq_edges += total_edges;
             const uint64_t seq_rel_t0 = prof_now_ns();
 #endif
-            auto& local_k = thread_k_buffers[0];
+            K.clear();
             auto& local_d = thread_d_buffers[0];
-            for (uint32_t u : nw_complete) {
-                const double du = ctx.states[u].load_dist();
-                if (du >= B) {
-                    continue;
-                }
-                for (uint64_t e = ctx.graph.edge_begin(u); e < ctx.graph.edge_end(u); ++e) {
-                    relax_outgoing_edge(
-                        ctx, level, B, trying_B, complete_B,
-                        u, du, e, local_d, local_k
-                    );
+            local_d.clear();
+            if (total_edges > 0) {
+                for (uint32_t u : nw_complete) {
+                    const double du = ctx.states[u].load_dist();
+                    if (du >= B) {
+                        continue;
+                    }
+                    for (uint64_t e = ctx.graph.edge_begin(u); e < ctx.graph.edge_end(u); ++e) {
+                        relax_outgoing_edge(
+                            ctx, level, B, trying_B, complete_B,
+                            u, du, e, local_d, K
+                        );
+                    }
                 }
             }
 #ifdef BMSSP_ENABLE_PROFILING
@@ -478,21 +599,14 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
             prof.relax_seq_ns += (seq_ins_t0 - seq_rel_t0);
             prof.insert_batch_items += local_d.size();
 #endif
-            flush_local_d_to_frontier(local_d, ctx.states, D);
+            if (batch_size == 1) {
+                D->insert_batch(local_d);
+            } else {
+                flush_local_d_to_frontier(local_d, ctx.states, D, 0, 1);
+            }
 #ifdef BMSSP_ENABLE_PROFILING
             prof.insert_batch_seq_ns += (prof_now_ns() - seq_ins_t0);
 #endif
-        }
-
-        // Gather local_k buffers into K
-        size_t total_k = 0;
-        for (const auto& buf : thread_k_buffers) {
-            total_k += buf.size();
-        }
-        K.clear();
-        K.reserve(total_k + miniS.size());
-        for (const auto& buf : thread_k_buffers) {
-            K.insert(K.end(), buf.begin(), buf.end());
         }
 
         // Return remaining unfinished miniS vertices into K or D
@@ -513,7 +627,11 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
 #ifdef BMSSP_ENABLE_PROFILING
             const uint64_t ksort_t0 = prof_now_ns();
 #endif
+#if defined(__SANITIZE_THREAD__)
             parallel_sample_sort(K);
+#else
+            sort_k_openmp(K, max_threads);
+#endif
 #ifdef BMSSP_ENABLE_PROFILING
             const uint64_t bp_t0 = prof_now_ns();
             prof.k_sort_ns += (bp_t0 - ksort_t0);
@@ -528,16 +646,23 @@ std::pair<double, std::vector<uint32_t>> bmssp_rec(
         last_complete_B = complete_B;
     }
 
-    const double retB = D->empty() ? B : last_complete_B;
+    const double retB = (d_exhausted || D->empty()) ? B : last_complete_B;
 
     // Collect completed vertices from Bellman-Ford visited set
     for (uint32_t x : bellman_vis) {
         const double dx = ctx.states[x].load_dist();
         if (dx < retB) {
             ctx.global_completed[x] = 1;
-            if (level_dedup.try_claim(x, my_complete_epoch)) {
+            if (try_claim_level(x)) {
                 complete.push_back(x);
             }
+        }
+    }
+
+    if (use_bitmask) {
+        const uint8_t clear_mask = static_cast<uint8_t>(~lvl_bit);
+        for (uint32_t u : complete) {
+            ctx.level_complete_mask[u] &= clear_mask;
         }
     }
 
@@ -662,8 +787,26 @@ SSSPResult run_bmssp_direct(
     FrontierType frontier_type
 ) {
     const size_t n = graph.n;
-    std::vector<AtomicVertexState> atomic_states(n);
-    atomic_states[source].store(VertexState{0.0, NO_PRED, 0});
+    const int max_threads = std::max(1, omp_get_max_threads());
+
+    std::unique_ptr<AtomicVertexState, AlignedStateDeleter> raw_states(
+        static_cast<AtomicVertexState*>(
+            ::operator new[](n * sizeof(AtomicVertexState), std::align_val_t{alignof(AtomicVertexState)})
+        )
+    );
+    AtomicVertexState* atomic_states = raw_states.get();
+
+    if (n >= DEFAULT_GRANULARITY_CUTOFF && max_threads > 1) {
+        #pragma omp parallel for schedule(static)
+        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
+            new (&atomic_states[static_cast<size_t>(i)]) AtomicVertexState();
+        }
+    } else {
+        for (size_t i = 0; i < n; ++i) {
+            new (&atomic_states[i]) AtomicVertexState();
+        }
+    }
+    atomic_states[source].init_raw(0.0, NO_PRED, 0);
 
     const double lg = std::max(1.0, std::log2(static_cast<double>(n)));
     const size_t k = std::max<size_t>(1, static_cast<size_t>(std::floor(std::cbrt(lg))));
@@ -671,7 +814,7 @@ SSSPResult run_bmssp_direct(
     const size_t max_level = std::max<size_t>(1, static_cast<size_t>(std::ceil(lg / static_cast<double>(t))));
 
     EpochDeduplicator deduplicator(n);
-    BMSSPContext ctx(graph, k, t, max_level, atomic_states.data(), deduplicator, frontier_type);
+    BMSSPContext ctx(graph, k, t, max_level, atomic_states, deduplicator, frontier_type);
 
     std::vector<uint32_t> initial_sources{source};
 #ifdef BMSSP_ENABLE_PROFILING
@@ -685,10 +828,18 @@ SSSPResult run_bmssp_direct(
     SSSPResult res;
     res.dist.resize(n);
     res.pred.resize(n);
-    for (size_t i = 0; i < n; ++i) {
-        const VertexState st = atomic_states[i].load(std::memory_order_relaxed);
-        res.dist[i] = st.dist;
-        res.pred[i] = st.pred;
+    if (n >= DEFAULT_GRANULARITY_CUTOFF && max_threads > 1) {
+        #pragma omp parallel for schedule(static)
+        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
+            const size_t idx = static_cast<size_t>(i);
+            res.dist[idx] = atomic_states[idx].load_dist(std::memory_order_relaxed);
+            res.pred[idx] = atomic_states[idx].load_pred(std::memory_order_relaxed);
+        }
+    } else {
+        for (size_t i = 0; i < n; ++i) {
+            res.dist[i] = atomic_states[i].load_dist(std::memory_order_relaxed);
+            res.pred[i] = atomic_states[i].load_pred(std::memory_order_relaxed);
+        }
     }
     res.pred[source] = NO_PRED;
     return res;

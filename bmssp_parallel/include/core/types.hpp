@@ -112,6 +112,31 @@ public:
         return dist;
     }
 
+    /**
+     * @brief Fast 32-bit atomic predecessor load without issuing lock cmpxchg16b.
+     */
+    [[nodiscard]] uint32_t load_pred(std::memory_order order = std::memory_order_relaxed) const noexcept {
+        static_assert(offsetof(VertexState, pred) == 8, "VertexState::pred must be at offset 8");
+        const auto* ptr = &state_.pred;
+        if (order == std::memory_order_acquire || order == std::memory_order_acq_rel ||
+            order == std::memory_order_consume) {
+            return __atomic_load_n(ptr, __ATOMIC_ACQUIRE);
+        }
+        if (order == std::memory_order_seq_cst) {
+            return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+        }
+        return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+    }
+
+    /**
+     * @brief Non-locked initialization for exclusive single-writer setup before concurrent phases.
+     */
+    void init_raw(double dist, uint32_t pred, uint32_t epoch = 0) noexcept {
+        state_.dist = dist;
+        state_.pred = pred;
+        state_.epoch = epoch;
+    }
+
     void store(VertexState desired, std::memory_order = std::memory_order_relaxed) noexcept {
         VertexState curr = load();
         while (!raw_cmpxchg16b(&state_, &curr, desired)) {

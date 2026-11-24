@@ -14,6 +14,7 @@ namespace bmssp {
  */
 struct D0Block {
     std::vector<VertexDist> items;
+    size_t head{0};
     double upper_bound{INF_DIST};
 };
 
@@ -28,11 +29,14 @@ struct D0Block {
 class D0Deque {
 private:
     std::deque<D0Block> blocks_;
+    std::vector<D0Block> free_blocks_;
     std::vector<VertexDist> scratch_;
     size_t M_{16};
     double B_{INF_DIST};
     size_t approx_size_{0};
 
+    D0Block acquire_block();
+    void recycle_front_block();
     void push_front_sorted_span(std::span<const VertexDist> sorted_items);
 
 public:

@@ -15,10 +15,35 @@ inline bool cmp_vertex_dist(const VertexDist& a, const VertexDist& b) noexcept {
 
 } // namespace
 
+D0Block D0Deque::acquire_block() {
+    if (!free_blocks_.empty()) {
+        D0Block blk = std::move(free_blocks_.back());
+        free_blocks_.pop_back();
+        blk.items.clear();
+        blk.head = 0;
+        blk.upper_bound = INF_DIST;
+        return blk;
+    }
+    return D0Block{};
+}
+
+void D0Deque::recycle_front_block() {
+    if (blocks_.empty()) return;
+    D0Block blk = std::move(blocks_.front());
+    blocks_.pop_front();
+    blk.items.clear();
+    blk.head = 0;
+    if (free_blocks_.size() < 256) {
+        free_blocks_.push_back(std::move(blk));
+    }
+}
+
 void D0Deque::init(size_t M, double B) {
     M_ = std::max<size_t>(M, 1);
     B_ = B;
-    blocks_.clear();
+    while (!blocks_.empty()) {
+        recycle_front_block();
+    }
     scratch_.clear();
     approx_size_ = 0;
 }
@@ -34,9 +59,10 @@ void D0Deque::push_front_sorted_span(std::span<const VertexDist> sorted_items) {
         const size_t start = idx * M_;
         const size_t end = std::min(start + M_, n);
 
-        D0Block blk;
+        D0Block blk = acquire_block();
         blk.items.assign(sorted_items.begin() + static_cast<std::ptrdiff_t>(start),
                          sorted_items.begin() + static_cast<std::ptrdiff_t>(end));
+        blk.head = 0;
         blk.upper_bound = blk.items.back().dist;
         approx_size_ += blk.items.size();
         blocks_.push_front(std::move(blk));
@@ -67,7 +93,7 @@ void D0Deque::batch_prepend(std::span<const VertexDist> K) {
 
     // Fast path: K is already filtered, sorted ascending, and <= existing front min.
     if (all_valid && is_sorted &&
-        (blocks_.empty() || K.back().dist <= blocks_.front().items.front().dist)) {
+        (blocks_.empty() || K.back().dist <= peek_front_min_dist())) {
         push_front_sorted_span(K);
         return;
     }
@@ -88,11 +114,14 @@ void D0Deque::batch_prepend(std::span<const VertexDist> K) {
 
     const double max_k = scratch_.back().dist;
     bool merged_existing = false;
-    while (!blocks_.empty() && blocks_.front().items.front().dist < max_k) {
+    while (!blocks_.empty() && peek_front_min_dist() < max_k) {
         D0Block& front = blocks_.front();
-        approx_size_ -= front.items.size();
-        scratch_.insert(scratch_.end(), front.items.begin(), front.items.end());
-        blocks_.pop_front();
+        const size_t rem = front.items.size() - front.head;
+        approx_size_ -= rem;
+        scratch_.insert(scratch_.end(),
+                        front.items.begin() + static_cast<std::ptrdiff_t>(front.head),
+                        front.items.end());
+        recycle_front_block();
         merged_existing = true;
     }
 
@@ -111,9 +140,9 @@ size_t D0Deque::drain_valid_up_to(size_t target_count,
     size_t added = 0;
     while (!blocks_.empty() && added < target_count) {
         D0Block& front = blocks_.front();
-        approx_size_ -= front.items.size();
-
-        for (const auto& item : front.items) {
+        while (front.head < front.items.size() && added < target_count) {
+            const VertexDist item = front.items[front.head++];
+            --approx_size_;
             if (state_arr != nullptr && item.v < num_vertices) {
                 const double best = state_arr[item.v].load_dist(std::memory_order_acquire);
                 if (item.dist > best) {
@@ -124,13 +153,20 @@ size_t D0Deque::drain_valid_up_to(size_t target_count,
             out.push_back(item);
             ++added;
         }
-        blocks_.pop_front();
+        if (front.head >= front.items.size()) {
+            recycle_front_block();
+        }
     }
     return added;
 }
 
 void D0Deque::push_front_block(D0Block&& block) {
-    if (block.items.empty()) return;
+    if (block.head >= block.items.size()) return;
+    if (block.head > 0) {
+        block.items.erase(block.items.begin(),
+                          block.items.begin() + static_cast<std::ptrdiff_t>(block.head));
+        block.head = 0;
+    }
 
     if (block.items.size() <= M_) {
         if (!std::is_sorted(block.items.begin(), block.items.end(), cmp_vertex_dist)) {
@@ -151,7 +187,7 @@ void D0Deque::push_front_block(D0Block&& block) {
 void D0Deque::push_front_sorted(std::span<const VertexDist> sorted_items) {
     if (sorted_items.empty()) return;
 
-    if (blocks_.empty() || sorted_items.back().dist <= blocks_.front().items.front().dist) {
+    if (blocks_.empty() || sorted_items.back().dist <= peek_front_min_dist()) {
         push_front_sorted_span(sorted_items);
         return;
     }
@@ -159,11 +195,14 @@ void D0Deque::push_front_sorted(std::span<const VertexDist> sorted_items) {
     // Defensive fallback if remaining items overlap an already-present front block.
     scratch_.assign(sorted_items.begin(), sorted_items.end());
     const double max_item = scratch_.back().dist;
-    while (!blocks_.empty() && blocks_.front().items.front().dist < max_item) {
+    while (!blocks_.empty() && peek_front_min_dist() < max_item) {
         D0Block& front = blocks_.front();
-        approx_size_ -= front.items.size();
-        scratch_.insert(scratch_.end(), front.items.begin(), front.items.end());
-        blocks_.pop_front();
+        const size_t rem = front.items.size() - front.head;
+        approx_size_ -= rem;
+        scratch_.insert(scratch_.end(),
+                        front.items.begin() + static_cast<std::ptrdiff_t>(front.head),
+                        front.items.end());
+        recycle_front_block();
     }
     std::sort(scratch_.begin(), scratch_.end(), cmp_vertex_dist);
     push_front_sorted_span(scratch_);
@@ -176,7 +215,9 @@ double D0Deque::peek_front_upper_bound() const noexcept {
 
 double D0Deque::peek_front_min_dist() const noexcept {
     if (blocks_.empty()) return INF_DIST;
-    return blocks_.front().items.front().dist;
+    const D0Block& front = blocks_.front();
+    if (front.head >= front.items.size()) return INF_DIST;
+    return front.items[front.head].dist;
 }
 
 bool D0Deque::empty() const noexcept {
@@ -184,7 +225,9 @@ bool D0Deque::empty() const noexcept {
 }
 
 void D0Deque::clear() noexcept {
-    blocks_.clear();
+    while (!blocks_.empty()) {
+        recycle_front_block();
+    }
     scratch_.clear();
     approx_size_ = 0;
 }

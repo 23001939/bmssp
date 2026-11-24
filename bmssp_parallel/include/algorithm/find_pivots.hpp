@@ -5,6 +5,7 @@
 #include "core/primitives.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <span>
 #include <vector>
 
@@ -19,33 +20,29 @@ struct PivotResult {
  * @brief Reusable scratch workspace for find_pivots_parallel to avoid per-call O(n) allocations.
  */
 struct FindPivotsWorkspace {
-    EpochDeduplicator vis_tracker;
-    EpochDeduplicator in_s_tracker;
-    std::vector<uint32_t> parent_in_forest; // size n, only touched on vis
-    std::vector<uint32_t> root_of;          // size n, only touched on vis
-    std::vector<uint32_t> subtree_cnt;      // size n, only touched on S
+    // Bit 0x01: visited in current find_pivots call; Bit 0x02: member of unique_S.
+    // Cleared in O(|vis|) on exit from find_pivots_parallel.
+    std::vector<uint8_t> vertex_flags;
+    size_t forest_cap{0};
+    std::unique_ptr<uint32_t[]> parent_in_forest; // allocated lazily for overwrite, touched on vis
+    std::unique_ptr<uint32_t[]> root_of;          // allocated lazily for overwrite, touched on vis
+    std::unique_ptr<uint32_t[]> subtree_cnt;      // allocated lazily for overwrite, touched on unique_S
+
     std::vector<std::vector<uint32_t>> thread_buffers;
     std::vector<uint64_t> edge_offsets;
+    std::vector<uint32_t> unique_S_buf;
+    std::vector<uint32_t> active_buf;
+    std::vector<uint32_t> next_active_buf;
+    std::vector<size_t> gather_offsets;
+    std::vector<uint32_t> path_buf;
 
     explicit FindPivotsWorkspace(size_t n = 0);
     void ensure_size(size_t n);
+    void ensure_forest_arrays(size_t n);
 };
 
 /**
  * @brief Algorithm 1: Parallel FindPivots (arXiv:2504.17033v2).
- * 
- * Performs k steps of parallel edge relaxations starting from active sources S.
- * Restricts expansion to paths with total distance < B.
- * Identifies high-degree subtree roots (pivots) to reduce source set size.
- * 
- * @param graph CSR graph representation.
- * @param B Distance upper bound.
- * @param S Initial active source set.
- * @param k Bound on Bellman-Ford steps (floor(log^(1/3) n)).
- * @param states Global array of atomic vertex states.
- * @param deduplicator Thread-safe epoch deduplicator.
- * @param workspace Optional reusable workspace to eliminate per-call allocations.
- * @return PivotResult containing pivots P and visited vertices vis.
  */
 PivotResult find_pivots_parallel(
     const CSRGraph& graph,

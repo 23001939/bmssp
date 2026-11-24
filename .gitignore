@@ -35,6 +35,7 @@ venv/
 
 # Large dataset dumps & benchmark artifacts (>10MB)
 bmssp_comparison/data/
+bmssp_parallel/data/
 bmssp_comparison/repos/rust_python/target/
 bmssp_visualizer_mizchi/native_rust/target/
 *.csv.zip

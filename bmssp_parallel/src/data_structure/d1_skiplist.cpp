@@ -234,6 +234,7 @@ D1SkipList::~D1SkipList() noexcept {
 
 D1SkipList::BlockNode* D1SkipList::allocate_node(uint8_t pool_id, uint8_t level) {
     const uint8_t sid = static_cast<uint8_t>(pool_id % NUM_POOL_SHARDS);
+    active_shard_mask_.fetch_or(uint64_t{1} << sid, std::memory_order_relaxed);
     PoolShard& shard = shards_[sid];
     BlockNode* raw = nullptr;
     {
@@ -347,18 +348,32 @@ void D1SkipList::destroy_all_locked(bool release_memory) noexcept {
         head_ = nullptr;
     }
 
+    for (BlockNode* node : retired_staging_) {
+        std::destroy_at(node);
+    }
+    retired_staging_.clear();
+    drain_unlinked_buf_.clear();
+    reclaim_ready_buf_.clear();
+
     for (auto& entry : retired_nodes_) {
         std::destroy_at(entry.node);
     }
     retired_nodes_.clear();
     pending_retired_count_.store(0, std::memory_order_relaxed);
 
-    for (auto& shard : shards_) {
-        std::lock_guard<BlockSpinlock> lk(shard.lock);
-        if (release_memory) {
+    if (release_memory) {
+        active_shard_mask_.store(0, std::memory_order_relaxed);
+        for (auto& shard : shards_) {
+            std::lock_guard<BlockSpinlock> lk(shard.lock);
             shard.pool.clear();
-        } else {
-            shard.pool.reset();
+        }
+    } else {
+        uint64_t mask = active_shard_mask_.exchange(0, std::memory_order_relaxed);
+        while (mask != 0) {
+            const unsigned sid = static_cast<unsigned>(__builtin_ctzll(mask));
+            mask &= (mask - 1ULL);
+            std::lock_guard<BlockSpinlock> lk(shards_[sid].lock);
+            shards_[sid].pool.reset();
         }
     }
     current_max_level_.store(1, std::memory_order_relaxed);
@@ -680,7 +695,7 @@ void D1SkipList::collect_reclaimable_locked(std::vector<BlockNode*>& ready_to_fr
 }
 
 void D1SkipList::retire_and_reclaim_batch(const std::vector<BlockNode*>& unlinked_nodes) {
-    std::vector<BlockNode*> ready_to_free;
+    reclaim_ready_buf_.clear();
     {
         std::lock_guard<std::mutex> tower_lk(tower_mtx_);
         const uint64_t unlink_epoch =
@@ -689,10 +704,10 @@ void D1SkipList::retire_and_reclaim_batch(const std::vector<BlockNode*>& unlinke
             retired_nodes_.push_back(RetiredEntry{target, unlink_epoch});
         }
         pending_retired_count_.store(retired_nodes_.size(), std::memory_order_release);
-        collect_reclaimable_locked(ready_to_free);
+        collect_reclaimable_locked(reclaim_ready_buf_);
     }
 
-    for (BlockNode* node : ready_to_free) {
+    for (BlockNode* node : reclaim_ready_buf_) {
         deallocate_node(node);
     }
 }
@@ -701,12 +716,12 @@ void D1SkipList::try_reclaim_retired() {
     if (pending_retired_count_.load(std::memory_order_acquire) == 0) {
         return;
     }
-    std::vector<BlockNode*> ready_to_free;
+    reclaim_ready_buf_.clear();
     {
         std::lock_guard<std::mutex> tower_lk(tower_mtx_);
-        collect_reclaimable_locked(ready_to_free);
+        collect_reclaimable_locked(reclaim_ready_buf_);
     }
-    for (BlockNode* node : ready_to_free) {
+    for (BlockNode* node : reclaim_ready_buf_) {
         deallocate_node(node);
     }
 }
@@ -715,10 +730,12 @@ D1SkipList::DrainResult D1SkipList::drain_valid_up_to(size_t target_count,
                                                       const AtomicVertexState* state_arr,
                                                       size_t num_vertices,
                                                       std::vector<VertexDist>& out,
-                                                      uint64_t& stale_dropped_counter) {
+                                                      uint64_t& stale_dropped_counter,
+                                                      double dist_limit) {
     std::lock_guard<std::mutex> drain_lk(drain_mtx_);
     DrainResult result{};
-    std::vector<BlockNode*> unlinked_nodes;
+    drain_unlinked_buf_.clear();
+    bool hit_dist_limit = false;
 
     {
         ReaderGuard guard;
@@ -732,21 +749,43 @@ D1SkipList::DrainResult D1SkipList::drain_valid_up_to(size_t target_count,
                 continue;
             }
 
-            for (const auto& item : curr->items) {
-                if (state_arr != nullptr && item.v < num_vertices) {
-                    const double best = state_arr[item.v].load_dist(std::memory_order_acquire);
-                    if (item.dist > best) {
-                        ++stale_dropped_counter;
-                        continue;
+            const double cub = curr->upper_bound.load(std::memory_order_relaxed);
+            if (dist_limit < INF_DIST) {
+                size_t write = 0;
+                for (const auto& item : curr->items) {
+                    if (state_arr != nullptr && item.v < num_vertices) {
+                        const double best = state_arr[item.v].load_dist(std::memory_order_acquire);
+                        if (item.dist > best) {
+                            ++stale_dropped_counter;
+                            continue;
+                        }
+                    }
+                    if (item.dist <= dist_limit) {
+                        out.push_back(item);
+                        ++result.added;
+                    } else {
+                        curr->items[write++] = item;
                     }
                 }
-                out.push_back(item);
-                ++result.added;
+                curr->items.resize(write);
+            } else {
+                for (const auto& item : curr->items) {
+                    if (state_arr != nullptr && item.v < num_vertices) {
+                        const double best = state_arr[item.v].load_dist(std::memory_order_acquire);
+                        if (item.dist > best) {
+                            ++stale_dropped_counter;
+                            continue;
+                        }
+                    }
+                    out.push_back(item);
+                    ++result.added;
+                }
+                curr->items.clear();
             }
-            curr->items.clear();
 
             BlockNode* next = curr->forward[0].load(std::memory_order_acquire);
-            if (next != nullptr) {
+            const bool stop_here = (result.added >= target_count) || (cub > dist_limit);
+            if (curr->items.empty() && next != nullptr && !stop_here) {
                 // Mark retired and unlink synchronously under tower_mtx_ before releasing
                 // curr->spinlock so no concurrent split of a successor can cross a retired block.
                 curr->retired.store(true, std::memory_order_release);
@@ -754,18 +793,28 @@ D1SkipList::DrainResult D1SkipList::drain_valid_up_to(size_t target_count,
                     std::lock_guard<std::mutex> tower_lk(tower_mtx_);
                     unlink_node_locked(curr);
                 }
-                unlinked_nodes.push_back(curr);
+                drain_unlinked_buf_.push_back(curr);
             }
             curr->spinlock.unlock();
 
             curr = next;
+            if (cub > dist_limit) {
+                hit_dist_limit = true;
+                break;
+            }
         }
-        result.reached_end = (curr == nullptr);
+        result.reached_end = (curr == nullptr) || hit_dist_limit;
     } // Exit ReaderGuard before checking EBR epochs so this thread does not pin itself.
 
-    if (!unlinked_nodes.empty()) {
-        retire_and_reclaim_batch(unlinked_nodes);
-    } else {
+    if (!drain_unlinked_buf_.empty()) {
+        retired_staging_.insert(retired_staging_.end(),
+                                drain_unlinked_buf_.begin(),
+                                drain_unlinked_buf_.end());
+        if (retired_staging_.size() >= 64) {
+            retire_and_reclaim_batch(retired_staging_);
+            retired_staging_.clear();
+        }
+    } else if (pending_retired_count_.load(std::memory_order_relaxed) >= 64) {
         try_reclaim_retired();
     }
 

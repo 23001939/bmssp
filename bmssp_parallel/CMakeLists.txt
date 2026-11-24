@@ -73,6 +73,16 @@ add_executable(bench_parallel_bmssp
 )
 target_link_libraries(bench_parallel_bmssp PRIVATE bmssp_parallel_lib OpenMP::OpenMP_CXX)
 
+add_executable(bench_final_vs_dijkstra
+    benchmarks/bench_final_vs_dijkstra.cpp
+)
+target_link_libraries(bench_final_vs_dijkstra PRIVATE bmssp_parallel_lib OpenMP::OpenMP_CXX)
+
+add_executable(bench_dimacs_road
+    benchmarks/bench_dimacs_road.cpp
+)
+target_link_libraries(bench_dimacs_road PRIVATE bmssp_parallel_lib OpenMP::OpenMP_CXX)
+
 enable_testing()
 add_test(NAME test_person1 COMMAND test_person1)
 add_test(NAME test_d_stress COMMAND test_d_stress)

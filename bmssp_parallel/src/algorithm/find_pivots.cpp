@@ -9,6 +9,9 @@ namespace bmssp {
 
 namespace {
 
+constexpr uint8_t FLAG_IN_VIS = 0x01;
+constexpr uint8_t FLAG_IN_S   = 0x02;
+
 inline void process_edge_relaxation(
     uint32_t u,
     double dist_u,
@@ -49,24 +52,21 @@ FindPivotsWorkspace::FindPivotsWorkspace(size_t n) {
 }
 
 void FindPivotsWorkspace::ensure_size(size_t n) {
-    if (vis_tracker.size() < n) {
-        vis_tracker.resize(n);
-    }
-    if (in_s_tracker.size() < n) {
-        in_s_tracker.resize(n);
-    }
-    if (parent_in_forest.size() < n) {
-        parent_in_forest.resize(n, NO_PRED);
-    }
-    if (root_of.size() < n) {
-        root_of.resize(n, NO_PRED);
-    }
-    if (subtree_cnt.size() < n) {
-        subtree_cnt.resize(n, 0);
+    if (vertex_flags.size() < n) {
+        vertex_flags.resize(n, 0);
     }
     const size_t max_threads = static_cast<size_t>(std::max(1, omp_get_max_threads()));
     if (thread_buffers.size() < max_threads) {
         thread_buffers.resize(max_threads);
+    }
+}
+
+void FindPivotsWorkspace::ensure_forest_arrays(size_t n) {
+    if (forest_cap < n) {
+        parent_in_forest = std::make_unique_for_overwrite<uint32_t[]>(n);
+        root_of = std::make_unique_for_overwrite<uint32_t[]>(n);
+        subtree_cnt = std::make_unique_for_overwrite<uint32_t[]>(n);
+        forest_cap = n;
     }
 }
 
@@ -104,9 +104,8 @@ PivotResult find_pivots_parallel(
     FindPivotsWorkspace& ws = (workspace != nullptr) ? *workspace : fallback_ws;
     ws.ensure_size(n);
 
-    const uint32_t vis_epoch = ws.vis_tracker.allocate_epoch();
-
-    std::vector<uint32_t> unique_S;
+    auto& unique_S = ws.unique_S_buf;
+    unique_S.clear();
     unique_S.reserve(S.size());
 
     std::vector<uint32_t> vis;
@@ -116,7 +115,8 @@ PivotResult find_pivots_parallel(
     vis.reserve(std::min(n, max_vis_bound + S.size()));
 
     for (uint32_t s : S) {
-        if (static_cast<size_t>(s) < n && ws.vis_tracker.try_claim(s, vis_epoch)) {
+        if (static_cast<size_t>(s) < n && (ws.vertex_flags[s] & FLAG_IN_VIS) == 0) {
+            ws.vertex_flags[s] = static_cast<uint8_t>(FLAG_IN_VIS | FLAG_IN_S);
             unique_S.push_back(s);
             vis.push_back(s);
         }
@@ -126,11 +126,18 @@ PivotResult find_pivots_parallel(
         return result;
     }
 
-    std::vector<uint32_t> active = unique_S;
-    std::vector<uint32_t> next_active;
-    std::vector<size_t> gather_offsets(ws.thread_buffers.size() + 1, 0);
+    auto& active = ws.active_buf;
+    active.assign(unique_S.begin(), unique_S.end());
+    auto& next_active = ws.next_active_buf;
+    next_active.clear();
+    auto& gather_offsets = ws.gather_offsets;
+    gather_offsets.assign(ws.thread_buffers.size() + 1, 0);
 
     const int max_threads = std::max(1, omp_get_max_threads());
+    const uint64_t par_edge_cutoff = std::max<uint64_t>(
+        DEFAULT_GRANULARITY_CUTOFF,
+        512ULL * static_cast<uint64_t>(max_threads)
+    );
     const size_t cutoff = (k <= (std::numeric_limits<size_t>::max() / unique_S.size()))
         ? (k * unique_S.size())
         : std::numeric_limits<size_t>::max();
@@ -161,7 +168,7 @@ PivotResult find_pivots_parallel(
             buf.clear();
         }
 
-        if (active_edges >= static_cast<uint64_t>(DEFAULT_GRANULARITY_CUTOFF) && max_threads > 1) {
+        if (active_edges >= par_edge_cutoff && max_threads > 1) {
 #ifdef BMSSP_ENABLE_PROFILING
             prof.fp_par_steps++;
             prof.fp_par_edges += active_edges;
@@ -305,14 +312,18 @@ PivotResult find_pivots_parallel(
         }
 
         for (uint32_t v : next_active) {
-            if (ws.vis_tracker.try_claim(v, vis_epoch)) {
+            if ((ws.vertex_flags[v] & FLAG_IN_VIS) == 0) {
+                ws.vertex_flags[v] |= FLAG_IN_VIS;
                 vis.push_back(v);
             }
         }
 
-        // Early cutoff: if visited size exceeds k * |S|, return immediately
+        // Early cutoff: if visited size exceeds k * |S|, clean flags and return immediately
         if (vis.size() > cutoff) {
-            result.pivots = std::move(unique_S);
+            for (uint32_t v : vis) {
+                ws.vertex_flags[v] = 0;
+            }
+            result.pivots.assign(unique_S.begin(), unique_S.end());
             result.visited = std::move(vis);
             return result;
         }
@@ -324,19 +335,22 @@ PivotResult find_pivots_parallel(
 #ifdef BMSSP_ENABLE_PROFILING
     const uint64_t fp_forest_t0 = prof_now_ns();
 #endif
-    const uint32_t s_epoch = ws.in_s_tracker.allocate_epoch();
+    ws.ensure_forest_arrays(n);
+    uint32_t* parent_in_forest = ws.parent_in_forest.get();
+    uint32_t* root_of = ws.root_of.get();
+    uint32_t* subtree_cnt = ws.subtree_cnt.get();
+
     for (uint32_t s : unique_S) {
-        static_cast<void>(ws.in_s_tracker.try_claim(s, s_epoch));
-        ws.root_of[s] = s;
-        ws.subtree_cnt[s] = 0;
+        root_of[s] = s;
+        subtree_cnt[s] = 0;
     }
 
     for (uint32_t v : vis) {
-        if (!ws.in_s_tracker.is_claimed(v, s_epoch)) {
-            ws.root_of[v] = NO_PRED;
-            ws.parent_in_forest[v] = states[v].load(std::memory_order_relaxed).pred;
+        if ((ws.vertex_flags[v] & FLAG_IN_S) == 0) {
+            root_of[v] = NO_PRED;
+            parent_in_forest[v] = states[v].load_pred(std::memory_order_relaxed);
         } else {
-            ws.parent_in_forest[v] = v;
+            parent_in_forest[v] = v;
         }
     }
 
@@ -344,28 +358,28 @@ PivotResult find_pivots_parallel(
     constexpr uint32_t ROOT_NONE = NO_PRED - 2;
 
     if (n <= static_cast<size_t>(ROOT_NONE)) {
-        std::vector<uint32_t> path;
+        auto& path = ws.path_buf;
         path.reserve(k + 2);
 
         for (uint32_t v : vis) {
-            uint32_t r = ws.root_of[v];
+            uint32_t r = root_of[v];
             if (r == NO_PRED) {
                 path.clear();
                 uint32_t cur = v;
                 uint32_t resolved = ROOT_NONE;
 
                 for (size_t hop = 0; hop <= vis.size(); ++hop) {
-                    const uint32_t st = ws.root_of[cur];
+                    const uint32_t st = root_of[cur];
                     if (st != NO_PRED) {
                         resolved = (st == ROOT_VISITING) ? ROOT_NONE : st;
                         break;
                     }
-                    ws.root_of[cur] = ROOT_VISITING;
+                    root_of[cur] = ROOT_VISITING;
                     path.push_back(cur);
 
-                    const uint32_t p = ws.parent_in_forest[cur];
+                    const uint32_t p = parent_in_forest[cur];
                     if (p == NO_PRED || static_cast<size_t>(p) >= n ||
-                        !ws.vis_tracker.is_claimed(p, vis_epoch)) {
+                        (ws.vertex_flags[p] & FLAG_IN_VIS) == 0) {
                         resolved = ROOT_NONE;
                         break;
                     }
@@ -373,51 +387,55 @@ PivotResult find_pivots_parallel(
                 }
 
                 for (uint32_t node : path) {
-                    ws.root_of[node] = resolved;
+                    root_of[node] = resolved;
                 }
                 r = resolved;
             }
 
             if (static_cast<size_t>(r) < n) {
-                ws.subtree_cnt[r]++;
+                subtree_cnt[r]++;
             }
         }
     } else {
         for (uint32_t v : vis) {
-            uint32_t r = ws.root_of[v];
+            uint32_t r = root_of[v];
             if (r == NO_PRED) {
                 uint32_t cur = v;
                 for (size_t hop = 0; hop < k; ++hop) {
-                    const uint32_t p = ws.parent_in_forest[cur];
+                    const uint32_t p = parent_in_forest[cur];
                     if (p == NO_PRED || static_cast<size_t>(p) >= n ||
-                        !ws.vis_tracker.is_claimed(p, vis_epoch)) {
+                        (ws.vertex_flags[p] & FLAG_IN_VIS) == 0) {
                         break;
                     }
                     cur = p;
-                    if (ws.root_of[cur] != NO_PRED) {
-                        r = ws.root_of[cur];
+                    if (root_of[cur] != NO_PRED) {
+                        r = root_of[cur];
                         break;
                     }
-                    if (ws.in_s_tracker.is_claimed(cur, s_epoch)) {
+                    if ((ws.vertex_flags[cur] & FLAG_IN_S) != 0) {
                         r = cur;
                         break;
                     }
                 }
                 if (r != NO_PRED) {
-                    ws.root_of[v] = r;
+                    root_of[v] = r;
                 }
             }
             if (r != NO_PRED) {
-                ws.subtree_cnt[r]++;
+                subtree_cnt[r]++;
             }
         }
     }
 
     result.pivots.reserve(unique_S.size());
     for (uint32_t s : unique_S) {
-        if (static_cast<size_t>(ws.subtree_cnt[s]) >= k) {
+        if (static_cast<size_t>(subtree_cnt[s]) >= k) {
             result.pivots.push_back(s);
         }
+    }
+
+    for (uint32_t v : vis) {
+        ws.vertex_flags[v] = 0;
     }
 
     result.visited = std::move(vis);

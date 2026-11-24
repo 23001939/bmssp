@@ -36,8 +36,14 @@ struct alignas(CACHE_LINE_SIZE) BlockSpinlock {
 
     void lock() noexcept {
         while (flag.test_and_set(std::memory_order_acquire)) {
+            int spins = 0;
             while (flag.test(std::memory_order_relaxed)) {
-                cpu_pause();
+                if (spins < 64) {
+                    cpu_pause();
+                    ++spins;
+                } else {
+                    std::this_thread::yield();
+                }
             }
         }
     }
@@ -119,6 +125,7 @@ private:
                   "std::atomic<double> must be lock-free for concurrent skip-list traversal");
 
     std::array<PoolShard, NUM_POOL_SHARDS> shards_;
+    std::atomic<uint64_t> active_shard_mask_{0};
     BlockNode* head_{nullptr};
     std::atomic<int> current_max_level_{1};
     size_t M_{16};
@@ -129,6 +136,9 @@ private:
     mutable std::mutex drain_mtx_;
     std::mutex tower_mtx_;
 
+    std::vector<BlockNode*> drain_unlinked_buf_;
+    std::vector<BlockNode*> retired_staging_;
+    std::vector<BlockNode*> reclaim_ready_buf_;
     std::vector<RetiredEntry> retired_nodes_;
     std::atomic<size_t> pending_retired_count_{0};
 
@@ -208,7 +218,8 @@ public:
                                   const AtomicVertexState* state_arr,
                                   size_t num_vertices,
                                   std::vector<VertexDist>& out,
-                                  uint64_t& stale_dropped_counter);
+                                  uint64_t& stale_dropped_counter,
+                                  double dist_limit = INF_DIST);
 
     [[nodiscard]] bool empty() const noexcept;
 

@@ -1,6 +1,6 @@
 # Bộ nhớ dự án BMSSP
 
-Cập nhật: 20/11/2026, múi giờ Asia/Saigon.
+Cập nhật: 24/11/2026, múi giờ Asia/Saigon.
 
 ## Mục tiêu và trạng thái
 
@@ -691,3 +691,39 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - `Dense-20 Random 200K`: `FindPivots` giảm `44,80 → 28,88 ms` (**-35,5%**); tổng giảm `190,07 → 145,88 ms`, speedup `1T → 8T` tăng `1,32× → 1,45×`.
   - `Hub 100K`: `FindPivots` giảm `12,70 → 9,11 ms` (**-28,3%**); tổng giảm `62,47 → 57,04 ms`, speedup `1T → 8T` tăng `1,15× → 1,31×`.
 - **Chi tiết & giới hạn:** Xem mục 4 trong `bmssp_parallel/PROFILING_PHASE_REPORT.md`. Nút thắt lớn nhất còn lại là `D.Pull` tuần tự (`40,5% – 52,0%` ở 8T).
+
+---
+
+## Tối Ưu Triệt Để `D.Pull` / `BMSSPContext` & Vượt Qua Dijkstra Ở Quy Mô 200K – 2.000.000 Đỉnh, 12 Luồng (24/11/2026)
+
+- **Bối cảnh:** Đồng bộ lượt push mới nhất trên `origin/parallel-bmssp` (`2cd0b3c`) và kịch bản đo 1M của `origin/feat/person4-qa` (`c76a215`, seed `20261122`), tối ưu hiệu năng Parallel BMSSP và đối sánh toàn diện với `dijkstra_sequential` lên tới `1.000.000` (`1M`) và `2.000.000` (`2M`) đỉnh ở các mức `1, 2, 4, 8, 12` luồng trên AMD Ryzen 5 7640HS (6C/12T), Windows GCC `16.2.0` (`-O3 -march=native -mcx16 -fopenmp`).
+- **Thay đổi kỹ thuật (bảo toàn 100% Algorithm 1–3 & Lemma 3.3, không fallback Dijkstra):**
+  1. `ConcurrentFrontierD` (`concurrent_frontier_d.{hpp,cpp}`): chuyên biệt hóa chính xác trường hợp khối đơn vị `M = 1` (tầng `level = 1`) bằng min-heap phẳng bảo vệ bởi `BlockSpinlock`; với `M > 1`, thay 3 lượt `std::sort` khử trùng bằng bảng băm phẳng đánh dấu `epoch` $\mathcal{O}(1)$, dùng `std::nth_element`, cắt sớm `dist_limit`, và giữ phần dư `pull()` đã sắp xếp ở đầu `D0` thay vì tái chèn/chia khối `D1`.
+  2. `D0Deque` & `D1SkipList` (`d0_deque.{hpp,cpp}`, `d1_skiplist.{hpp,cpp}`): con trỏ đầu `head` + tái chế khối `D0Block` không cấp phát động; gom lô EBR theo ngưỡng 64 khối; chỉ reset `PoolShard` có bit hoạt động; giới hạn 64 vòng spin + `yield()` trong `BlockSpinlock` chống nghẽn SMT 12 luồng.
+  3. `types.hpp`, `base_case.cpp`, `find_pivots.{hpp,cpp}`, `bmssp.cpp`: thêm `load_pred()` 32-bit tránh `lock cmpxchg16b` tuần tự; quét mảng tĩnh cho `k <= 32` trong `base_case` (bỏ cấp phát `std::unordered_set`); cờ `uint8_t` + `make_unique_for_overwrite` trong `FindPivotsWorkspace` và `BMSSPContext`; khởi tạo song song *first-touch* và thu hoạch kết quả song song; dịch vòng offset chèn `local_d` chống convoy khóa; sắp xếp `K` trực tiếp bằng OpenMP.
+- **Kiểm chứng & Kết quả đối sánh (`bench_final_vs_dijkstra.cpp`, 66/66 cấu hình khớp Dijkstra Oracle, `MaxDiff = 0.0`, CTest 4/4 PASS):**
+  - `Erdős–Rényi 1M` (`m=4M`): `Dijkstra 1T = 746,77 ms` vs **`BMSSP 12T = 498,66 ms`** (**nhanh hơn `1,50×`**, giảm từ `885,07 ms` trước tối ưu).
+  - `Scale-Free 1M` (`m=4M`, `max_deg=62.550`): `Dijkstra 1T = 732,21 ms` vs **`BMSSP 8T = 517,58 ms` / `12T = 522,90 ms`** (**nhanh hơn `1,41×`**, giảm từ `1.084,33 ms` trước tối ưu).
+  - `Dense-12 Random 1M` (`m=12M`): `Dijkstra 1T = 1.211,13 ms` vs **`BMSSP 12T = 664,68 ms`** (**nhanh hơn `1,82×`**).
+  - `Erdős–Rényi 2M` (`n=2M, m=8M`): `Dijkstra 1T = 1.642,68 ms` vs **`BMSSP 8T = 996,52 ms` / `12T = 1.011,66 ms`** (**nhanh hơn `1,65×`**).
+  - `Scale-Free 2M` (`n=2M, m=8M`, `max_deg=107.839`): `Dijkstra 1T = 1.685,27 ms` vs **`BMSSP 8T = 1.043,25 ms` / `12T = 1.057,74 ms`** (**nhanh hơn `1,62×`**).
+  - `Dense-12 Random 2M` (`n=2M, m=24M`): `Dijkstra 1T = 2.645,71 ms` vs **`BMSSP 12T = 1.202,72 ms`** (**nhanh hơn `2,20×`**, tự tăng tốc `2,28×` so với BMSSP 1T).
+  - Ở quy mô nhỏ (`ER 100K`, `deg=4`), `Dijkstra 1T` vẫn nhỉnh hơn nhẹ (`48,45 ms` vs `53,95 ms`); điểm vượt bắt đầu từ `200.000` đỉnh.
+- **Bằng chứng & Tài liệu:** `bmssp_parallel/FINAL_VS_DIJKSTRA_1M_2M_REPORT.md`, `bmssp_parallel/final_benchmark_1m_2m.csv`, `bmssp_parallel/final_vs_dijkstra_1m_2m.png`. Giới hạn: chạy trực tiếp trên CSR (`use_gadget_transform = false`); kiểm chứng thực nghiệm hữu hạn không thay thế chứng minh toán học tổng quát.
+
+
+---
+
+## Thực Nghiệm 7 Đồ Thị Giao Thông Đường Bộ Hoa Kỳ 9th DIMACS (`NY` → `CAL`) (24/11/2026)
+
+- **Phạm vi theo yêu cầu người dùng:** Khảo sát danh mục 12 đồ thị đường bộ Hoa Kỳ trên `architecture-performance.fr`, đưa ra ước tính thời gian lý thuyết/vi kiến trúc trước khi chạy, sau đó chạy đo thực nghiệm tuần tự cho 7 bộ đầu tiên (`NY`, `BAY`, `COL`, `FLA`, `NW`, `NE`, `CAL`) và đối chiếu với ước tính.
+- **Provenance dữ liệu:** Do máy chủ gốc Sapienza (`diag.uniroma1.it/challenge9`) ngừng hoạt động (HTTP 404/timeout), `NY`, `BAY`, `COL` lấy nguyên bản `USA-road-t.*.gr` từ `lbwang95/QHL4CSP`; `FLA` lắp ghép nguyên bản từ CSR `USA-road-d.FLA` (`sengorajkumar/gpu_graph_algorithms`); `NW`, `NE`, `CAL` tái tạo từ kho dữ liệu bang TIGER/Line 2000 `us_roads` (`travel_time`) của Dominik Schultes trên `networks.skewed.de` (nối biên theo tọa độ micro-độ, cắt theo kinh/vĩ tuyến vùng DIMACS-9 và lấy LCC, khớp chính xác số đỉnh `1.207.945`, `1.524.453`, `1.890.815`). Thư mục dữ liệu lớn `bmssp_parallel/data/` đã được đưa vào `.gitignore`.
+- **Kết quả đo trung vị (`1 warmup + 5 samples`, `MaxDiff = 0.000 [OK]` trên 100% của `6.714.871` đỉnh đối chiếu `dijkstra_sequential`):**
+  - `NY` (`264K` đỉnh, `730K` cung): `Dijkstra 1T = 63,71 ms` | `BMSSP tối ưu = 166,87 ms` (`12T`, tỷ số `2,62×`).
+  - `BAY` (`321K` đỉnh, `795K` cung): `Dijkstra 1T = 73,20 ms` | `BMSSP tối ưu = 195,39 ms` (`8T`, tỷ số `2,67×`).
+  - `COL` (`436K` đỉnh, `1,04M` cung): `Dijkstra 1T = 101,79 ms` | `BMSSP tối ưu = 236,77 ms` (`12T`, tỷ số `2,33×`).
+  - `FLA` (`1,07M` đỉnh, `2,69M` cung): `Dijkstra 1T = 226,74 ms` (trúng giữa ước tính `200–260 ms`) | `BMSSP tối ưu = 541,95 ms` (`8T`, tỷ số `2,39×`, nhanh hơn `2,14×` so với mức `1.162,18 ms` trước tối ưu).
+  - `NW` (`1,21M` đỉnh, `2,82M` cung): `Dijkstra 1T = 295,80 ms` | `BMSSP tối ưu = 614,24 ms` (`8T`, tỷ số `2,08×`).
+  - `NE` (`1,52M` đỉnh, `3,86M` cung): `Dijkstra 1T = 445,99 ms` | `BMSSP tối ưu = 758,88 ms` (`8T`, `Self-Scale = 1,23×`, tỷ số thu hẹp còn **`1,70×`**).
+  - `CAL` (`1,89M` đỉnh, `4,62M` cung): `Dijkstra 1T = 482,93 ms` (sát ước tính `380–480 ms`) | `BMSSP tối ưu = 891,43 ms` (`12T`, `Self-Scale = 1,21×`, tỷ số **`1,85×`**).
+- **Nhận định:** Khác với đồ thị ngẫu nhiên/scale-free (nơi `BMSSP` vượt `Dijkstra` `1,41× – 2,20×` từ 200K–2M đỉnh), đồ thị giao thông đường bộ 2D có tính cục bộ không gian cao và mặt sóng hẹp nên cực kỳ thuận lợi cho binary heap của `Dijkstra` (`~3,3×` nhanh hơn cùng số đỉnh ER), đồng thời hạn chế độ rộng song song của `BMSSP`. Tuy vậy, khi quy mô vượt ngưỡng L3 cache (`NE 1,52M`, `CAL 1,89M`), khoảng cách `BMSSP / Dijkstra` thu hẹp rõ rệt từ `2,67×` xuống còn `1,70× – 1,85×`. Tài liệu chi tiết: `bmssp_parallel/DIMACS_ROAD_7_BENCHMARK_REPORT.md` và `bmssp_parallel/dimacs_road_7_results.csv`.

@@ -20,12 +20,8 @@ namespace bmssp {
  * - D_0 (D0Deque): sequential block deque for Master-thread batch_prepend(K).
  * - D_1 (D1SkipList): concurrent B-Link Skip-List over blocks supporting lock-free
  *   traversal, block-level spinlocks, lazy deletion, and eager cleanup on split.
- *
- * Thread-safety model:
- * - insert() only touches D_1 and never acquires pull_mtx_, allowing parallel
- *   edge-relaxation workers to insert concurrently with minimal contention.
- * - batch_prepend(), pull(), empty(), init(), and clear() acquire pull_mtx_ to
- *   serialize D_0 mutations and pull boundary extraction/re-insertion.
+ * - Exact M=1 specialization: spinlock-protected flat min-heap avoiding degenerated
+ *   1-element skip-list block splits while preserving identical Lemma 3.3 semantics.
  */
 class ConcurrentFrontierD : public IFrontierD {
 public:
@@ -44,8 +40,22 @@ private:
         uint8_t source; // 0 = D_0, 1 = D_1
     };
 
+    struct DedupSlot {
+        uint32_t epoch{0};
+        uint32_t v{0};
+        uint32_t merged_idx{0};
+        uint8_t seen_mask{0}; // bit 0 = D_0, bit 1 = D_1
+    };
+
     D0Deque d0_;
     D1SkipList d1_;
+    bool d1_dirty_{true};
+
+    // Fast exact M = 1 path (capacity-1 blocks = total-order priority queue)
+    std::atomic<bool> use_m1_heap_{false};
+    mutable BlockSpinlock m1_lock_;
+    std::vector<VertexDist> m1_heap_;
+    std::atomic<uint64_t> stale_rejected_m1_{0};
 
     std::atomic<const AtomicVertexState*> state_arr_{nullptr};
     std::atomic<size_t> num_vertices_{0};
@@ -56,6 +66,9 @@ private:
 
     mutable std::mutex pull_mtx_;
 
+    std::vector<DedupSlot> dedup_table_;
+    uint32_t dedup_epoch_{0};
+
     std::vector<VertexDist> cand0_buf_;
     std::vector<VertexDist> cand1_buf_;
     std::vector<TaggedCandidate> merged_buf_;
@@ -63,6 +76,10 @@ private:
     std::vector<VertexDist> rem1_buf_;
 
     std::atomic<uint64_t> stale_dropped_on_pull_{0};
+
+    void prepare_dedup_table(size_t min_capacity);
+    void rehash_dedup_table(size_t new_pow2);
+    bool upsert_merged(uint32_t v, double dist, uint8_t source);
 
 public:
     ConcurrentFrontierD() = default;
