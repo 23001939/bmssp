@@ -1,0 +1,537 @@
+% CHƯƠNG 2 — Thiết kế và triển khai thuật toán BMSSP song song
+% Đưa nội dung này vào sau Chương 1 trong tài liệu chính.
+% Các gói cần có: amsmath, amssymb, algorithm, algpseudocode, float, booktabs, tabularx, xltabular, tikz (positioning, calc).
+
+\chapter{THIẾT KẾ VÀ TRIỂN KHAI THUẬT TOÁN BMSSP SONG SONG}\label{chap:parallel_bmssp}
+
+Chương~\ref{chap:co-so-ly-thuyet} đã trình bày cơ sở lý thuyết của thuật toán BMSSP tuần tự. Khi triển khai trên CPU đa lõi bộ nhớ dùng chung bằng C++20 và OpenMP, hệ thống đối mặt với bốn thách thức chính: (1) sự phụ thuộc dữ liệu chặt giữa các lát trích xuất liên tiếp cản trở song song hóa theo nhánh đệ quy; (2) nguy cơ đọc/ghi rách dữ liệu (\textit{torn read/write}) hoặc nghẽn khóa khi nhiều luồng cập nhật đồng thời khoảng cách và đỉnh cha; (3) yêu cầu chèn đồng thời tần suất cao vào cấu trúc biên mà vẫn bảo toàn thứ tự rút lô nhỏ nhất; và (4) sự biến thiên mạnh về khối lượng cạnh hoạt động cùng chi phí cấp phát, khử trùng lặp có thể làm tiêu tán lợi ích đa luồng.
+
+Để giải quyết các vấn đề trên, Mục~\ref{sec:c2-kien-truc} xác định kiến trúc phân tầng, biểu diễn đồ thị nén và mô hình song song theo lát khoảng cách. Mục~\ref{sec:c2-primitives} xây dựng các nguyên thủy đồng bộ hóa phần cứng và quản lý bộ nhớ dùng chung. Mục~\ref{sec:c2-frontier} thiết kế cấu trúc biên đồng thời Frontier $\mathcal{D}$ theo Bổ đề~3.3, trong khi Mục~\ref{sec:c2-thuat-toan} đặc tả các thủ tục thuật toán cốt lõi. Cuối cùng, Mục~\ref{sec:c2-phan-tich} phân tích độ phức tạp song song và giới hạn phần cứng làm cơ sở cho thực nghiệm tại Chương~\ref{ch:thuc-nghiem}.
+
+% ============================================================
+% 2.1. MÔ HÌNH SONG SONG HÓA VÀ KIẾN TRÚC HỆ THỐNG
+% ============================================================
+\section{Mô hình song song hóa và kiến trúc hệ thống}\label{sec:c2-kien-truc}
+
+Việc chuyển đổi thuật toán BMSSP từ mô hình tuần tự sang môi trường bộ nhớ dùng chung đòi hỏi sự phối hợp chặt chẽ giữa cách tổ chức phần mềm, chiến lược phân chia công việc và cơ chế kiểm soát chi phí điều phối luồng. Theo hướng đó, Mục~\ref{subsec:c2-arch} trình bày cấu trúc phân tầng cùng định dạng lưu trữ đồ thị nén, Mục~\ref{subsec:c2-model} xác lập mô hình song song dữ liệu theo từng lát khoảng cách, và Mục~\ref{subsec:c2-granularity} định nghĩa quy tắc chuyển chế độ thực thi theo ngưỡng độ hạt công việc.
+
+\subsection{Phân tầng kiến trúc và biểu diễn đồ thị nén}\label{subsec:c2-arch}
+
+Hệ thống BMSSP song song gồm bốn tầng mô-đun có quan hệ phụ thuộc một chiều từ trên xuống nhằm tách biệt đồng bộ phần cứng khỏi logic đệ quy (Hình~\ref{fig:sys_arch}). Tầng hạ tầng lõi cung cấp đồ thị chỉ đọc, trạng thái đỉnh nguyên tử 128-bit, bộ khử trùng lặp theo kỷ nguyên (\textit{epoch}), bể cấp phát khối theo luồng và các thủ tục mảng song song. Phía trên là tầng cấu trúc biên với giao diện trừu tượng \texttt{IFrontierD}, cho phép hoán đổi linh hoạt giữa bản đồng thời \texttt{Concurrent\allowbreak FrontierD} và bản khóa toàn cục \texttt{Mutex\allowbreak FrontierD} để đối chứng. Tầng lõi thuật toán điều phối tìm đỉnh trụ, trường hợp cơ sở và đệ quy cắt lát, còn tầng trên cùng tích hợp bộ giải tuần tự đối chuẩn và bộ đo thời gian từng pha.
+
+Đồ thị có hướng $G = (V, E, w)$ với $n = |V|$ và $m = |E|$ được lưu ở định dạng nén theo hàng CSR chỉ đọc với ba mảng liên tiếp: chỉ số hàng ($n + 1$ phần tử 64-bit không dấu), đỉnh đích ($m$ phần tử 32-bit không dấu) và trọng số không âm ($m$ số thực 64-bit). Tính bất biến của đồ thị cho phép mọi luồng duyệt cạnh đồng thời không cần khóa, tận dụng bộ nạp trước phần cứng của bộ nhớ đệm (\textit{hardware prefetcher}) và tính bậc ra $\deg^+(u)$ của từng đỉnh trong thời gian $\mathcal{O}(1)$ để phục vụ chia tải. Hệ thống có tích hợp phép biến đổi tùy chọn đưa bậc vào và bậc ra về tối đa $2$ bằng chu trình đỉnh ảo trọng số $0$, nhưng tắt mặc định để tránh phình bộ nhớ làm việc và phát sinh đường đi trọng số $0$ dài trên đồ thị lớn.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    >=latex,
+    every node/.style={execute at begin node=\setlength{\baselineskip}{11pt}},
+    layerbox/.style={draw, rounded corners=3pt, thick, minimum width=12.2cm, anchor=north, inner sep=0pt},
+    subbox/.style={draw, rounded corners=2pt, fill=white, align=center, anchor=north, font=\scriptsize, inner xsep=2.8pt, inner ysep=3pt}
+]
+% Tầng 4
+\node[layerbox, fill=gray!8, draw=gray!55!black, minimum height=1.68cm] (L4) at (0, 0) {};
+\node[anchor=north, inner ysep=1.5pt, font=\footnotesize\bfseries, text=gray!35!black] at ($(L4.north)+(0,-0.06)$) {Tầng 4: Đối chứng và đo đạc};
+\node[subbox, draw=gray!55!black, text width=3.52cm, minimum height=0.92cm] at ($(L4.north)+(-3.96,-0.56)$) {Bộ giải tuần tự\\đối chuẩn khoảng cách};
+\node[subbox, draw=gray!55!black, text width=3.52cm, minimum height=0.92cm] at ($(L4.north)+(0,-0.56)$) {Kiểm thử đúng đắn\\và các trường hợp biên};
+\node[subbox, draw=gray!55!black, text width=3.52cm, minimum height=0.92cm] at ($(L4.north)+(3.96,-0.56)$) {Đo thời gian thực thi\\và phân tách pha chạy};
+
+% Tầng 3
+\node[layerbox, fill=blue!6, draw=blue!55!black, minimum height=1.82cm, below=0.44cm of L4] (L3) {};
+\node[anchor=north, inner ysep=1.5pt, font=\footnotesize\bfseries, text=blue!50!black] at ($(L3.north)+(0,-0.06)$) {Tầng 3: Lõi thuật toán BMSSP song song};
+\node[subbox, draw=blue!50!black, text width=3.52cm, minimum height=1.04cm] at ($(L3.north)+(-3.96,-0.56)$) {Tìm đỉnh trụ song song\\$k$ vòng thư giãn cạnh};
+\node[subbox, draw=blue!50!black, text width=3.52cm, minimum height=1.04cm] at ($(L3.north)+(0,-0.56)$) {Trường hợp cơ sở\\Dijkstra cục bộ tuần tự};
+\node[subbox, draw=blue!50!black, text width=3.52cm, minimum height=1.04cm] at ($(L3.north)+(3.96,-0.56)$) {Điều phối đệ quy cắt lát\\và ngưỡng độ hạt $\Theta_{\mathrm{cutoff}}$};
+
+% Tầng 2
+\node[layerbox, fill=teal!7, draw=teal!55!black, minimum height=2.06cm, below=0.44cm of L3] (L2) {};
+\node[anchor=north, inner ysep=1.5pt, font=\footnotesize\bfseries, text=teal!50!black] at ($(L2.north)+(0,-0.06)$) {Tầng 2: Cấu trúc biên phân tầng qua \texttt{IFrontierD}};
+\node[subbox, draw=teal!50!black, text width=5.42cm, minimum height=1.24cm] at ($(L2.north)+(-2.96,-0.56)$) {\texttt{Concurrent\allowbreak FrontierD}\\Hàng đợi hai đầu tuần tự và danh sách nhảy đồng thời};
+\node[subbox, draw=teal!50!black, text width=5.42cm, minimum height=1.24cm] at ($(L2.north)+(2.96,-0.56)$) {\texttt{Mutex\allowbreak FrontierD}\\Cấu trúc biên bảo vệ bằng khóa phục vụ đối chứng};
+
+% Tầng 1
+\node[layerbox, fill=orange!8, draw=orange!65!black, minimum height=2.40cm, below=0.44cm of L2] (L1) {};
+\node[anchor=north, inner ysep=1.5pt, font=\footnotesize\bfseries, text=orange!55!black] at ($(L1.north)+(0,-0.06)$) {Tầng 1: Hạ tầng lõi, biểu diễn đồ thị và nguyên thủy phần cứng};
+\node[subbox, draw=orange!60!black, text width=2.60cm, minimum height=1.56cm] at ($(L1.north)+(-4.44,-0.56)$) {Đồ thị CSR chỉ đọc\\và tùy chọn bậc $\le 2$};
+\node[subbox, draw=orange!60!black, text width=2.60cm, minimum height=1.56cm] at ($(L1.north)+(-1.48,-0.56)$) {\texttt{VertexState} 128-bit\\và đọc nhanh 64-bit};
+\node[subbox, draw=orange!60!black, text width=2.60cm, minimum height=1.56cm] at ($(L1.north)+(1.48,-0.56)$) {Khử trùng kỷ nguyên\\và bể cấp phát khối};
+\node[subbox, draw=orange!60!black, text width=2.60cm, minimum height=1.56cm] at ($(L1.north)+(4.44,-0.56)$) {Quét tiền tố, gom đệm\\và sắp xếp song song};
+
+% Mũi tên phụ thuộc giữa các tầng
+\draw[->, thick, black!75] (L4.south) -- (L3.north) node[midway, anchor=west, xshift=4pt, font=\scriptsize] {kiểm chứng và đo đạc};
+\draw[->, thick, black!75] (L3.south) -- (L2.north) node[midway, anchor=west, xshift=4pt, font=\scriptsize] {thao tác biên qua \texttt{IFrontierD}};
+\draw[->, thick, black!75] (L2.south) -- (L1.north) node[midway, anchor=west, xshift=4pt, font=\scriptsize] {trạng thái nguyên tử và bộ nhớ khối};
+\end{tikzpicture}
+\caption{Kiến trúc phân bốn tầng độc lập của hệ thống BMSSP song song.}
+\label{fig:sys_arch}
+\end{figure}
+
+\subsection{Mô hình song song dữ liệu theo lát khoảng cách}\label{subsec:c2-model}
+
+Tại mỗi tầng đệ quy $\ell$, cấu trúc biên ở lần lặp $i + 1$ phụ thuộc trực tiếp vào kết quả thư giãn toàn bộ cạnh đi ra từ tập hoàn tất $U_i$ của lát $[B'_i, B_i)$ liền trước. Vì vậy, việc tách các lời gọi đệ quy thành tác vụ chạy song song sẽ phá vỡ bất biến tập hoàn tất và gây dư thừa phép tính.
+
+Thay vào đó, hệ thống áp dụng mô hình song song dữ liệu theo lát khoảng cách (Hình~\ref{fig:distance_sliced}): một luồng chủ điều phối tuần tự ngăn xếp đệ quy, trường hợp cơ sở (tối đa $k + 1$ đỉnh), thao tác rút biên và chèn tiền tố lô $K$; còn OpenMP tập trung song song hóa hai pha duyệt cạnh nặng nhất bên trong mỗi lát là tìm đỉnh trụ ($k$ vòng thư giãn) và mở rộng cạnh từ $U_i$. Ở cả hai pha, hệ thống dùng mảng tổng tiền tố bậc ra để chia đều tải cho $p$ luồng theo chỉ số cạnh, đồng thời ghi kết quả vào bộ đệm cục bộ trước khi đồng bộ tại rào chắn cuối pha nhằm loại bỏ tranh chấp ghi.
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[
+    >=latex,
+    every node/.style={execute at begin node=\setlength{\baselineskip}{11pt}},
+    seqnode/.style={draw=blue!55!black, fill=white, rounded corners=2pt, thick, align=center, anchor=north, font=\scriptsize, inner xsep=3.5pt, inner ysep=3pt},
+    parnode/.style={draw=teal!60!black, fill=white, rounded corners=2pt, thick, align=center, anchor=north, font=\scriptsize, inner xsep=3.5pt, inner ysep=3pt}
+]
+% Khung trục điều phối tuần tự
+\draw[rounded corners=4pt, dashed, thick, draw=blue!55!black, fill=blue!5] (0.0, 3.85) rectangle (12.5, 7.75);
+\node[anchor=north, inner ysep=1.5pt, font=\footnotesize\bfseries, text=blue!50!black] at (6.25, 7.63) {Trục điều phối tuần tự trên luồng chủ};
+
+% Các bước tuần tự
+\node[seqnode, text width=2.45cm, minimum height=1.82cm] (S1) at (1.70, 6.22) {\textbf{1. Nạp đỉnh trụ}\\[2pt]Nhận tập $P$, khởi tạo cấu trúc biên mức $\ell$};
+\node[seqnode, text width=2.25cm, minimum height=1.82cm] (S2) at (4.90, 6.22) {\textbf{2. Trích xuất lô}\\[2pt]Rút lô $S_i$ nhỏ nhất và ngưỡng $B_i$};
+\node[seqnode, text width=2.35cm, minimum height=1.82cm] (S3) at (8.05, 6.22) {\textbf{3. Đệ quy mức $\ell-1$}\\[2pt]Hoặc cơ sở tuần tự; thu $B'_i$ và tập $U_i$};
+\node[seqnode, text width=1.95cm, minimum height=1.82cm] (S4) at (11.05, 6.22) {\textbf{4. Nạp tập $K$}\\[2pt]Sắp xếp $K$ và chèn tiền tố lô};
+
+% Mũi tên giữa các bước tuần tự
+\draw[->, thick, blue!60!black] (S1.east) -- (S2.west);
+\draw[->, thick, blue!60!black] (S2.east) -- (S3.west);
+\draw[->, thick, blue!60!black] (S4.north) -- (11.05, 6.64) -- (4.90, 6.64) -- (S2.north);
+\node[anchor=south, inner ysep=1.5pt, font=\scriptsize, text=blue!50!black] at (7.98, 6.70) {Lặp cho lát khoảng cách kế tiếp khi biên chưa rỗng};
+
+% Đường rào chắn đồng bộ
+\draw[dotted, thick, gray!75!black] (0.10, 3.35) -- (12.40, 3.35);
+\node[anchor=south, inner ysep=1pt, font=\scriptsize\itshape, text=gray!40!black] at (5.55, 3.39) {rào chắn đồng bộ};
+
+% Khung vùng song song dữ liệu OpenMP
+\draw[rounded corners=4pt, dashed, thick, draw=teal!60!black, fill=teal!6] (0.0, -0.96) rectangle (12.5, 2.92);
+\node[anchor=south, inner ysep=1.5pt, font=\footnotesize\bfseries, text=teal!55!black, align=center, text width=11.8cm] at (6.25, -0.84) {Vùng song song dữ liệu OpenMP khi $N_{\mathrm{act}} \ge \Theta_{\mathrm{cutoff}}$ và $p > 1$};
+
+% Hai pha song song dữ liệu
+\node[parnode, text width=4.20cm, minimum height=2.25cm] (P1) at (2.58, 2.74) {\textbf{Pha~song~song~A: Tìm~đỉnh~trụ}\\[3pt]Chia đều cạnh theo tổng tiền tố; $k$ vòng thư giãn 128-bit OpenMP, khử trùng kỷ nguyên và gom đệm cục bộ.};
+\node[parnode, text width=6.75cm, minimum height=2.20cm] (P2) at (8.65, 2.74) {\textbf{Pha song song B: Mở rộng cạnh từ tập hoàn tất $U_i$}\\[3pt]Phân hoạch cạnh đi ra từ $U_i$ cho $p$ luồng OpenMP; thư giãn nguyên tử 128-bit; nạp ứng viên thuộc $[B_i, B)$ vào biên $\mathcal{D}_1$ và gom ứng viên $< B_i$ vào đệm cục bộ tạo tập $K$.};
+
+% Luồng dữ liệu giữa tầng điều phối và vùng công nhân song song
+\draw[->, thick, teal!60!black] ($(S1.south)+(-0.35,0)$) -- ($(S1.south |- P1.north)+(-0.35,0)$);
+\node[anchor=east, font=\scriptsize] at (1.25, 3.12) {$S, B$};
+\draw[->, thick, teal!60!black] ($(S1.south |- P1.north)+(0.85,0)$) -- ($(S1.south)+(0.85,0)$);
+\node[anchor=west, font=\scriptsize] at (2.65, 3.12) {$P$};
+
+\draw[->, thick, teal!60!black] (S3.south) -- (S3.south |- P2.north);
+\node[anchor=east, font=\scriptsize] at (7.95, 3.12) {tập $U_i$};
+\draw[->, thick, teal!60!black] (S4.south |- P2.north) -- (S4.south);
+\node[anchor=west, font=\scriptsize] at (11.15, 3.12) {tập $K$};
+\end{tikzpicture}
+\caption{Chu trình song song dữ liệu theo lát khoảng cách giữa luồng điều phối tuần tự và các pha công nhân OpenMP.}
+\label{fig:distance_sliced}
+\end{figure}
+
+\subsection{Cơ chế chuyển chế độ theo ngưỡng độ hạt}\label{subsec:c2-granularity}
+
+Ở các tầng đệ quy sâu hoặc tại các lát hẹp, số cạnh hoạt động và kích thước tập $K$ thường rất nhỏ; kích hoạt vùng đa luồng cho các tác vụ ngắn này sẽ khiến chi phí điều phối lấn át tính toán có ích. Do đó, với số đơn vị công việc hoạt động $N_{\mathrm{act}}$, số luồng cấu hình $p$ và ngưỡng độ hạt $\Theta_{\mathrm{cutoff}} = 2048$, hệ thống chọn chế độ thực thi $\mathcal{M}(N_{\mathrm{act}}, p)$ theo Công thức~\eqref{eq:cutoff}:
+\begin{equation}\label{eq:cutoff}
+\mathcal{M}(N_{\mathrm{act}}, p) =
+\begin{cases}
+\text{Song song đa luồng}, & \text{nếu } N_{\mathrm{act}} \ge \Theta_{\mathrm{cutoff}} \text{ và } p > 1, \\
+\text{Tuần tự đơn luồng}, & \text{ngược lại.}
+\end{cases}
+\end{equation}
+
+% ============================================================
+% 2.2. ĐỒNG BỘ HÓA CẤP PHẦN CỨNG VÀ QUẢN LÝ BỘ NHỚ DÙNG CHUNG
+% ============================================================
+\section{Đồng bộ hóa cấp phần cứng và quản lý bộ nhớ dùng chung}\label{sec:c2-primitives}
+
+Hiệu năng của các pha duyệt cạnh song song phụ thuộc trực tiếp vào cách hệ thống đồng bộ hóa trạng thái đỉnh dùng chung và quản lý vùng nhớ tạm thời giữa các luồng mà không cần khóa toàn cục. Mở đầu phần này, Mục~\ref{subsec:c2-atomic-relax} đặc tả cơ chế cập nhật nguyên tử cấp phần cứng kết hợp đường đọc nhanh tiết kiệm băng thông bộ nhớ đệm, sau đó Mục~\ref{subsec:c2-primitive-tools} xây dựng bộ khử trùng lặp theo kỷ nguyên, bể cấp phát bộ nhớ cục bộ theo luồng và các thủ tục xử lý mảng song song.
+
+\subsection{Trạng thái đỉnh nguyên tử 128-bit, đường đọc nhanh 64-bit và thư giãn cạnh}\label{subsec:c2-atomic-relax}
+
+Để tránh lỗi đọc/ghi rách dữ liệu khi nhiều luồng đồng thời cập nhật khoảng cách tạm thời và đỉnh cha, mỗi đỉnh được đóng gói vào bản ghi \texttt{VertexState} kích thước 16 byte (căn biên 16 byte), gồm trường khoảng cách \texttt{dist} (8 byte số thực dấu phẩy động), chỉ số đỉnh cha \texttt{pred} (4 byte nguyên không dấu) và bộ đếm kỷ nguyên \texttt{epoch} (4 byte nguyên không dấu) chống lỗi ABA. Hệ thống gọi trực tiếp chỉ thị \texttt{lock cmpxchg16b} trên kiến trúc x86-64 để bảo đảm cập nhật không khóa ở mức phần cứng.
+
+Tuy nhiên, phép tải 128-bit trên x86-64 cũng phải dùng \texttt{lock cmpxchg16b}, phát yêu cầu chiếm quyền sở hữu độc quyền dòng bộ nhớ đệm (\textit{Read-For-Ownership} -- RFO) và gây nhiễu giữa các lõi khi nhiều luồng cùng đọc một đỉnh bậc vào cao. Do trường \texttt{dist} nằm tại độ lệch 0 byte và căn biên 8 byte, hệ thống bổ sung đường đọc nhanh nguyên tử 64-bit giữ dòng bộ nhớ đệm ở trạng thái chia sẻ (Hình~\ref{fig:vertex_state}). Khi xét cạnh $(u, v)$ với ứng viên $d' = \widehat{d}[u] + w_{uv}$, luồng kiểm tra $\widehat{d}[v]$ qua đường đọc 64-bit trước và chỉ vào vòng lặp so sánh--hoán đổi nguyên tử (CAS) 128-bit khi $d' < \widehat{d}[v]$ chặt. Với trường hợp hòa khoảng cách $d' = \widehat{d}[v]$, luồng không ghi đè \texttt{VertexState} mà chỉ đưa $v$ vào bộ đệm ứng viên nếu chưa hoàn tất, bảo toàn đúng ngữ nghĩa quan hệ $\le$ và tránh khóa sống (\textit{livelock}) trên chu trình trọng số $0$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    >=latex,
+    every node/.style={execute at begin node=\setlength{\baselineskip}{11pt}},
+    pathbox/.style={draw, rounded corners=3pt, thick, align=center, anchor=north, font=\scriptsize, inner xsep=4pt, inner ysep=3.5pt}
+]
+% Thanh bố cục bộ nhớ 16 byte
+\draw[thick, fill=blue!10, draw=blue!60!black] (0.0, 3.60) rectangle (5.8, 4.90);
+\draw[thick, fill=teal!10, draw=teal!60!black] (5.8, 3.60) rectangle (8.7, 4.90);
+\draw[thick, fill=orange!10, draw=orange!65!black] (8.7, 3.60) rectangle (11.6, 4.90);
+
+\node[align=center, font=\scriptsize, text=blue!55!black] at (2.90, 4.25) {\textbf{\texttt{dist}}\\[1pt]Khoảng cách tạm $\widehat{d}[v]$\\8 byte dấu phẩy động};
+\node[align=center, font=\scriptsize, text=teal!55!black] at (7.25, 4.25) {\textbf{\texttt{pred}}\\[1pt]Đỉnh cha\\4 byte không dấu};
+\node[align=center, font=\scriptsize, text=orange!60!black] at (10.15, 4.25) {\textbf{\texttt{epoch}}\\[1pt]Kỷ nguyên\\4 byte không dấu};
+
+% Vạch chia độ lệch byte
+\foreach \x in {0.0, 5.8, 8.7, 11.6} {
+    \draw[thick, black!70] (\x, 4.90) -- (\x, 5.04);
+}
+\node[anchor=south west, inner ysep=1.5pt, font=\scriptsize] at (0.0, 5.05) {Byte 0};
+\node[anchor=south, inner ysep=1.5pt, font=\scriptsize] at (5.8, 5.05) {Byte 8};
+\node[anchor=south, inner ysep=1.5pt, font=\scriptsize] at (8.7, 5.05) {Byte 12};
+\node[anchor=south east, inner ysep=1.5pt, font=\scriptsize] at (11.6, 5.05) {Byte 16};
+
+% Ngoặc trên cho toàn bộ bản ghi 128-bit
+\draw[thick, orange!70!black] (0.0, 5.52) -- (0.0, 5.70) -- (11.6, 5.70) -- (11.6, 5.52);
+\node[anchor=south, inner ysep=1.5pt, font=\footnotesize\bfseries, text=orange!60!black] at (5.80, 5.76) {Bản ghi \texttt{VertexState} 128-bit, kích thước và căn biên 16 byte};
+
+% Ngoặc dưới cho 8 byte đầu
+\draw[thick, blue!65!black] (0.0, 3.48) -- (0.0, 3.28) -- (5.8, 3.28) -- (5.8, 3.48);
+
+% Hai hộp đường truy cập bên dưới
+\node[pathbox, fill=blue!5, draw=blue!60!black, text width=5.30cm, minimum height=2.15cm] (fast64) at (2.85, 2.15) {\textbf{Đường đọc nhanh 64-bit}\\[3pt]Đọc trực tiếp 8 byte đầu mà không phát chỉ thị có tiền tố khóa; giữ dòng bộ nhớ đệm ở trạng thái chia sẻ giữa các lõi; lọc sớm các cạnh không cải thiện khoảng cách.};
+
+\node[pathbox, fill=orange!6, draw=orange!65!black, text width=5.30cm, minimum height=2.15cm] (cas128) at (8.95, 2.15) {\textbf{Đường truy cập nguyên tử 128-bit}\\[3pt]Thực thi trực tiếp \texttt{lock cmpxchg16b}; ghi nguyên tử đồng thời khoảng cách, đỉnh cha và kỷ nguyên; chống đọc rách nhưng phát yêu cầu RFO chiếm quyền dòng bộ nhớ đệm.};
+
+% Mũi tên nối
+\draw[->, thick, blue!65!black] (2.85, 3.28) -- (fast64.north);
+\node[anchor=west, font=\scriptsize, text=blue!55!black] at (2.98, 2.75) {Đọc 64-bit tại độ lệch 0};
+
+\draw[->, thick, orange!70!black] (11.6, 5.70) -- (12.05, 5.70) -- (12.05, 2.75) -- (8.95, 2.75) -- (cas128.north);
+\node[anchor=south, inner ysep=1.5pt, font=\scriptsize, text=orange!60!black] at (10.50, 2.81) {Truy cập đủ 16 byte};
+\end{tikzpicture}
+\caption{Bố cục bộ nhớ 16 byte của \texttt{VertexState} và hai đường truy cập 64-bit, 128-bit.}
+\label{fig:vertex_state}
+\end{figure}
+
+\subsection{Khử trùng lặp theo kỷ nguyên, bể cấp phát khối và các thủ tục mảng song song}\label{subsec:c2-primitive-tools}
+
+Để khử trùng lặp đỉnh đích trong từng bước thư giãn mà không tốn $\mathcal{O}(n)$ xóa mảng đánh dấu, hệ thống dùng \texttt{Epoch\allowbreak Deduplicator} gồm mảng nguyên tử 32-bit kích thước $n$ và một bộ đếm kỷ nguyên. Mở đầu mỗi bước chỉ tốn $\mathcal{O}(1)$ để tăng bộ đếm kỷ nguyên; luồng nào nâng nhãn của đỉnh $v$ từ giá trị cũ lên bằng kỷ nguyên hiện tại đầu tiên qua phép CAS nguyên tử sẽ giành quyền ghi $v$ vào bộ đệm cục bộ.
+
+Nhằm triệt tiêu tranh chấp khóa trên bộ cấp phát vùng nhớ hệ điều hành, bể cấp phát cục bộ theo luồng \texttt{ThreadLocal\allowbreak BlockPool} quản lý riêng cho mỗi luồng các khối bộ nhớ liên tiếp cỡ $4096$ phần tử. Mỗi ô nhớ là hợp nhất giữa vùng lưu dữ liệu căn biên và con trỏ danh sách trống (\textit{free-list}), đạt chi phí cấp phát và hoàn trả $\mathcal{O}(1)$ không khóa. Bể hỗ trợ đặt lại nhẹ con trỏ để tái sử dụng bộ nhớ giữa các lời gọi đệ quy và chỉ giải phóng về hệ điều hành khi thuật toán kết thúc.
+
+Ngoài ra, tầng lõi cung cấp ba thủ tục mảng song song (quét tiền tố ba pha theo khối đệm, gom bộ đệm luồng và sắp xếp phân hoạch nhanh dùng hàng đợi đoạn chung) với ngưỡng độ hạt $\Theta_{\mathrm{cutoff}} = 2048$ và tối đa $32$ luồng. Các thủ tục này cài đặt bằng \texttt{std::thread} nhằm biểu diễn tường minh quan hệ đồng bộ trước--sau (\textit{happens-before}) cho công cụ kiểm tra tranh chấp dữ liệu ThreadSanitizer, chấp nhận đánh đổi thêm chi phí khởi tạo luồng hệ điều hành mỗi lần gọi.
+
+% ============================================================
+% 2.3. THIẾT KẾ CẤU TRÚC DỮ LIỆU FRONTIER ĐỒNG THỜI D
+% ============================================================
+\section{Thiết kế cấu trúc dữ liệu Frontier đồng thời $\mathcal{D}$}\label{sec:c2-frontier}
+
+Trên nền tảng các nguyên thủy đồng bộ và cấp phát bộ nhớ đã xây dựng, bài toán trọng tâm tiếp theo là hiện thực hóa cấu trúc biên $\mathcal{D}$ của Bổ đề~3.3 sao cho chịu được tần suất chèn đồng thời cao mà vẫn bảo toàn thứ tự trích xuất theo lô. Để giải quyết yêu cầu đó, Mục~\ref{subsec:c2-frontier-arch} trình bày kiến trúc tách biệt hai phân vùng $\mathcal{D}_0$ và $\mathcal{D}_1$ qua giao diện \texttt{IFrontierD}, Mục~\ref{subsec:c2-d1-sync} phân tích cơ chế đồng bộ khóa mịn kết hợp thu hồi bộ nhớ theo kỷ nguyên trên $\mathcal{D}_1$, còn Mục~\ref{subsec:c2-batch-pull} làm rõ quy trình chèn lô có sắp xếp và rút biên tuần tự.
+
+\subsection{Giao diện trừu tượng và kiến trúc hai phân vùng $\mathcal{D}_0, \mathcal{D}_1$}\label{subsec:c2-frontier-arch}
+
+Toàn bộ thao tác biên bám sát Bổ đề~3.3 đều đi qua giao diện trừu tượng \texttt{IFrontierD} gồm khởi tạo theo sức chứa khối $M$ và cận $B$, chèn lô \textsc{InsertBatch}, chèn tiền tố \textsc{BatchPrepend} và rút biên \textsc{Pull}. Cách thiết kế này tách biệt hoàn toàn bản cài đặt đồng thời \texttt{Concurrent\allowbreak FrontierD} khỏi bản đối chứng dùng khóa toàn cục \texttt{Mutex\allowbreak FrontierD}.
+
+Như minh họa trên Hình~\ref{fig:frontier_arch}, \texttt{Concurrent\allowbreak FrontierD} chia cấu trúc biên thành hai phân vùng tương ứng với hai mẫu truy cập khác nhau. Phân vùng $\mathcal{D}_0$ tiếp nhận lô $K$ tuần tự từ luồng điều phối qua \textsc{BatchPrepend} dưới dạng hàng đợi hai đầu gồm các khối đã sắp tăng dần, mỗi khối chứa tối đa $M$ phần tử. Khi lô $K$ đã có thứ tự tăng dần và phần tử lớn nhất không vượt quá khóa đầu hiện tại của $\mathcal{D}_0$, đường chèn nhanh $\mathcal{O}(|K|)$ cắt trực tiếp $K$ thành từng khối rồi đẩy lên đầu hàng đợi; ngược lại, khi miền giá trị chồng lấn, $\mathcal{D}_0$ rút các khối đầu giao miền ra trộn sắp lại trước khi đóng gói. Song song đó, phân vùng $\mathcal{D}_1$ tiếp nhận toàn bộ thao tác chèn đồng thời từ các luồng công nhân và được tổ chức thành danh sách nhảy liên kết khối kiểu B-Link tối đa $16$ tầng với xác suất nâng tầng $1/4$, trong đó mỗi khối lá có sức chứa định mức $M$ cùng cận trên nguyên tử. Nhờ tách riêng hai phân vùng, các luồng chèn vào $\mathcal{D}_1$ không bao giờ tranh chấp khóa với $\mathcal{D}_0$.
+
+\begin{figure}[!htb]
+\centering
+\resizebox{0.88\textwidth}{!}{%
+\begin{tikzpicture}[
+    >=latex,
+    every node/.style={execute at begin node=\setlength{\baselineskip}{11pt}},
+    topbox/.style={draw=gray!70!black, fill=gray!8, rounded corners=2.5pt, align=center, font=\scriptsize, inner xsep=5pt, inner ysep=4.5pt, minimum height=1.02cm},
+    d0blk/.style={draw=teal!65!black, fill=white, rounded corners=2pt, align=center, font=\scriptsize, minimum width=1.42cm, minimum height=0.88cm, inner xsep=3pt, inner ysep=3pt},
+    d1blk/.style={draw=blue!60!black, fill=white, rounded corners=2pt, align=center, font=\scriptsize, text width=2.08cm, minimum height=0.90cm, inner xsep=3pt, inner ysep=3pt},
+    infrabox/.style={draw=gray!65!black, fill=gray!10, rounded corners=2pt, align=center, font=\scriptsize, minimum width=3.65cm, minimum height=0.56cm, inner xsep=3pt, inner ysep=2.5pt},
+    pullbox/.style={draw=orange!70!black, fill=orange!8, rounded corners=2.5pt, align=center, font=\scriptsize, text width=12.6cm, inner xsep=6pt, inner ysep=5pt},
+    outbox/.style={draw=gray!75!black, fill=gray!6, rounded corners=2.5pt, align=center, font=\scriptsize, text width=10.2cm, inner xsep=6pt, inner ysep=4.5pt},
+    arr/.style={->, thick, gray!45!black},
+    lbl/.style={font=\scriptsize, text=black!85}
+]
+    \coordinate (left_col) at (2.60, 0);
+    \coordinate (right_col) at (9.95, 0);
+
+    % Hàng đầu vào trên cùng
+    \node[topbox, text width=7.6cm, anchor=north] (workers_in) at (right_col) {%
+        \textbf{Các luồng công nhân song song}\\[1pt]
+        Thư giãn cạnh song song sinh ứng viên $\langle v, \widehat{d}[v] \rangle$
+    };
+
+    \node[topbox, text width=7.6cm, anchor=north] (local_buf) at (9.95, -1.50) {%
+        \textbf{Bộ đệm cục bộ theo luồng}\\[1pt]
+        Lọc 64-bit, khử trùng lặp đỉnh, sắp tăng dần
+    };
+
+    \node[topbox, text width=4.6cm, anchor=north] (master_in) at (2.60, -1.50) {%
+        \textbf{Luồng điều phối tuần tự}\\[1pt]
+        Lô $K$ sau đồng bộ rào chắn
+    };
+
+    \draw[arr] (workers_in.south) -- (local_buf.north);
+
+    % Hai phân vùng D_0 (x: 0.00 -> 5.20) và D_1 (x: 5.70 -> 14.20), y: -3.72 -> -7.98
+    \node[draw=teal!60!black, fill=teal!6, rounded corners=3pt, minimum width=5.20cm, minimum height=4.26cm, anchor=north] (d0_box) at (2.60, -3.72) {};
+    \node[draw=blue!60!black, fill=blue!5, rounded corners=3pt, minimum width=8.50cm, minimum height=4.26cm, anchor=north] (d1_box) at (9.95, -3.72) {};
+
+    \draw[arr] (master_in.south) -- (d0_box.north);
+    \draw[arr] (local_buf.south) -- (d1_box.north);
+
+    \node[lbl, anchor=west] at (2.74, -2.88) {\textsc{BatchPrepend}};
+    \node[lbl, anchor=west] at (10.09, -2.88) {\textsc{InsertBatch}};
+
+    % Nội dung bên trong phân vùng D_0
+    \node[align=center, font=\scriptsize, text width=4.85cm, inner ysep=1.5pt, anchor=north] (d0_title) at (2.60, -3.86) {%
+        \textbf{Phân vùng $\mathcal{D}_0$}\\[1pt]
+        Hàng đợi hai đầu các khối đã sắp
+    };
+
+    \node[d0blk, anchor=north] (d0_b1) at (1.15, -5.26) {Khối 1\\ $\le M$};
+    \node[d0blk, anchor=north] (d0_b2) at (3.05, -5.26) {Khối 2\\ $\le M$};
+    \node[font=\scriptsize, anchor=center] (d0_dots) at (4.48, -5.70) {$\cdots$};
+
+    \draw[->, thick, teal!70!black] (d0_b1.east) -- (d0_b2.west);
+    \draw[->, thick, teal!70!black] (d0_b2.east) -- (d0_dots.west);
+
+    \node[draw=teal!45!black, fill=white, rounded corners=2pt, align=center, font=\scriptsize, text width=4.55cm, inner xsep=4pt, inner ysep=4pt, anchor=north] (d0_note) at (2.60, -6.58) {%
+        Đường chèn nhanh $\mathcal{O}(|K|)$;\\
+        gộp sắp khi giá trị chồng lấn
+    };
+
+    % Nội dung bên trong phân vùng D_1
+    \node[font=\scriptsize\bfseries, inner ysep=1.5pt, anchor=north] (d1_title) at (9.95, -3.86) {%
+        Phân vùng $\mathcal{D}_1$: Danh sách nhảy khối kiểu B-Link
+    };
+
+    \node[draw=blue!55!black, fill=blue!12, rounded corners=2pt, minimum width=7.90cm, minimum height=0.52cm, align=center, font=\scriptsize, anchor=north] (d1_tower) at (9.95, -4.56) {%
+        Chỉ mục không khóa tối đa 16 tầng
+    };
+
+    \node[d1blk, anchor=north] (b1) at (7.16, -5.56) {Khối lá 1\\ Khóa 64 B};
+    \node[d1blk, anchor=north] (b2) at (9.95, -5.56) {Khối lá 2\\ Dọn lỗi thời};
+    \node[d1blk, anchor=north] (b3) at (12.74, -5.56) {Khối lá $r$\\ Nối phải};
+
+    \draw[->, blue!65!black] (d1_tower.south -| b1.north) -- (b1.north);
+    \draw[->, blue!65!black] (d1_tower.south -| b2.north) -- (b2.north);
+    \draw[->, blue!65!black] (d1_tower.south -| b3.north) -- (b3.north);
+
+    \draw[->, thick, blue!70!black] (b1.east) -- (b2.west);
+    \draw[->, thick, blue!70!black] (b2.east) -- (b3.west);
+
+    \node[infrabox, anchor=north] (ebr_box) at (7.90, -7.02) {Thu hồi kỷ nguyên EBR};
+    \node[infrabox, anchor=north] (pool_box) at (12.00, -7.02) {Bể 64 vùng căn 64 byte};
+
+    \draw[->, dashed, gray!65!black] (ebr_box.north) -- (ebr_box.north |- b1.south);
+    \draw[->, dashed, gray!65!black] (pool_box.north) -- (pool_box.north |- b3.south);
+
+    % Khối rút biên Pull bên dưới
+    \node[pullbox, anchor=north] (pull_box) at (7.10, -9.04) {%
+        \textbf{Thao tác rút biên} \textsc{Pull} \textbf{tuần tự dưới khóa rút riêng}\\[1pt]
+        Lọc mục lỗi thời bằng đường đọc nhanh 64-bit, gộp hai phân vùng và khử trùng lặp theo đỉnh;\\
+        rút tối đa $M$ đỉnh nhỏ nhất và trả phần dư chưa chọn về phân vùng nguồn
+    };
+
+    \coordinate (bus_y) at (0, -8.56);
+    \coordinate (bus_mid) at (7.10, -8.56);
+
+    \draw[thick, gray!45!black] (d0_box.south) -- (d0_box.south |- bus_y) -- (bus_mid);
+    \draw[thick, gray!45!black] (d1_box.south) -- (d1_box.south |- bus_y) -- (bus_mid);
+    \draw[arr] (bus_mid) -- (pull_box.north);
+
+    \node[lbl, anchor=west] at (2.74, -8.27) {Rút khối đầu $\mathcal{D}_0$};
+    \node[lbl, anchor=west] at (10.09, -8.27) {Rút khối đầu $\mathcal{D}_1$};
+
+    % Khung bao nét đứt của ConcurrentFrontierD
+    \coordinate (frame_bl) at ($(d0_box.west |- pull_box.south)+(-0.26,-0.26)$);
+    \coordinate (frame_tr) at (14.46, -3.26);
+    \draw[dashed, thick, gray!70!black, rounded corners=4pt] (frame_bl) rectangle (frame_tr);
+
+    \node[fill=white, inner xsep=5pt, inner ysep=1.5pt, font=\scriptsize\bfseries] at (7.10, -3.26) {\texttt{ConcurrentFrontierD}};
+
+    % Đầu ra gửi tới vòng đệ quy BMSSP
+    \node[outbox, below=0.68cm of pull_box.south, anchor=north] (out_box) {%
+        \textbf{Kết quả biên $(B_i, S_i)$ gửi tới vòng đệ quy \textsc{BMSSP}}\\[1pt]
+        Tập $S_i$ gồm tối đa $M$ đỉnh nhỏ nhất cùng cận phân tách $B_i$
+    };
+
+    \draw[arr] (pull_box.south) -- (out_box.north);
+\end{tikzpicture}%
+}
+\caption{Kiến trúc hai phân vùng $\mathcal{D}_0, \mathcal{D}_1$ và luồng rút biên của \texttt{Concurrent\allowbreak FrontierD}.}\label{fig:frontier_arch}
+\end{figure}
+
+\subsection{Đồng bộ hóa trong $\mathcal{D}_1$: B-Link, EBR và chống bão tách khối}\label{subsec:c2-d1-sync}
+
+Phân vùng $\mathcal{D}_1$ thay khóa toàn cục bằng khóa quay TTAS đặt riêng trên từng khối lá. Mỗi khóa quay được căn biên 64 byte tách biệt khỏi cận trên nguyên tử và mảng $16$ con trỏ tiếp theo nhằm triệt tiêu hiện tượng chia sẻ giả trên dòng bộ nhớ đệm. Hệ thống đồng thời áp đặt thứ tự chiếm khóa phi chu trình từ khóa rút khối đầu sang khóa quay khối rồi đến khóa tầng chỉ mục, trong khi khóa vùng bể nhớ luôn đóng vai trò khóa lá độc lập để loại trừ khóa chết.
+
+Quá trình duyệt tìm khối đích chạy không khóa từ tầng cao xuống tầng cơ sở bằng các phép đọc nguyên tử ngữ nghĩa \textit{acquire}. Khi số phần tử trong khối vượt $M$, luồng giữ khóa thực hiện dọn dẹp chủ động trước: quét tuyến tính và nén tại chỗ các mục còn hiệu lực đối chiếu qua đường đọc nhanh 64-bit. Nhờ xóa lười các bản ghi lỗi thời kết hợp bước nén tại chỗ này, hệ thống chặn được hiện tượng bão tách khối (\textit{split storm}) trên đồ thị dày. Chỉ khi số mục hợp lệ vẫn vượt $M$, khối mới được phân hoạch theo trung vị trong thời gian tuyến tính dưới khóa tầng chỉ mục theo giao thức B-Link: khối phải nhận cận trên cũ và con trỏ kế tiếp, sau đó khối trái trỏ sang khối phải trước khi hạ cận trên xuống giá trị trung vị và móc nối khối phải lên các tầng chỉ mục cao hơn (dùng thêm chỉ số thứ tự phụ khi trùng cận trên). Thứ tự công bố với ngữ nghĩa \textit{release} này bảo đảm luồng tìm kiếm không khóa hoặc luồng chèn đi ngang qua lúc tách khối luôn dịch chuyển an toàn sang khối phải.
+
+Để tái chế bộ nhớ các khối đầu $\mathcal{D}_1$ đã bị rút cạn và gỡ liên kết mà không gây lỗi truy cập con trỏ treo (\textit{dangling pointer}) cho luồng đọc đang duyệt, $\mathcal{D}_1$ kết hợp thu hồi bộ nhớ theo kỷ nguyên EBR (\textit{Epoch-Based Reclamation}) với bể cấp phát $64$ vùng độc lập căn biên 64 byte (mỗi vùng quản lý đoạn $1024$ nút khối). Mỗi luồng ghim khe kỷ nguyên riêng căn biên 64 byte qua hàng rào nhất quán tuần tự (\textit{sequentially consistent}) trước khi duyệt; khối bị gỡ chỉ được hoàn trả về vùng xuất xứ khi kỷ nguyên gỡ của nó nhỏ hơn hẳn kỷ nguyên nhỏ nhất trong mọi khe đang hoạt động.
+
+\subsection{Chèn theo lô có sắp xếp và thao tác rút biên}\label{subsec:c2-batch-pull}
+
+Thay vì chèn lẻ từng cạnh vào $\mathcal{D}_1$, mỗi luồng công nhân gom ứng viên vào bộ đệm cục bộ, lọc mục lỗi thời qua đường đọc 64-bit, khử trùng lặp giữ khoảng cách nhỏ nhất theo đỉnh và sắp xếp tăng dần. Nhờ đó, \textsc{InsertBatch} chỉ cần mở một phiên bảo vệ đọc EBR và duyệt từ tầng cao đúng một lần cho phần tử đầu tiên, rồi tiến tuần tự sang phải dọc tầng cơ sở để chèn liên tiếp từng đoạn vào các khối kề nhau, khấu hao đáng kể chi phí đồng bộ.
+
+Ở chiều ngược lại, \textsc{Pull} chạy tuần tự trên luồng điều phối dưới khóa rút riêng để bảo toàn cực tiểu toàn cục và xác định chính xác cận phân tách $B_i$. Thủ tục rút dần các khối đầu từ $\mathcal{D}_0$ và $\mathcal{D}_1$ (đồng thời lọc mục lỗi thời qua đường đọc 64-bit và khử trùng lặp) cho tới khi mỗi phân vùng thu đủ $M + 1$ đỉnh hợp lệ phân biệt hoặc cạn phần tử. Hai tập được gộp, khử trùng lặp liên phân vùng và sắp tăng dần: nếu tổng số đỉnh $\le M$ thì trả về toàn bộ với $B_i = B$; ngược lại trả về $M$ đỉnh đầu làm $S_i$, lấy khoảng cách đỉnh thứ $M + 1$ làm cận $B_i$ và hoàn trả các ứng viên dư về đúng phân vùng nguồn. Do tính tuần tự cố hữu, \textsc{Pull} cùng \textsc{BatchPrepend} nằm trực tiếp trên đường găng của vòng lặp BMSSP.
+
+% ============================================================
+% 2.4. CÁC THỦ TỤC THUẬT TOÁN BMSSP SONG SONG
+% ============================================================
+\section{Các thủ tục thuật toán BMSSP song song}\label{sec:c2-thuat-toan}
+
+Sau khi hoàn thiện tầng hạ tầng nguyên tử và cấu trúc biên \texttt{Concurrent\allowbreak FrontierD}, các thành phần hệ thống được kết nối trực tiếp vào ba thủ tục cốt lõi của thuật toán BMSSP. Cụ thể, Mục~\ref{subsec:c2-find-pivots} đặc tả thủ tục thu gọn tập nguồn \textsc{FindPivots} song song hóa theo cạnh, Mục~\ref{subsec:c2-base-case} trình bày thủ tục giải cục bộ \textsc{BaseCase} tại tầng đáy, và Mục~\ref{subsec:c2-bmssp-rec} tổng hợp khung đệ quy cắt lát kèm cơ chế tái sử dụng vùng làm việc qua các tầng.
+
+\subsection{Tìm đỉnh trụ song song}\label{subsec:c2-find-pivots}
+
+Thủ tục \textsc{FindPivots} (Thuật toán~\ref{alg:parallel_find_pivots}) thu gọn tập nguồn $S$ thành tập đỉnh trụ $P \subseteq S$ thỏa mãn $|P| \le |W|/k$ qua tối đa $k$ bước thư giãn bị chặn bởi $B$. Để tránh cấp phát và xóa trắng mảng cỡ $\mathcal{O}(n)$ lặp lại giữa các lời gọi, hệ thống duy trì vùng làm việc dùng chung với hai bộ đánh dấu kỷ nguyên cho $W$ và $S$. Trong mỗi bước, khi tổng cạnh hoạt động $N_{\mathrm{act}} \ge \Theta_{\mathrm{cutoff}}$ và $p > 1$, đoạn chỉ số cạnh $[0, N_{\mathrm{act}})$ được chia đều cho $p$ luồng dựa trên mảng tổng tiền tố bậc ra và tìm kiếm nhị phân để cân bằng tải ngay cả với đỉnh bậc cao. Các cạnh cải thiện chặt ($d' < \widehat{d}[v]$) thực hiện thư giãn nguyên tử 128-bit, còn cả nhánh cải thiện lẫn hòa khoảng cách ($d' = \widehat{d}[v]$) đều đi qua bộ khử trùng lặp kỷ nguyên bước $e_j$ trước khi ghi vào bộ đệm cục bộ.
+
+Nếu $|W|$ vượt $k|S|$, thủ tục thoát sớm và trả về $(S, W)$. Ngược lại, sau $k$ vòng, thuật toán dựng rừng đỉnh cha tuần tự trên $W$ bằng phương pháp nén đường đi kết hợp đánh dấu thăm tạm thời để loại trừ chu trình trọng số $0$, rồi chọn các nguồn $s \in S$ có kích thước cây con tối thiểu $k$.
+
+\begin{algorithm}[htbp]
+\caption{Thủ tục tìm đỉnh trụ song song $\textsc{FindPivots}(B, S, k)$}
+\label{alg:parallel_find_pivots}
+\small\setlength{\baselineskip}{14pt}
+\begin{algorithmic}[1]
+\Require Cận trên $B$, tập nguồn $S$, số bước $k$, số luồng $p$, vùng làm việc dùng lại.
+\Ensure Tập đỉnh trụ $P \subseteq S$ và tập đỉnh đã thăm $W$.
+\State Khử trùng lặp $S$ qua kỷ nguyên thăm; đặt $W \leftarrow S$, $A \leftarrow S$
+\For{$j \leftarrow 1$ \textbf{to} $k$}
+    \State Xây mảng tiền tố $\mathrm{off}[0\ldots|A|]$ theo $\deg^+(u)$; $N_{\mathrm{act}} \leftarrow \mathrm{off}[|A|]$
+    \State \textbf{if} $N_{\mathrm{act}} = 0$ \textbf{then break}
+    \State Cấp kỷ nguyên bước $e_j$; xóa rỗng bộ đệm cục bộ $L_0, \ldots, L_{p-1}$
+    \If{$N_{\mathrm{act}} \ge \Theta_{\mathrm{cutoff}}$ \textbf{and} $p > 1$}
+        \For{mỗi luồng $r \in \{0, \ldots, p-1\}$ \textbf{in parallel}}
+            \State Chia đều $[0, N_{\mathrm{act}})$, tìm đỉnh đầu bằng tìm kiếm nhị phân trên $\mathrm{off}$
+            \State Thư giãn nguyên tử $(u, v)$ với $\widehat{d}[u] < B$, $d' = \widehat{d}[u] + w_{uv} < B$
+            \State Nếu cải thiện hoặc hòa $\widehat{d}[v]$ và giành quyền ở $e_j$, ghi $v$ vào $L_r$
+        \EndFor
+        \State Gom song song $L_0, \ldots, L_{p-1}$ thành $A'$
+    \Else
+        \State Thư giãn tuần tự các cạnh đi ra từ $A$ vào $L_0$; đặt $A' \leftarrow L_0$
+    \EndIf
+    \State Bổ sung đỉnh mới của $A'$ vào $W$; \textbf{if} $|W| > k|S|$ \textbf{then return} $(S, W)$
+    \State $A \leftarrow A'$
+\EndFor
+\State Đặt $\mathrm{root}[s] \leftarrow s$, $\mathrm{cnt}[s] \leftarrow 0$ với $s \in S$; lấy $\operatorname{pred}[v]$ với $v \in W \setminus S$
+\ForAll{$v \in W$} \Comment{Dựng rừng tuần tự}
+    \State Lần theo $\operatorname{pred}[\cdot]$ tìm gốc $r \in S$, nén đường đi và loại chu trình
+    \State \textbf{if} $r \in S$ \textbf{then} $\mathrm{cnt}[r] \leftarrow \mathrm{cnt}[r] + 1$
+\EndFor
+\State \textbf{return} $(\{s \in S : \mathrm{cnt}[s] \ge k\}, W)$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Trường hợp cơ sở}\label{subsec:c2-base-case}
+
+Tại tầng $\ell = 0$, thủ tục \textsc{BaseCase} chạy Dijkstra cục bộ tuần tự từ nguồn $x$ ($\widehat{d}[x] < B$) và dừng khi cố định đủ $k + 1$ đỉnh (với $k = \lfloor (\log_2 n)^{1/3} \rfloor$) hoặc khi hàng đợi ưu tiên rỗng. Do số cạnh mở rộng luôn nhỏ hơn ngưỡng $\Theta_{\mathrm{cutoff}} = 2048$, chạy tuần tự giúp tránh chi phí đồng bộ luồng.
+
+Để bảo đảm tính đúng đắn trong mọi trường hợp biên, \textsc{BaseCase} xử lý ba tình huống đặc biệt: (1) duy trì tập đỉnh đã cố định riêng cho lời gọi để lan truyền đúng các cạnh hòa khoảng cách $d' = \widehat{d}[v]$ mà không lặp vô hạn trên chu trình trọng số $0$; (2) nếu cả $k + 1$ đỉnh cố định đều có khoảng cách bằng $\widehat{d}[x]$ khiến phép lọc nhỏ hơn chặt $B'$ cho tập rỗng, thủ tục giữ lại $k$ đỉnh đầu tiên và loại đỉnh thứ $k + 1$ để bảo đảm tiến triển; và (3) khi nhận tập nguồn $S$ nhiều đỉnh, khung đệ quy sắp xếp $S$ tăng dần theo $(\widehat{d}[x], x)$, chạy tuần tự từng nguồn đồng thời thu hẹp dần $B_{\mathrm{cur}}$ rồi lọc kết quả qua bộ khử trùng lặp kỷ nguyên tầng $0$.
+
+\subsection{Khung đệ quy BMSSP và tái sử dụng vùng làm việc}\label{subsec:c2-bmssp-rec}
+
+Trước khi gọi đệ quy từ tầng cao nhất $L = \lceil (\log_2 n) / t \rceil$ với $t = \lfloor (\log_2 n)^{2/3} \rfloor$, hệ thống cấp phát sẵn một vùng làm việc riêng cho từng tầng $\ell \in \{1, \ldots, L\}$ gồm một thể hiện \texttt{Concurrent\allowbreak FrontierD} (với kích thước lát $M = \max(1, \min(2^{(\ell-1)t}, n))$) và các bộ đệm luồng, đi kèm một bộ khử trùng lặp kỷ nguyên hoàn tất riêng cho từng tầng từ $0$ đến $L$. Mỗi lần tái sử dụng chỉ đặt lại nhẹ cấu trúc $\mathcal{D}$ mà giữ nguyên các khối nhớ đã cấp.
+
+Quy trình thực thi tại tầng $\ell \ge 1$ được tổng hợp trong Thuật toán~\ref{alg:parallel_bmssp}. Sau bước tìm đỉnh trụ và nạp $P$ vào $\mathcal{D}$, vòng lặp chính rút tuần tự từng lát $(B_i, S_i)$, gọi đệ quy mức $\ell - 1$ thu về $(B'_i, U_i)$, rồi mở rộng song song các cạnh đi ra từ $U_i$ (khi $N_{\mathrm{act}} \ge \Theta_{\mathrm{cutoff}}$ và $p > 1$): ứng viên thuộc $[B_i, B)$ được chèn lô vào $\mathcal{D}_1$ qua \textsc{InsertBatch}, còn ứng viên cải thiện nhỏ hơn $B_i$ hoặc hòa chưa hoàn tất thuộc $[B'_i, B_i)$ được gom vào tập $K$ để sắp xếp song song và đẩy lên đầu $\mathcal{D}_0$ qua \textsc{BatchPrepend}. Khung đệ quy xử lý riêng hai điều kiện biên quan trọng: nâng trực tiếp các đỉnh chưa hoàn tất $x \in S_i$ có $\widehat{d}[x] = B_i < B$ vào $U$ và $U_i$ khi $B'_i = B_i$ để tránh kẹt lặp vô hạn tại biên hòa, và bỏ qua ngưỡng dừng $|U| < Q$ ($Q = \min(k \cdot 2^{\ell t}, n)$) tại tầng gốc $\ell = L$ để giải trọn vẹn đồ thị.
+
+\begin{algorithm}[htbp]
+\caption{Khung đệ quy song song $\textsc{BMSSP}(\ell, B, S)$}
+\label{alg:parallel_bmssp}
+\small\setlength{\baselineskip}{14pt}
+\begin{algorithmic}[1]
+\Require Tầng đệ quy $\ell$, cận trên $B$, tập nguồn $S$, số luồng $p$, vùng làm việc tầng $\ell$.
+\Ensure Cận hoàn tất $B' \le B$ và tập đỉnh hoàn tất $U$.
+\State \textbf{if} $S = \emptyset$ \textbf{then return} $(B, \emptyset)$
+\State \textbf{if} $\ell = 0$ \textbf{then return} kết quả tuần tự từ \textsc{BaseCase} trên $(B, S, k)$
+\State $(P, W) \leftarrow \textsc{FindPivots}(B, S, k)$
+\State Đặt lại nhẹ $\mathcal{D}$ tầng $\ell$ với $M \leftarrow \max(1, \min(2^{(\ell-1)t}, n))$ và cận $B$
+\State Chèn mọi $u \in P$ có $\widehat{d}[u] < B$ vào $\mathcal{D}$; $B_{\mathrm{last}} \leftarrow \min(\{B\} \cup \{\widehat{d}[u] : u \in P\})$
+\State Đặt hạn mức $Q \leftarrow \min(k \cdot 2^{\ell t}, n)$ và $U \leftarrow \emptyset$
+\While{($\ell = L$ \textbf{or} $|U| < Q$) \textbf{and} $\mathcal{D} \neq \emptyset$}
+    \State Rút lát $(B_i, S_i) \leftarrow \textsc{Pull}(\mathcal{D})$; \textbf{if} $S_i = \emptyset$ \textbf{then break}
+    \State $(B'_i, U_i) \leftarrow \textsc{BMSSP}(\ell - 1, B_i, S_i)$
+    \State Đánh dấu hoàn tất toàn cục và thêm các đỉnh mới của $U_i$ vào $U$
+    \If{$B'_i = B_i$}
+        \State Nâng mọi $x \in S_i$ chưa hoàn tất có $\widehat{d}[x] = B_i < B$ vào $U$ và $U_i$
+    \EndIf
+    \State Xây mảng tiền tố bậc ra trên $U_i$ có tổng cạnh $N_{\mathrm{act}}$; xóa rỗng $D_r, K_r$
+    \For{mỗi luồng $r$ trên lát cạnh $U_i$} \Comment{Song song khi $N_{\mathrm{act}} \ge \Theta_{\mathrm{cutoff}}$, $p > 1$}
+        \State Với mỗi cạnh $(u, v)$ trong lát có $\widehat{d}[u] < B$, $d' = \widehat{d}[u] + w_{uv} < B$:
+        \State \hspace{1em} Thư giãn nguyên tử; ứng viên ở $[B_i, B)$ ghi $\langle v, d' \rangle$ vào $D_r$
+        \State \hspace{1em} Ứng viên cải thiện $< B_i$ hoặc hòa chưa hoàn tất ở $[B'_i, B_i)$ ghi vào $K_r$
+        \State Kết thúc lát của luồng $r$: lọc lỗi thời, khử trùng, sắp $D_r$; gọi $\textsc{InsertBatch}(\mathcal{D}_1, D_r)$
+    \EndFor
+    \State Gom tuần tự các bộ đệm $K_r$ thành $K$
+    \State Với $x \in S_i$ chưa hoàn tất, $\widehat{d}[x] < B$: đưa vào $\mathcal{D}$ nếu $\widehat{d}[x] \ge B_i$, còn lại vào $K$
+    \State \textbf{if} $K \neq \emptyset$ \textbf{then} sắp xếp song song $K$ và gọi $\textsc{BatchPrepend}(\mathcal{D}_0, K)$
+    \State $B_{\mathrm{last}} \leftarrow B'_i$
+\EndWhile
+\State Đặt $B' \leftarrow B$ nếu $\mathcal{D} = \emptyset$, ngược lại $B' \leftarrow B_{\mathrm{last}}$
+\State Đánh dấu hoàn tất toàn cục và thêm mọi $x \in W$ có $\widehat{d}[x] < B'$ vào $U$
+\State \textbf{return} $(B', U)$
+\end{algorithmic}
+\end{algorithm}
+
+% ============================================================
+% 2.5. PHÂN TÍCH ĐỘ PHỨC TẠP VÀ GIỚI HẠN TRÊN PHẦN CỨNG THỰC TẾ
+% ============================================================
+\section{Phân tích độ phức tạp song song và giới hạn trên phần cứng thực tế}\label{sec:c2-phan-tich}
+
+Một bản cài đặt đúng đắn về mặt thuật toán không tự động chuyển hóa toàn bộ tiềm năng lý thuyết thành hệ số tăng tốc tuyến tính trên máy tính đa lõi. Nhằm làm rõ cơ sở định tính trước khi bước vào đo đạc thực nghiệm, Mục~\ref{subsec:c2-complexity} phân tích khối lượng công việc cùng các thành phần tuần tự trên đường găng của hệ thống, tiếp theo Mục~\ref{subsec:c2-limits} tổng hợp vai trò của các kỹ thuật tối ưu hóa và đối chiếu những khác biệt cốt lõi giữa mô hình lý thuyết với kiến trúc phần cứng thực tế.
+
+\subsection{Khối lượng công việc, đường găng và các phần tuần tự cố hữu}\label{subsec:c2-complexity}
+
+Trên đồ thị bậc ra hằng số khi bỏ qua chi phí tranh chấp đồng thời, bản cài đặt bảo toàn cận trên khối lượng công việc tiệm cận $\mathcal{O}(m \log^{2/3} n)$ của thuật toán BMSSP. Tuy nhiên, do tùy chọn chuẩn hóa bậc được tắt theo mặc định nhằm tiết kiệm bộ nhớ làm việc như đã nêu tại Mục~\ref{subsec:c2-arch}, khối lượng thao tác thực tế trên đồ thị tổng quát còn phụ thuộc trực tiếp vào phân bố bậc đỉnh, số lượt thư giãn cạnh lặp lại và tần suất lọc lười các bản ghi lỗi thời bên trong cấu trúc biên $\mathcal{D}$.
+
+Xét theo chiều sâu đường găng $T_\infty$, mặc dù các pha duyệt cạnh, gom bộ đệm cục bộ và sắp xếp lô $K$ đã được song song hóa khi vượt ngưỡng $\Theta_{\mathrm{cutoff}} = 2048$, hệ thống vẫn tồn tại bốn thành phần mang bản chất tuần tự cố hữu. Trước hết, vòng lặp điều phối tại mỗi tầng đệ quy buộc phải xử lý nối tiếp từng lát khoảng cách để bảo toàn bất biến tập hoàn tất. Tại tầng đáy $\ell = 0$, thủ tục \textsc{BaseCase} thực thi tuần tự trên tối đa $k + 1$ đỉnh do khối lượng mở rộng quá nhỏ để bù đắp chi phí khởi tạo luồng. Bên cạnh đó, thao tác rút biên \textsc{Pull} dưới khóa rút riêng cùng bước chèn tiền tố \textsc{BatchPrepend} vẫn tập trung trên luồng điều phối, tương tự như pha dựng rừng đỉnh cha trên tập $W$ có kích thước tối đa $k|S|$ ở cuối thủ tục \textsc{FindPivots}. Theo định lý Brent và định luật Amdahl tại Mục~\ref{sec:co-so-song-song}, tổng tỷ trọng thời gian của các pha tuần tự này cộng với những đợt xử lý rơi xuống dưới ngưỡng độ hạt $\Theta_{\mathrm{cutoff}} = 2048$ trên đồ thị biên hẹp chính là cận trên giới hạn hệ số tăng tốc đạt được trên CPU đa lõi.
+
+\subsection{Tổng hợp tối ưu hệ thống và khoảng cách từ lý thuyết đến phần cứng}\label{subsec:c2-limits}
+
+Để giảm chi phí quản lý bộ nhớ và đồng bộ hóa giữa các luồng, hệ thống tích hợp các kỹ thuật tối ưu cấp thấp cùng mô-đun đo đạc từng pha bật tắt theo cờ biên dịch nên không gây nhiễu khi đo hiệu năng chuẩn. Bảng~\ref{tab:optimizations} tổng hợp cơ chế triển khai và nút thắt mục tiêu của từng giải pháp trong kiến trúc đã xây dựng.
+
+\begin{table}[H]
+\centering
+{\small\setlength{\baselineskip}{14pt}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Kỹ thuật tối ưu} & \textbf{Cơ chế triển khai} & \textbf{Nút thắt được khắc phục} \\
+\midrule
+Tái sử dụng vùng làm việc theo tầng đệ quy &
+Cấp phát sẵn một vùng làm việc cho từng tầng $1 \dots L$ gồm \texttt{Concurrent\allowbreak FrontierD}, bể nhớ 64 vùng và các bộ đệm trung gian; mỗi lời gọi đệ quy chỉ đặt lại nhẹ cấu trúc biên và con trỏ bể nhớ, giữ nguyên các khối nhớ đã cấp. &
+Loại bỏ chi phí cấp phát, khởi tạo và giải phóng lặp lại đối tượng biên cùng bể nhớ 64 vùng qua hàng nghìn lời gọi đệ quy. \\
+\addlinespace[5pt]
+Đường đọc nhanh nguyên tử 64-bit tại độ lệch 0 &
+Đọc trực tiếp trường khoảng cách tại độ lệch 0 của bản ghi trạng thái đỉnh bằng phép tải nguyên tử 64-bit thay cho lệnh 128-bit tại các bước lọc cạnh và kiểm tra mục lỗi thời trong $\mathcal{D}_0, \mathcal{D}_1$. &
+Tránh phát sinh yêu cầu giành quyền sở hữu dòng bộ nhớ đệm RFO ở các thao tác chỉ đọc, giảm lưu lượng duy trì tính nhất quán giữa các lõi. \\
+\addlinespace[5pt]
+Đệm cục bộ theo luồng và chèn lô có sắp xếp vào $\mathcal{D}_1$ &
+Mỗi luồng gom các đỉnh mới thư giãn vào bộ đệm riêng, lọc bản ghi lỗi thời tại chỗ, khử trùng lặp theo khoảng cách nhỏ nhất và sắp xếp tăng dần để chèn liên tiếp trong một phiên bảo vệ đọc EBR. &
+Khấu hao chi phí duyệt danh sách nhảy và hàng rào đồng bộ EBR, loại bỏ mục trùng lặp sớm và giảm tranh chấp khóa khối trên $\mathcal{D}_1$. \\
+\addlinespace[5pt]
+Đo đạc chi tiết từng pha theo cờ biên dịch &
+Ghi nhận thời gian thực, số lượt gọi và độ lệch tải giữa các luồng cho \textsc{FindPivots}, \textsc{BaseCase}, \textsc{Pull}, pha thư giãn cạnh từ $U_i$ và \textsc{BatchPrepend} khi bật cờ biên dịch. &
+Định vị trực tiếp nút thắt tuần tự và mức độ mất cân bằng tải trên phần cứng thật mà không gây nhiễu bản chạy thực nghiệm chính. \\
+\bottomrule
+\end{tabularx}
+}
+\caption{Tổng hợp các kỹ thuật tối ưu hóa hệ thống và công cụ đo đạc trong cài đặt BMSSP song song.}
+\label{tab:optimizations}
+\end{table}
+
+Ngay cả khi đã áp dụng các tối ưu trên, hiệu năng thực thi trên vi xử lý đa lõi vẫn chịu chi phối bởi những ràng buộc vật lý mà mô hình PRAM lý thuyết lược bỏ, bao gồm phân cấp bộ nhớ đệm, lưu lượng đồng bộ dòng đệm khi cập nhật nguyên tử 128-bit và độ trễ điều phối luồng. Bảng~\ref{tab:theory_vs_hardware} đối chiếu năm khác biệt trọng yếu giữa giả định lý thuyết và điều kiện vận hành thực tế của hệ thống.
+
+\begin{table}[H]
+\centering
+{\small\setlength{\baselineskip}{14pt}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Khía cạnh} & \textbf{Giả định lý thuyết} & \textbf{Thực tế phần cứng và cài đặt} \\
+\midrule
+Mô hình truy cập bộ nhớ &
+Truy cập bộ nhớ chia sẻ có độ trễ hằng số đồng nhất và không chịu nhiễu tranh chấp giữa các bộ xử lý. &
+Chịu chi phối bởi phân cấp bộ nhớ đệm và băng thông RAM; truy cập rải rác trên đồ thị thưa dễ gây trượt bộ nhớ đệm và phát sinh lưu lượng đồng bộ khi cập nhật nguyên tử 128-bit. \\
+\addlinespace[5pt]
+Tính song song của cấu trúc $\mathcal{D}$ &
+Phân tích khấu hao dựa trên kích thước khối lý thuyết, bỏ qua khóa bảo vệ và sự tích tụ bản ghi lỗi thời. &
+Chèn vào $\mathcal{D}_1$ duyệt không khóa kết hợp khóa mịn theo khối, nhưng \textsc{Pull} vẫn chạy dưới khóa rút riêng còn \textsc{BatchPrepend} thực thi tuần tự trên luồng điều phối và phải dọn bản ghi lỗi thời. \\
+\addlinespace[5pt]
+Chi phí khởi tạo và đồng bộ luồng &
+Các thao tác phân nhánh, gom dữ liệu, quét tiền tố và sắp xếp song song có chi phí điều phối bằng không. &
+Vùng OpenMP chịu độ trễ rào chắn cuối pha; các thủ tục mảng tạo và thu hồi luồng \texttt{std::thread} theo từng lần gọi, làm tăng chi phí hệ điều hành với lô dữ liệu cỡ vừa. \\
+\addlinespace[5pt]
+Giả định bậc đồ thị &
+Đồ thị được chuẩn hóa về bậc ra hằng số để bảo đảm chặt chẽ cận khối lượng công việc $\mathcal{O}(m \log^{2/3} n)$. &
+Tùy chọn chuẩn hóa bậc tắt mặc định; phân hoạch theo cạnh giúp cân bằng tải giữa các luồng nhưng đỉnh bậc vào cao vẫn tập trung tranh chấp nguyên tử và sinh nhiều mục lỗi thời. \\
+\addlinespace[5pt]
+Ngưỡng độ hạt $\Theta_{\mathrm{cutoff}}$ và cấu trúc đồ thị &
+Mọi bước có độ song song hữu hạn đều chia đều cho các bộ xử lý mà không cần ngưỡng chuyển về tuần tự. &
+Bộ giải chuyển về chạy tuần tự khi khối lượng công việc dưới ngưỡng $\Theta_{\mathrm{cutoff}} = 2048$; đồ thị có biên mở rộng hẹp hoặc đường kính lớn thường xuyên rơi dưới ngưỡng này, làm thu hẹp tỷ phần chạy song song. \\
+\bottomrule
+\end{tabularx}
+}
+\caption{Đối chiếu các giả định lý thuyết với điều kiện phần cứng và cài đặt thực tế của BMSSP song song.}
+\label{tab:theory_vs_hardware}
+\end{table}
+
+Những phân tích về đường găng tuần tự và giới hạn phần cứng trên đây cho thấy hiệu quả tăng tốc của BMSSP song song phụ thuộc chặt chẽ vào mật độ cạnh hoạt động trong từng lát khoảng cách. Trên cơ sở kiến trúc và công cụ đo đạc đã thiết lập, Chương~\ref{ch:thuc-nghiem} tiến hành kiểm chứng tính đúng đắn, đánh giá khả năng mở rộng theo số luồng và định lượng các nút thắt hiệu năng trên dữ liệu thực nghiệm.

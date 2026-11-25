@@ -1,0 +1,310 @@
+% CHƯƠNG 1 — Dự án Parallel BMSSP
+% Đưa nội dung này vào sau \begin{document} trong tài liệu chính.
+% Các gói cần khai báo ở preamble: amsmath, amssymb, algorithm, algpseudocode.
+% Các khóa tài liệu tham khảo nằm trong tệp tai_lieu_tham_khao_bmssp.bib.
+
+\chapter{MÔ TẢ BÀI TOÁN, ĐẶT VẤN ĐỀ VÀ CƠ SỞ LÝ THUYẾT}
+\label{chap:co-so-ly-thuyet}
+
+\section{Tổng quan và bối cảnh bài toán SSSP}
+\label{sec:tong-quan-sssp}
+
+\subsection{Vai trò của đồ thị trong các hệ thống tính toán}
+
+Đồ thị là một mô hình toán học quan trọng để biểu diễn các đối tượng và mối liên hệ giữa chúng. Trong nhiều hệ thống thực tế, các đối tượng được mô hình hóa thành đỉnh, còn sự kết nối hoặc tương tác giữa chúng được biểu diễn bằng cạnh. Khi mỗi kết nối gắn với một đại lượng định lượng như khoảng cách, thời gian truyền, độ trễ hoặc chi phí, ta thu được đồ thị có trọng số. Đặc biệt, đồ thị có hướng cho phép mô tả các quan hệ không đối xứng, phù hợp với nhiều bài toán định tuyến và xử lý mạng.
+
+Một yêu cầu phổ biến khi khai thác dữ liệu đồ thị là tìm phương án di chuyển hoặc truyền tin có tổng chi phí nhỏ nhất, chẳng hạn trong mạng giao thông (độ dài hoặc thời gian di chuyển), mạng máy tính (độ trễ liên kết) hay hệ thống phụ thuộc tác vụ (chi phí chuyển trạng thái). Mặc dù ngữ nghĩa ứng dụng khác nhau, các bài toán này đều có thể quy về bài toán tìm đường đi ngắn nhất trên đồ thị.
+
+\subsection{Bài toán đường đi ngắn nhất nguồn đơn}
+
+Bài toán đường đi ngắn nhất nguồn đơn (\textit{Single-Source Shortest Path} -- SSSP) yêu cầu xác định khoảng cách ngắn nhất từ một đỉnh nguồn cho trước đến mọi đỉnh khác của đồ thị. Khác với bài toán tìm đường đi giữa một cặp đỉnh riêng lẻ, SSSP phải giải quyết đồng thời toàn bộ các đích đạt tới được từ cùng một nguồn, tạo ra bảng khoảng cách và (khi cần thiết) cấu trúc truy vết đường đi tương ứng.
+
+Trong phạm vi đề tài, bài toán được xét trên \textbf{đồ thị có hướng với trọng số cạnh không âm} --- miền đầu vào chuẩn của cả thuật toán Dijkstra và thuật toán \textit{Bounded Multi-Source Shortest Path} (BMSSP). Khi quy mô đồ thị tăng lớn, chi phí duyệt cạnh, cập nhật khoảng cách và quản lý tập đỉnh chờ xử lý trở thành yếu tố chi phối thời gian chạy, đặt ra yêu cầu nghiên cứu khả năng khai thác kiến trúc CPU đa lõi bên cạnh yêu cầu về tính đúng đắn.
+
+\section{Phát biểu và mô hình toán học của bài toán}
+\label{sec:phat-bieu-bai-toan}
+
+\subsection{Mô hình đồ thị và các ký hiệu}
+
+Xét đồ thị có hướng, có trọng số $G=(V,E,w)$, trong đó $V$ là tập đỉnh, $E\subseteq V\times V$ là tập cạnh có hướng và $w:E\rightarrow\mathbb{R}_{\ge 0}$ là hàm trọng số không âm. Ký hiệu $n=|V|$, $m=|E|$ lần lượt là số đỉnh và số cạnh; trọng số của cạnh $(u,v)\in E$ được viết là $w(u,v)$ hoặc gọn hơn là $w_{uv}$. Cho trước đỉnh nguồn $s\in V$, mục tiêu là xác định khoảng cách ngắn nhất từ $s$ đến mọi đỉnh $v\in V$.
+
+Một đường đi có hướng từ $s$ đến $v$ là dãy đỉnh $p=(v_0,v_1,\ldots,v_r)$ thỏa mãn $v_0=s$, $v_r=v$ và $(v_{i-1},v_i)\in E$ với mọi $1\le i\le r$. Độ dài của đường đi $p$ được xác định bởi
+\begin{equation}
+    L(p)=\sum_{i=1}^{r} w(v_{i-1},v_i).
+    \label{eq:duong-di-do-dai}
+\end{equation}
+
+Gọi $\mathcal{P}(s,v)$ là tập tất cả các đường đi có hướng từ $s$ đến $v$. Khoảng cách ngắn nhất từ $s$ đến $v$, ký hiệu $\delta(s,v)$ (và viết gọn là $d(v)$ khi nguồn $s$ đã cố định), được định nghĩa như sau:
+\begin{equation}
+    d(v) = \delta(s,v) =
+    \begin{cases}
+        \displaystyle\min_{p\in\mathcal{P}(s,v)} L(p),
+        & \text{khi }\mathcal{P}(s,v)\neq\emptyset,\\[6pt]
+        +\infty, & \text{khi }\mathcal{P}(s,v)=\emptyset.
+    \end{cases}
+    \label{eq:khoang-cach-ngan-nhat}
+\end{equation}
+
+Theo quy ước, $d(s)=0$, và đỉnh không thể đi tới từ $s$ nhận khoảng cách $+\infty$. Trọng số bằng $0$ được cho phép; do đó đồ thị đầu vào có thể chứa cạnh hoặc chu trình có tổng trọng số bằng $0$.
+
+\subsection{Yêu cầu đầu ra và phép thư giãn cạnh}
+
+Trong quá trình thực thi, thuật toán duy trì một mảng ước lượng khoảng cách tạm thời $\widehat{d}[v] \ge d(v)$ với khởi tạo $\widehat{d}[s] = 0$ và $\widehat{d}[v] = +\infty$ cho mọi $v \neq s$. Một đỉnh $v$ được gọi là \textit{hoàn tất} (\textit{complete}) nếu $\widehat{d}[v] = d(v)$. Đầu ra chính của bài toán SSSP là mảng $\widehat{d}[v]$ thỏa mãn $\widehat{d}[v] = d(v)$ với mọi $v\in V$.
+
+Để khôi phục đường đi ngắn nhất, thuật toán đồng thời duy trì mảng đỉnh trước $\operatorname{pred}[v]$. Với mỗi đỉnh $v\neq s$ có thể đi tới, $\operatorname{pred}[v]$ phải là đỉnh liền trước $v$ trên một đường đi ngắn nhất hợp lệ từ $s$ đến $v$, bảo đảm truy vết ngược không tạo chu trình; các đỉnh không tới được không có đỉnh trước hợp lệ.
+
+Thao tác cơ bản của các thuật toán SSSP là \textit{thư giãn cạnh} (\textit{edge relaxation})\cite{cormen2022introduction}. Với cạnh $(u,v)\in E$, ta tính ứng viên khoảng cách
+\begin{equation}
+    d_{\mathrm{cand}}(v) = \widehat{d}[u] + w_{uv}.
+    \label{eq:ung-vien-thu-gian}
+\end{equation}
+Khi $d_{\mathrm{cand}}(v) < \widehat{d}[v]$ (hoặc $d_{\mathrm{cand}}(v) \le \widehat{d}[v]$ theo quy ước phá vỡ hòa ở Mục~\ref{sec:ly-thuyet-bmssp}), thuật toán cập nhật $\widehat{d}[v] \leftarrow d_{\mathrm{cand}}(v)$ và gán $\operatorname{pred}[v] \leftarrow u$.
+
+\subsection{Đặc điểm của bài toán trên đồ thị lớn}
+
+Hiệu năng giải SSSP không chỉ phụ thuộc vào $n$ và $m$ mà còn chịu ảnh hưởng mạnh bởi cấu trúc kết nối của đồ thị. Đồ thị thưa có $m$ cùng bậc với $n$, trong khi đồ thị mật độ cao phát sinh khối lượng thư giãn cạnh lớn hơn đáng kể. Các đỉnh siêu bậc (\textit{hub}) trong mạng lưới phi quy mô (\textit{scale-free}) dễ gây mất cân bằng tải; ngược lại, đồ thị lưới hoặc mạng giao thông phẳng thường tạo ra tập đỉnh đang hoạt động hẹp ở từng bước. Trong môi trường đa luồng, nhiều cạnh cùng hướng tới một đỉnh đích có thể gây xung đột cập nhật, đòi hỏi cơ chế đồng bộ thích hợp để vừa bảo toàn tính đúng đắn vừa hạn chế tranh chấp bộ nhớ.
+
+\section{Đặt vấn đề và mục tiêu nghiên cứu}
+\label{sec:dat-van-de}
+
+\subsection{Đặt vấn đề}
+
+Trên CPU đa lõi, việc tăng số luồng xử lý không tự động làm giảm tương ứng thời gian giải SSSP. Các bước xử lý theo thứ tự khoảng cách tồn tại phụ thuộc dữ liệu chặt chẽ, trong khi các cấu trúc ưu tiên dùng chung dễ phát sinh chi phí khóa, tranh chấp bộ nhớ đệm và điều phối luồng.
+
+Năm 2025, Duan và các cộng sự công bố thuật toán BMSSP tất định cho bài toán SSSP trên đồ thị có hướng với trọng số thực không âm, đạt cận thời gian lý thuyết $\mathcal{O}(m\log^{2/3}n)$ trong mô hình so sánh--cộng \cite{duan2025breaking}. Kết quả này mở ra hướng tiếp cận khác với chiến lược ưu tiên từng đỉnh toàn cục của Dijkstra. Tuy nhiên, \emph{cận tiệm cận lý thuyết của thuật toán gốc không đồng nghĩa với việc mọi cài đặt BMSSP đều đạt cận đó}, và cũng không bảo đảm phiên bản song song sẽ vượt Dijkstra trên mọi họ đồ thị thực nghiệm.
+
+Từ bối cảnh trên, bài toán nghiên cứu của đề tài là: \textit{Làm thế nào để tổ chức và triển khai các thành phần của BMSSP trên CPU đa lõi, bảo toàn tính đúng đắn của bài toán SSSP, đồng thời giảm thiểu chi phí đồng bộ và cải thiện hiệu năng thực thi trên các lớp đồ thị khác nhau?}
+
+\subsection{Mục tiêu nghiên cứu}
+
+Mục tiêu tổng quát của đề tài là nghiên cứu, triển khai và đánh giá thuật toán BMSSP song song trên CPU đa lõi, cụ thể gồm bốn nhiệm vụ:
+\begin{enumerate}
+    \item Nghiên cứu cơ sở lý thuyết của Dijkstra và BMSSP, làm rõ vai trò của 
+    \textsc{FindPivots}, \textsc{BaseCase}, cấu trúc Frontier $\mathcal{D}$ và cơ chế đệ quy cắt lát theo khoảng cách.
+    \item Xây dựng phiên bản BMSSP song song bằng C++20 và OpenMP trên kiến trúc bộ nhớ dùng chung; phân định rõ các giai đoạn tuần tự và các pha song song dữ liệu.
+    \item Thiết kế các cơ chế cập nhật nguyên tử, cấu trúc Frontier hỗ trợ truy cập đồng thời và kỹ thuật tổ chức bộ nhớ nhằm hạn chế tranh chấp khóa và chi phí cấp phát.
+    \item Xây dựng quy trình kiểm thử và thực nghiệm, đối chiếu kết quả với Dijkstra tuần tự, đánh giá thời gian chạy, hệ số tăng tốc và các nút thắt hiệu năng theo từng pha.
+\end{enumerate}
+
+\subsection{Phạm vi và định hướng đánh giá}
+
+Đề tài tập trung vào bài toán SSSP trên đồ thị có hướng, trọng số cạnh không âm, biểu diễn bằng \textit{Compressed Sparse Row} (CSR) và thực thi trên một máy CPU đa lõi (C++20, OpenMP), không mở rộng sang hệ thống phân tán hoặc GPU.
+
+Hệ thống được đánh giá theo hai tiêu chí độc lập: \textbf{tính đúng đắn} (đối chiếu khoảng cách và tính hợp lệ của cây đỉnh trước) và \textbf{hiệu năng} (thời gian giải thuần túy, khả năng mở rộng theo số luồng và tỷ trọng thời gian từng pha). Việc tách bạch hai tiêu chí này giúp đánh giá khách quan hiệu quả thực tế của giải pháp.
+
+\section{Thuật toán Dijkstra và những giới hạn khi song song hóa}
+\label{sec:dijkstra}
+
+\subsection{Nguyên lý hoạt động}
+
+Thuật toán Dijkstra \cite{dijkstra1959note} là phương pháp kinh điển cho bài toán SSSP với trọng số không âm. Khởi tạo $\widehat{d}[s]=0$ và $\widehat{d}[v]=+\infty$ với mọi $v\neq s$, thuật toán lặp lại việc chọn một đỉnh $u$ chưa xác nhận có giá trị $\widehat{d}[u]$ nhỏ nhất, xác nhận $\widehat{d}[u]=d(u)$, rồi thư giãn toàn bộ cạnh đi ra từ $u$. Do mọi trọng số đều không âm, không thể tồn tại đường đi qua các đỉnh chưa xác nhận cho khoảng cách nhỏ hơn $\widehat{d}[u]$.
+
+Trong triển khai thực tế, Dijkstra thường dùng hàng đợi ưu tiên tối thiểu (\textit{min-heap}) lưu các cặp $(\widehat{d}[v], v)$ theo cơ chế nạp thêm bản ghi mới khi giảm khoảng cách và bỏ qua bản ghi lỗi thời khi trích xuất, giúp tránh thao tác giảm khóa phức tạp.
+
+\subsection{Độ phức tạp và ưu điểm}
+
+Với biểu diễn danh sách kề hoặc CSR cùng heap nhị phân, độ phức tạp thời gian của Dijkstra là \cite{cormen2022introduction}
+\begin{equation}
+    T_{\mathrm{Dijkstra}}(n,m) = \mathcal{O}\bigl((n+m)\log n\bigr).
+    \label{eq:dijkstra-binary-heap}
+\end{equation}
+Khi dùng heap Fibonacci trong phân tích lý thuyết, cận thời gian đạt $\mathcal{O}(m + n\log n)$\cite{fredman1987fibonacci}. Dijkstra có ưu điểm là đơn giản, dễ kiểm chứng, hằng số ẩn nhỏ và tận dụng tốt bộ nhớ đệm, do đó là thuật toán đối chứng (\textit{baseline}) chuẩn mực cho các phương pháp SSSP mới\cite{haeupler2024universal}.
+
+\subsection{Khó khăn khi thực thi song song}
+
+Trong mô hình chuẩn, thao tác rút duy nhất đỉnh có $\widehat{d}[u]$ nhỏ nhất tại mỗi bước tạo ra sự phụ thuộc chặt chẽ giữa các vòng lặp liên tiếp. Nếu nhiều luồng cùng truy cập một hàng đợi ưu tiên toàn cục, việc bảo đảm thứ tự trích xuất và tính nhất quán phát sinh chi phí khóa lớn, trong khi các phép thư giãn song song vẫn có thể xung đột trên cùng đỉnh đích. Điều này thúc đẩy việc nghiên cứu các thuật toán tổ chức xử lý theo từng miền khoảng cách và tập nguồn như BMSSP, thay vì chỉ dựa trên thứ tự toàn cục của từng đỉnh đơn lẻ.
+
+\section{Cơ sở lý thuyết của thuật toán BMSSP}
+\label{sec:ly-thuyet-bmssp}
+
+\subsection{Tư tưởng tiếp cận và kết quả lý thuyết}
+
+Thuật toán \textit{Bounded Multi-Source Shortest Path} (BMSSP) do Duan và các cộng sự đề xuất \cite{duan2025breaking} phá vỡ rào cản sắp xếp $\Omega(n\log n)$ trên đồ thị thưa bằng cách kết hợp ưu điểm của Bellman--Ford \cite{bellman1958routing}(mở rộng theo số bước mà không cần sắp xếp toàn cục) và Dijkstra (giới hạn phạm vi theo khoảng cách). Thay vì trích xuất từng đỉnh nhỏ nhất một, BMSSP chia bài toán thành các bài toán con theo tầng đệ quy $\ell$, cận trên khoảng cách $B$ và tập nguồn biên $S$, kết hợp bước rút gọn nguồn (\textsc{FindPivots}) và cấu trúc hàng đợi ưu tiên theo lô $\mathcal{D}$ để đạt độ phức tạp tất định $\mathcal{O}(m\log^{2/3}n)$.
+
+Trong chứng minh lý thuyết của bài báo gốc, thuật toán giả thiết đồ thị đầu vào có bậc vào và bậc ra bị chặn bởi hằng số (tối đa $2$). Với đồ thị bất kỳ $G$, điều kiện này đạt được thông qua \textit{phép biến đổi bậc hằng số} (\textit{constant-degree transformation})\cite{frederickson1983data}: thay mỗi đỉnh $v$ bậc cao bằng một chu trình có hướng gồm các đỉnh ảo nối nhau bởi cạnh trọng số $0$, thu được đồ thị tương đương $G'$ có $\mathcal{O}(m)$ đỉnh, $\mathcal{O}(m)$ cạnh và bảo toàn chính xác mọi khoảng cách ngắn nhất. Ngoài ra, để giữ cấu trúc cây đỉnh trước không mơ hồ khi có đường đi bằng nhau, bài báo sử dụng giả thiết thứ tự toàn phần trên các đường đi (Giả thiết~2.1).
+
+Cần nhấn mạnh rằng cận $\mathcal{O}(m\log^{2/3}n)$ là \emph{định lý của mô hình thuật toán lý thuyết}; hiệu năng thực tế của một chương trình cài đặt còn phụ thuộc vào hằng số ẩn, chi phí biến đổi đồ thị, bố cục bộ nhớ và cơ chế đồng bộ. Các khía cạnh thiết kế này sẽ được phân tích ở Chương~2 và đánh giá thực nghiệm ở Chương~3.
+
+\subsection{Thủ tục FindPivots}
+
+Thủ tục $\textsc{FindPivots}(B, S)$ có nhiệm vụ thu gọn tập nguồn biên $S$ trước khi đưa vào các lời gọi đệ quy ở tầng thấp hơn, dưới giả thiết mọi đỉnh chưa hoàn tất $v$ thỏa $d(v) < B$ đều có đường đi ngắn nhất đi qua ít nhất một đỉnh hoàn tất thuộc $S$.
+
+Thủ tục thực hiện tối đa $k = \lfloor (\log_2 n)^{1/3} \rfloor$ bước thư giãn cạnh kiểu Bellman--Ford bị chặn bởi $B$ để thu tập đỉnh đã thăm $W$ (dừng sớm nếu $|W| > k|S|$). Nếu không dừng sớm, thuật toán xây dựng rừng đường đi ngắn nhất tạm thời
+\begin{equation}
+    F = \bigl\{(u, v) \in E : u, v \in W,\; \widehat{d}[v] = \widehat{d}[u] + w_{uv}\bigr\},
+    \label{eq:pivot-forest}
+\end{equation}
+và chọn các nguồn có cây con kích thước tối thiểu $k$ trong $F$ làm tập chốt (pivot):
+\begin{equation}
+    P = \bigl\{u \in S : \text{$u$ là gốc của một cây có ít nhất $k$ đỉnh trong $F$}\bigr\}.
+    \label{eq:pivot-set}
+\end{equation}
+Theo Bổ đề~3.2 của bài báo gốc \cite{duan2025breaking}, $|W| = \mathcal{O}(k|S|)$, $|P| \le |W|/k$, và mọi đỉnh $x$ thỏa $d(x) < B$ phụ thuộc vào $S$ đều hoặc đã hoàn tất trong $W$, hoặc có đường đi ngắn nhất đi qua một đỉnh hoàn tất thuộc $P$. Quy trình chi tiết được trình bày trong Thuật toán~\ref{alg:findpivots}.
+
+\begin{algorithm}[htbp]
+\caption{Thủ tục $\textsc{FindPivots}(B, S)$}
+\label{alg:findpivots}
+\begin{algorithmic}[1]
+\Function{FindPivots}{$B, S$}
+    \State $W \leftarrow S$; \; $W_0 \leftarrow S$
+    \For{$i \leftarrow 1$ \textbf{to} $k$} \Comment{Thư giãn $k$ bước kiểu Bellman--Ford}
+        \State $W_i \leftarrow \emptyset$
+        \ForAll{cạnh $(u, v) \in E$ với $u \in W_{i-1}$}
+            \If{$\widehat{d}[u] + w_{uv} \le \widehat{d}[v]$}
+                \State $\widehat{d}[v] \leftarrow \widehat{d}[u] + w_{uv}$
+                \If{$\widehat{d}[u] + w_{uv} < B$}
+                    \State $W_i \leftarrow W_i \cup \{v\}$
+                \EndIf
+            \EndIf
+        \EndFor
+        \State $W \leftarrow W \cup W_i$
+        \If{$|W| > k|S|$} \Comment{Cắt sớm khi vùng ảnh hưởng lớn}
+            \State \Return $(S, W)$
+        \EndIf
+    \EndFor
+    \State $F \leftarrow \{(u, v) \in E : u, v \in W,\; \widehat{d}[v] = \widehat{d}[u] + w_{uv}\}$
+    \State $P \leftarrow \{u \in S : \text{$u$ là gốc của cây có $\ge k$ đỉnh trong $F$}\}$
+    \State \Return $(P, W)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Trong mô hình song song hóa, vòng lặp duyệt các cạnh xuất phát từ $W_{i-1}$ là ứng viên tự nhiên cho song song dữ liệu; tuy nhiên việc cập nhật $\widehat{d}[v]$ và khử trùng lặp tập $W_i$ phải được đồng bộ nguyên tử để tránh tranh chấp dữ liệu.
+
+\subsection{Thủ tục BaseCase}
+
+$\textsc{BaseCase}(B, S)$ xử lý trường hợp cơ sở tại tầng đệ quy $\ell = 0$, với $S = \{x\}$ là tập đơn phần tử đã hoàn tất và cận trên khoảng cách $B$. Khác với Dijkstra chạy trên toàn đồ thị, thủ tục này chỉ mở rộng cục bộ bằng min-heap nhị phân $H$ cho tới khi $H = \emptyset$ hoặc thu đủ $k + 1$ đỉnh vào tập $U_0$, sau đó xác định biên trả về $B'$ và tập đỉnh hoàn tất $U$ theo công thức:
+\begin{equation}
+    (B', U) =
+    \begin{cases}
+        (B,\; U_0), & \text{nếu } |U_0| \le k, \\[4pt]
+        \bigl(\max_{v \in U_0}\widehat{d}[v],\; \{v \in U_0 : \widehat{d}[v] < B'\}\bigr), & \text{nếu } |U_0| = k + 1.
+    \end{cases}
+    \label{eq:basecase-return}
+\end{equation}
+
+\begin{algorithm}[htbp]
+\caption{Thủ tục cơ sở $\textsc{BaseCase}(B, S)$}
+\label{alg:basecase}
+\begin{algorithmic}[1]
+\Function{BaseCase}{$B, S$} \Comment{$S = \{x\}$ với $x$ đã hoàn tất}
+    \State $U_0 \leftarrow S$; \; khởi tạo min-heap $H \leftarrow \{\langle x, \widehat{d}[x] \rangle\}$
+    \While{$H \ne \emptyset$ \textbf{and} $|U_0| < k + 1$}
+        \State $\langle u, \widehat{d}[u] \rangle \leftarrow H.\textsc{ExtractMin}()$
+        \State $U_0 \leftarrow U_0 \cup \{u\}$
+        \ForAll{cạnh $(u, v) \in E$}
+            \If{$\widehat{d}[u] + w_{uv} \le \widehat{d}[v]$ \textbf{and} $\widehat{d}[u] + w_{uv} < B$}
+                \State $\widehat{d}[v] \leftarrow \widehat{d}[u] + w_{uv}$
+                \State Cập nhật (chèn mới hoặc giảm khóa) $\langle v, \widehat{d}[v] \rangle$ trong $H$
+            \EndIf
+        \EndFor
+    \EndWhile
+    \If{$|U_0| \le k$}
+        \Return $(B, U_0)$
+    \Else
+        \State $B' \leftarrow \max_{v \in U_0} \widehat{d}[v]$
+        \State \Return $\bigl(B',\; \{v \in U_0 : \widehat{d}[v] < B'\}\bigr)$
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Điều kiện thư giãn sử dụng dấu $\le$ (Nhận xét~3.4 của bài báo) để cạnh đã thư giãn ở tầng dưới vẫn tái sử dụng được ở tầng trên. Với đồ thị có cạnh trọng số $0$ hoặc nhiều đường đi bằng nhau, cần kết hợp thứ tự toàn phần phá vỡ hòa và đánh dấu đỉnh đã hoàn tất nhằm bảo đảm điều kiện dừng và tránh lặp vô hạn.
+
+\subsection{Thủ tục BMSSP đệ quy và cấu trúc Frontier}
+
+Với hai tham số $k = \lfloor (\log_2 n)^{1/3} \rfloor$ và $t = \lfloor (\log_2 n)^{2/3} \rfloor$, thủ tục trung tâm $\textsc{BMSSP}(\ell, B, S)$ nhận tầng đệ quy $\ell \in [0, \lceil (\log_2 n)/t \rceil]$, cận trên $B$, tập nguồn biên $S$ ($|S| \le 2^{\ell t}$), và trả về biên mới $B' \le B$ cùng tập đỉnh hoàn tất $U$. Ở tầng gốc, thuật toán gọi $\textsc{BMSSP}(\lceil (\log_2 n)/t \rceil, +\infty, \{s\})$.
+
+Tại mỗi tầng $\ell \ge 1$, thuật toán sử dụng cấu trúc hàng đợi ưu tiên theo khối $\mathcal{D}$ (\textit{Frontier}, Bổ đề~3.3) với kích thước lô $M = 2^{(\ell - 1)t}$, hỗ trợ ba thao tác với cận thời gian khấu hao:
+\begin{itemize}
+    \item $\textsc{Insert}(\langle v, \widehat{d}[v] \rangle)$: chèn hoặc cập nhật ứng viên trong $\mathcal{O}(\max\{1, \log(N/M)\})$;
+    \item $\textsc{BatchPrepend}(L)$: đưa lô $L$ gồm các phần tử nhỏ hơn mọi khóa hiện tại vào đầu $\mathcal{D}$ trong $\mathcal{O}(|L|\cdot\max\{1, \log(|L|/M)\})$;
+    \item $\textsc{Pull}() \to (B_i, S_i)$: rút tập $S_i$ gồm tối đa $M$ khóa nhỏ nhất cùng biên tách $B_i$ thỏa $\max_{v \in S_i}\widehat{d}[v] < B_i \le \min(\mathcal{D})$ (hoặc $B_i = B$ nếu $\mathcal{D}$ rỗng) trong $\mathcal{O}(|S_i|)$.
+\end{itemize}
+
+\begin{algorithm}[htbp]
+\caption{Thủ tục đệ quy $\textsc{BMSSP}(\ell, B, S)$}
+\label{alg:bmssp}
+\begin{algorithmic}[1]
+\Function{BMSSP}{$\ell, B, S$}
+    \If{$\ell = 0$}
+        \Return $\textsc{BaseCase}(B, S)$
+    \EndIf
+    \State $(P, W) \leftarrow \textsc{FindPivots}(B, S)$
+    \State $\mathcal{D}.\textsc{Initialize}(M, B)$ với $M \leftarrow 2^{(\ell-1)t}$; \; chèn $\langle x, \widehat{d}[x] \rangle$ cho mọi $x \in P$
+    \State $i \leftarrow 0$; \; $U \leftarrow \emptyset$; \; $B'_0 \leftarrow \min_{x \in P} \widehat{d}[x]$ \Comment{Nếu $P = \emptyset$ thì đặt $B'_0 \leftarrow B$}
+    \While{$|U| < k\,2^{\ell t}$ \textbf{and} $\mathcal{D} \ne \emptyset$}
+        \State $i \leftarrow i + 1$
+        \State $(B_i, S_i) \leftarrow \mathcal{D}.\textsc{Pull}()$
+        \State $(B'_i, U_i) \leftarrow \textsc{BMSSP}(\ell - 1, B_i, S_i)$
+        \State $U \leftarrow U \cup U_i$; \; $K \leftarrow \emptyset$
+        \ForAll{cạnh $(u, v) \in E$ với $u \in U_i$}
+            \If{$\widehat{d}[u] + w_{uv} \le \widehat{d}[v]$}
+                \State $\widehat{d}[v] \leftarrow \widehat{d}[u] + w_{uv}$
+                \If{$\widehat{d}[u] + w_{uv} \in [B_i, B)$}
+                    \State $\mathcal{D}.\textsc{Insert}(\langle v, \widehat{d}[u] + w_{uv} \rangle)$
+                \ElsIf{$\widehat{d}[u] + w_{uv} \in [B'_i, B_i)$}
+                    \State $K \leftarrow K \cup \{\langle v, \widehat{d}[u] + w_{uv} \rangle\}$
+                \EndIf
+            \EndIf
+        \EndFor
+        \State $\mathcal{D}.\textsc{BatchPrepend}\bigl(K \cup \{\langle x, \widehat{d}[x] \rangle : x \in S_i,\; \widehat{d}[x] \in [B'_i, B_i)\}\bigr)$
+    \EndWhile
+    \State $B' \leftarrow \min\{B'_i, B\}$
+    \State \Return $\bigl(B',\; U \cup \{x \in W : \widehat{d}[x] < B'\}\bigr)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Trong thiết kế của dự án, giao diện \texttt{IFrontierD} bổ sung thêm thao tác gom lô cập nhật \texttt{insert\_batch}. Giao diện này có hai cài đặt gồm \texttt{MutexFrontierD} và \texttt{ConcurrentFrontierD}; trong đó, phương án thứ hai tổ chức dữ liệu thành hai tầng $\mathcal{D}_0$ và $\mathcal{D}_1$ tương ứng với \textsc{BatchPrepend} và \textsc{Insert}. Chi tiết cấu trúc khối, cơ chế đồng bộ và xóa lười sẽ được trình bày ở Chương~2.
+
+Từ Thuật toán~\ref{alg:bmssp}, có thể thấy vòng lặp theo chỉ số $i$ mang \textbf{phụ thuộc dữ liệu tuần tự chặt chẽ theo lát khoảng cách}: cặp $(B_i, S_i)$ của bước $i$ phụ thuộc trực tiếp vào trạng thái $\mathcal{D}$ sau khi thư giãn toàn bộ cạnh từ $U_{i-1}$ (các tập hoàn tất $U_1, U_2, \dots$ rời nhau và tăng dần theo khoảng cách). Do đó, không thể thực thi đồng thời các lời gọi đệ quy $\textsc{BMSSP}(\ell - 1, B_i, S_i)$ theo mô hình chia để trị độc lập; hướng song song hóa phù hợp là giữ nguyên vòng điều phối tuần tự bên ngoài và khai thác song song dữ liệu ở pha duyệt cạnh, thư giãn nguyên tử và gom lô bên trong mỗi lát.
+
+\section{Cơ sở tính toán song song và đồng bộ hóa}
+\label{sec:co-so-song-song}
+
+\subsection{Mô hình bộ nhớ dùng chung, đồng bộ hóa và cân bằng tải đồ thị}
+
+Trên kiến trúc CPU đa lõi có bộ nhớ dùng chung, các luồng thực thi chia sẻ cùng không gian địa chỉ, cho phép nhiều luồng đọc đồng thời cấu trúc đồ thị CSR mà không cần sao chép dữ liệu. Trong C/C++, OpenMP \cite{openmp52} cung cấp mô hình song song dựa trên nhóm luồng và hàng rào đồng bộ (\textit{barrier}) để phân phối các vòng lặp duyệt cạnh và gom kết quả giữa các pha.
+
+Khi hai luồng đồng thời thư giãn hai cạnh $(u_1, v)$ và $(u_2, v)$ cùng hướng tới đỉnh $v$, việc đọc--so sánh--ghi không có đồng bộ sẽ dẫn đến \textit{điều kiện tranh chấp} (\textit{race condition}), làm mất giá trị khoảng cách nhỏ hơn hoặc tạo ra trạng thái rách dữ liệu (\textit{torn write}) giữa $\widehat{d}[v]$ và $\operatorname{pred}[v]$. Để bảo đảm tính nhất quán, phép cập nhật trạng thái đỉnh cần được thực hiện nguyên tử thông qua lệnh \textit{Compare-And-Swap} (CAS) trên cặp trạng thái $(\widehat{d}[v], \operatorname{pred}[v])$: chỉ ghi giá trị mới khi khoảng cách ứng viên thực sự cải thiện và trạng thái hiện tại chưa bị luồng khác thay đổi, ngược lại đọc lại trạng thái mới và lặp lại kiểm tra.
+
+Bên cạnh đồng bộ hóa, xử lý đồ thị song song còn đối mặt với hai vấn đề đặc thù:
+\begin{itemize}
+    \item \textbf{Mất cân bằng tải:} Phân chia công việc theo số đỉnh dễ khiến một luồng phải xử lý đỉnh bậc rất cao trong khi luồng khác nhàn rỗi; phân chia theo tổng số cạnh hoạt động $|E_{\mathrm{active}}|$ giúp cân bằng tải tốt hơn trên đồ thị có phân bố bậc lệch.
+    \item \textbf{Độ hạt song song (\textit{granularity}):} Khi $|E_{\mathrm{active}}|$ quá nhỏ (ví dụ ở các tầng đệ quy thấp), chi phí kích hoạt vùng song song và đồng bộ hàng rào vượt quá lợi ích đa luồng. Vì vậy cần áp dụng một ngưỡng cắt $\Theta_{\mathrm{cutoff}}$: thực thi song song khi $|E_{\mathrm{active}}| \ge \Theta_{\mathrm{cutoff}}$ và chuyển về tuần tự khi $|E_{\mathrm{active}}| < \Theta_{\mathrm{cutoff}}$.
+\end{itemize}
+
+\subsection{Mô hình phân tích và các chỉ số đánh giá hiệu năng song song}
+
+Để phân tích giới hạn tăng tốc của thuật toán song song, mô hình \textit{Work--Span} đặc trưng một phép tính bằng hai đại lượng: tổng khối lượng công việc tuần tự $T_1$ (\textit{work}) và chiều sâu đường găng $T_\infty$ (\textit{span} --- thời gian thực thi khi có vô hạn bộ xử lý). Theo định lý Brent\cite{brent1974parallel}, thời gian thực thi trên $p$ bộ xử lý bị chặn bởi
+\begin{equation}
+    \max\left\{\frac{T_1}{p},\; T_\infty\right\} \le T_p \le \frac{T_1}{p} + T_\infty,
+    \label{eq:brent}
+\end{equation}
+trong đó tỷ số $T_1 / T_\infty$ biểu thị mức độ song song lý thuyết tối đa. Tương ứng theo góc nhìn tỷ phần tuần tự $f \in [0, 1]$ (định luật Amdahl \cite{amdahl1967validity}), hệ số tăng tốc lý tưởng bị giới hạn bởi
+\begin{equation}
+    S_{\mathrm{Amdahl}}(p) = \frac{1}{f + \dfrac{1-f}{p}}.
+    \label{eq:amdahl}
+\end{equation}
+
+Trong thực nghiệm đánh giá một thuật toán song song đối sánh với thuật toán đối chứng, cần phân biệt rõ hai chỉ số tăng tốc trên cùng đầu vào và cùng điều kiện đo:
+\begin{align}
+    S_{\mathrm{self}}(p) &= \frac{T_{\mathrm{par}}(1)}{T_{\mathrm{par}}(p)}, &
+    E(p) &= \frac{S_{\mathrm{self}}(p)}{p} = \frac{T_{\mathrm{par}}(1)}{p\,T_{\mathrm{par}}(p)},
+    \label{eq:self-speedup} \\
+    S_{\mathrm{abs}}(p) &= \frac{T_{\mathrm{base}}}{T_{\mathrm{par}}(p)},
+    \label{eq:abs-speedup}
+\end{align}
+trong đó $T_{\mathrm{par}}(p)$ là thời gian chạy của BMSSP song song với $p$ luồng và $T_{\mathrm{base}}$ là thời gian của thuật toán đối chứng tuần tự tốt nhất (Dijkstra). Chỉ số $S_{\mathrm{self}}(p)$ và hiệu suất $E(p)$ phản ánh khả năng mở rộng nội tại của bản song song, còn $S_{\mathrm{abs}}(p)$ phản ánh hiệu quả thực tiễn so với thuật toán chuẩn. Ngoài thời gian tổng, việc đo phân rã theo từng pha (\textit{profiling}) là cần thiết để xác định nút thắt thực tế (đồng bộ, truy cập Frontier, bộ nhớ đệm) thay vì chỉ quan sát tổng thời gian chạy.
+
+\subsection{Tiêu chí kiểm chứng tính đúng đắn trong môi trường đa luồng}
+
+Do thứ tự thực thi của các luồng mang tính không tất định, một cài đặt SSSP song song chỉ được xem là hợp lệ khi đáp ứng đồng thời ba tiêu chí kiểm chứng độc lập với hiệu năng:
+\begin{enumerate}
+    \item \textbf{Chính xác khoảng cách:} Với mọi đỉnh $v \in V$, nếu $d(v) < +\infty$ thì $|\widehat{d}[v] - d(v)| \le \varepsilon$ (đối chiếu với Dijkstra đối chứng trong dung sai số thực $\varepsilon$ đã công bố, và trùng khớp tuyệt đối trên miền trọng số nguyên nhỏ); nếu $d(v) = +\infty$ thì $\widehat{d}[v] = +\infty$.
+    \item \textbf{Tính hợp lệ của cây đường đi:} Với mọi đỉnh tới được $v \neq s$, đỉnh $u = \operatorname{pred}[v]$ thỏa mãn $(u, v) \in E$, $\widehat{d}[v] = \widehat{d}[u] + w_{uv}$ (trong dung sai số thực), và quan hệ $\operatorname{pred}$ tạo thành cây không chu trình gốc tại $s$.
+    \item \textbf{Tính ổn định đa luồng:} Kết quả bất biến trước các số lượng luồng và lịch lập lịch khác nhau, kể cả trên các trường hợp biên như cạnh trọng số $0$, chu trình trọng số $0$, nhiều đường đi có độ dài bằng nhau và đỉnh bậc rất lớn.
+\end{enumerate}
+
+Trên nền tảng cơ sở lý thuyết và các tiêu chí đánh giá đã xác lập, Chương~2 sẽ trình bày kiến trúc cài đặt chi tiết của hệ thống BMSSP song song, còn Chương~3 sẽ báo cáo kết quả kiểm thử tính đúng đắn, thực nghiệm hiệu năng và phân tích giới hạn của hệ thống.

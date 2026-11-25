@@ -1,10 +1,12 @@
 # Bộ nhớ dự án BMSSP
 
-Cập nhật: 24/11/2026, múi giờ Asia/Saigon.
+Cập nhật: 25/11/2026, múi giờ Asia/Saigon.
 
 ## Mục tiêu và trạng thái
 
-**Tiến độ tổng Dự án Song song hóa BMSSP (Parallel BMSSP): 100%.** Đã hoàn thành toàn diện:
+**Tiến độ tổng Dự án Song song hóa BMSSP (Parallel BMSSP): 100%.** Đã hoàn thành toàn diện (cập nhật tối ưu & thực nghiệm mở rộng 24–25/11/2026):
+- **Trạng thái Git / GitHub hiện tại (`https://github.com/23001939/bmssp.git`):**
+  - Nhánh `origin/Viet` & `origin/parallel-bmssp`: đồng bộ mã nguồn tối ưu 6 nhóm hệ thống/cấu trúc dữ liệu + toàn bộ bộ benchmark 23 đồ thị (11 tổng hợp `100K–2M`, 7 mạng đường bộ DIMACS-9 `NY → CAL`, 5 mạng thực tế Stanford SNAP `cit-HepPh`, `soc-Slashdot0811`, `web-BerkStan`, `wiki-topcats`, `soc-Pokec`), báo cáo quy luật $(n, d)$ tại `bmssp_parallel/RELATIONSHIP_N_DEGREE_ANALYSIS.md` và bộ mã LaTeX báo cáo hoàn chỉnh tại `bao_cao_overleaf_ch3/`.
 - **Người 1 (Hạ tầng & Primitives):** Khởi tạo `CSRGraph` (SoA), `AtomicVertexState` 128-bit lock-free CAS (`cmpxchg16b`), `EpochDeduplicator`, `parallel_prefix_scan`, `parallel_sample_sort`, `parallel_gather`, `ThreadLocalMemoryPool`. 153.932/153.932 unit checks pass trong 12.81 ms.
 - **Người 2 (Cấu trúc dữ liệu đồng thời $\mathcal{D}$ - Lemma 3.3):** Hoàn thành `IFrontierD`, `MutexFrontierD` và `ConcurrentFrontierD` hỗ trợ `insert`, `batch_prepend`, `pull`, dọn rác lười biếng (Lazy Deletion) và chia tách khối không nghẽn (`SPLIT`).
 - **Người 3 (Lõi thuật toán BMSSP song song):** Hiện thực hóa `find_pivots_parallel` (k-bước Bellman-Ford đa luồng với OpenMP guided schedule), `base_case` (mini-queue có cận khoảng cách $B$), và vòng lặp đồng bộ cắt lát khoảng cách `bmssp_parallel` (Distance-Sliced Data Parallelism).
@@ -745,3 +747,19 @@ Benchmark v2 results_v2/20261114-092651/results.json is authoritative: 30configs
   - `cit-HepPh` (`n = 34.546`, `20.507` đỉnh tới được, `m = 421.534`, `avg_deg = 12,20`): `Dijkstra 1T = 6,41 ms` | `BMSSP tốt nhất = 18,20 ms` (`4T`, `Speedup = 0,35×` — đồ thị quá nhỏ nằm trọn trong L2 cache nên chi phí khởi tạo đệ quy/OpenMP chiếm ưu thế).
   - `soc-Slashdot0811` (`n = 77.360` tới được 100%, `m = 828.161` sau loại 77.307 khuyên, `avg_deg = 10,71`): `Dijkstra 1T = 53,06 ms` | `BMSSP tốt nhất = 64,86 ms` (`12T`, `Speedup = 0,82×`, tiệm cận sát Dijkstra).
   - `web-BerkStan` (`n = 685.230`, `459.831` đỉnh tới được, `m = 7.600.595`, `avg_deg = 11,09`): `Dijkstra 1T = 299,01 ms` | **`BMSSP tốt nhất = 291,25 ms` (`8T`) / `299,11 ms` (`12T`)** (`Speedup = 1,03×`, `Self-Scale = 1,60×` — xác lập đúng điểm cắt hòa vốn/vượt Dijkstra quanh mốc ~460K đỉnh tới được trên dữ liệu thực tế).
+
+- **Tổng hợp quy luật $(n, d)$ & Chốt phiên thực nghiệm 23 bộ dữ liệu (25/11/2026):**
+  - **Mô hình thực nghiệm:** Hồi quy log-tuyến tính trên toàn bộ 23 bộ dữ liệu đã đo trên cùng phần cứng AMD Ryzen 5 7640HS (6C/12T, L3 16 MB, GCC `16.2.0 -O3 -march=native -mcx16 -fopenmp`, `MaxDiff = 0.000` trên 100% phép đo) đạt $R^2 = 0,9018$.
+  - **Bản đồ pha $(n, d)$:**
+    1. `Dijkstra` tuần tự ưu thế khi $n < 150.000$ (nằm gọn trong L2/L3 cache) hoặc trên đồ thị phẳng bậc cực thấp $d \le 3$ (như bản đồ đường bộ DIMACS-9 `d = 2,34 – 2,76`, mặt sóng địa lý hẹp + cục bộ không gian cao).
+    2. `Parallel BMSSP` đạt điểm cắt vượt `Dijkstra` quanh $n \approx 150\text{K} – 200\text{K}$ (đồ thị ngẫu nhiên $d \ge 4$) và $n \approx 460\text{K}$ đỉnh tới được (đồ thị phân cụm thực tế `web-BerkStan`, $d = 11,09$, `1,03×`).
+    3. Ở quy mô lớn $n \ge 1.000.000$ kết hợp bậc $d \ge 4$ (đặc biệt $d = 12 – 20$), `Parallel BMSSP` thắng áp đảo `1,41× – 2,20×` (`wiki-topcats`: `1,69×`; `soc-Pokec`: `1,83×`; `Dense-12 2M`: `2,20×`), nhờ cấu trúc khối $\mathcal{D}$ quản lý theo đỉnh và quét tuần tự mảng `CSR` đa luồng (`Self-Scale = 1,84× – 2,28×`).
+  - **Giới hạn học thuật cần giữ vững:** Mọi kết luận tốc độ trên thuộc về thực nghiệm thực tế trên vi kiến trúc x86-64 đa nhân với `use_gadget_transform = false` và trọng số GAPBS `[1, 255]` cho dữ liệu SNAP (vốn không có trọng số vật lý gốc); không đồng nhất kết quả thực nghiệm này với chứng minh cận tiệm cận lý thuyết tổng quát $\mathcal{O}(m \log^{2/3} n)$ trong mô hình comparison-addition đơn luồng của bài báo gốc.
+  - **Danh mục hồ sơ & bằng chứng lưu tại máy:**
+    - Chi tiết 6 nhóm tối ưu mã nguồn: `BAO_CAO_CHI_TIET_TOI_UU_BMSSP.md`
+    - Tổng hợp 100K – 2M đỉnh: `bmssp_parallel/FINAL_VS_DIJKSTRA_1M_2M_REPORT.md`, `bmssp_parallel/final_benchmark_1m_2m.csv`
+    - 7 mạng đường bộ Hoa Kỳ DIMACS-9: `bmssp_parallel/DIMACS_ROAD_7_BENCHMARK_REPORT.md`, `bmssp_parallel/dimacs_road_7_results.csv`
+    - 5 mạng thực tế Stanford SNAP: `bmssp_parallel/SNAP_HIGH_DEGREE_REPORT.md`, `bmssp_parallel/snap_highdeg_results.csv`
+    - Phân tích & biểu đồ quy luật $(n, d)$: `bmssp_parallel/RELATIONSHIP_N_DEGREE_ANALYSIS.md`, `bmssp_parallel/relationship_n_degree_bmssp_vs_dijkstra.png`, `bmssp_parallel/benchmarks/plot_relationship_n_degree.py`
+    - Báo cáo LaTeX Overleaf hoàn chỉnh (Giới thiệu, Chương I–III, Kết luận, Tài liệu tham khảo, 5 hình TikZ + 6 biểu đồ 300 DPI): `bao_cao_overleaf_ch3/main.tex`, `bao_cao_overleaf_ch3/chuong1.tex`, `bao_cao_overleaf_ch3/chuong2.tex`, `bao_cao_overleaf_ch3/chuong3_ketluan_tltk.tex`, `bao_cao_overleaf_ch3/generate_ch3_figures.py`, `bao_cao_overleaf_ch3/image/`
+  - **Quyết định Git đã thực hiện theo lệnh người dùng (25/11/2026):** Đã commit và push đồng bộ toàn bộ mã nguồn mới nhất, các báo cáo thực nghiệm Markdown/CSV/PNG và bộ báo cáo LaTeX hoàn chỉnh lên cả `origin/parallel-bmssp` và `origin/Viet`.
